@@ -4,8 +4,27 @@
   <div class="card-body">
     <h1 class="card-title text-3xl">All Users</h1>
     <p class="text-sm opacity-70">Admin operations for user lifecycle management using authenticated admin session.</p>
-    <div class="alert oz-alert-soft mt-3">
-      User count/table view will appear here after core exposes a user-list endpoint.
+    <div class="stats stats-vertical md:stats-horizontal shadow mt-3">
+      <div class="stat">
+        <div class="stat-title">Total Users</div>
+        <div class="stat-value text-xl">{{ .Data.TotalUsers }}</div>
+      </div>
+      <div class="stat">
+        <div class="stat-title">Active</div>
+        <div class="stat-value text-xl">{{ .Data.ActiveUsers }}</div>
+      </div>
+      <div class="stat">
+        <div class="stat-title">Disabled</div>
+        <div class="stat-value text-xl">{{ .Data.DisabledUsers }}</div>
+      </div>
+      <div class="stat">
+        <div class="stat-title">Admins</div>
+        <div class="stat-value text-xl">{{ .Data.AdminUsers }}</div>
+      </div>
+      <div class="stat">
+        <div class="stat-title">Must Change Password</div>
+        <div class="stat-value text-xl">{{ .Data.MustChangePasswordUsers }}</div>
+      </div>
     </div>
   </div>
 </section>
@@ -41,5 +60,69 @@
     </div>
   </section>
 </div>
+
+<section class="card bg-base-100 shadow mt-6">
+  <div class="card-body">
+    <h2 class="card-title">User Table</h2>
+    <div class="overflow-x-auto">
+      <table class="table table-zebra">
+        <thead>
+          <tr>
+            <th>Display Name</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Status</th>
+            <th>Password State</th>
+            <th>User ID</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{ range .Data.Users }}
+          <tr>
+            <td>{{ .DisplayName }}</td>
+            <td>{{ .Email }}</td>
+            <td>
+              {{ if eq .Role "admin" }}
+              <span class="badge badge-secondary">admin</span>
+              {{ else }}
+              <span class="badge badge-outline">user</span>
+              {{ end }}
+            </td>
+            <td>
+              {{ if .Disabled }}
+              <span class="badge badge-error">disabled</span>
+              {{ else }}
+              <span class="badge badge-success">active</span>
+              {{ end }}
+            </td>
+            <td>
+              {{ if .MustChangePassword }}
+              <span class="badge badge-warning">must change</span>
+              {{ else }}
+              <span class="badge badge-ghost">normal</span>
+              {{ end }}
+            </td>
+            <td class="font-mono text-xs">{{ .Id }}</td>
+            <td>
+              {{ if .Disabled }}
+              <span class="text-xs opacity-60">No action</span>
+              {{ else if eq .Id $.Data.CurrentUserID }}
+              <span class="text-xs opacity-60">Current admin</span>
+              {{ else }}
+              <form method="post" action="/admin/users/{{ .Id }}/disable" class="inline">
+                <button class="btn btn-xs btn-warning" type="submit">Disable</button>
+              </form>
+              {{ end }}
+            </td>
+          </tr>
+          {{ else }}
+          <tr><td colspan="7" class="opacity-70">No users found</td></tr>
+          {{ end }}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
 {{ template "partials/footer" . }}
 {{ end }}

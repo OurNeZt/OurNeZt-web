@@ -7,6 +7,29 @@
   </div>
 </section>
 
+<div class="grid gap-4 md:grid-cols-5 mt-6">
+  <div class="stat bg-base-100 rounded-box shadow">
+    <div class="stat-title">Total Users</div>
+    <div class="stat-value text-2xl">{{ .Data.TotalUsers }}</div>
+  </div>
+  <div class="stat bg-base-100 rounded-box shadow">
+    <div class="stat-title">Active</div>
+    <div class="stat-value text-2xl">{{ .Data.ActiveUsers }}</div>
+  </div>
+  <div class="stat bg-base-100 rounded-box shadow">
+    <div class="stat-title">Disabled</div>
+    <div class="stat-value text-2xl">{{ .Data.DisabledUsers }}</div>
+  </div>
+  <div class="stat bg-base-100 rounded-box shadow">
+    <div class="stat-title">Admins</div>
+    <div class="stat-value text-2xl">{{ .Data.AdminUsers }}</div>
+  </div>
+  <div class="stat bg-base-100 rounded-box shadow">
+    <div class="stat-title">Must Change Password</div>
+    <div class="stat-value text-2xl">{{ .Data.MustChangePasswordUsers }}</div>
+  </div>
+</div>
+
 <div class="grid gap-4 md:grid-cols-1 mt-6">
   <a class="card oz-panel hover:shadow-xl transition" href="/admin/users">
     <div class="card-body">
