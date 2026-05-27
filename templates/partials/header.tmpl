@@ -1,0 +1,42 @@
+{{ define "partials/header" }}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ .Title }} | OurNeZt</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
+  <link href="/static/css/app.css" rel="stylesheet" type="text/css" />
+</head>
+<body class="min-h-screen">
+  <div class="navbar oz-navbar px-6">
+    <a class="oz-brand" href="/dashboard">
+      <img src="/static/img/ournezt-logo.png" alt="OurNeZt logo">
+      <span>OurNeZt</span>
+    </a>
+    <div class="ml-auto flex items-center gap-2">
+      {{ if .User }}
+        {{ if .User.MustChangePassword }}
+          <a class="btn btn-warning btn-sm" href="/change-password">Change Password</a>
+        {{ else }}
+          {{ if eq .User.Role "admin" }}
+            <a class="btn btn-ghost btn-sm" href="/admin">Admin Dashboard</a>
+            <a class="btn btn-ghost btn-sm" href="/admin/users">All Users</a>
+          {{ else }}
+            <a class="btn btn-ghost btn-sm" href="/dashboard">Dashboard</a>
+            <a class="btn btn-ghost btn-sm" href="/families">Families</a>
+            <a class="btn btn-ghost btn-sm" href="/people">People</a>
+            <a class="btn btn-ghost btn-sm" href="/housing">Housing</a>
+          {{ end }}
+        {{ end }}
+        <form method="post" action="/logout" class="inline"><button class="btn btn-outline btn-sm">Logout</button></form>
+      {{ else }}
+        <a class="btn btn-primary btn-sm" href="/login">Login</a>
+      {{ end }}
+    </div>
+  </div>
+  <main class="max-w-6xl mx-auto p-6 oz-main">
+    {{ if .Error }}<div class="alert alert-error mb-4">{{ .Error }}</div>{{ end }}
+    {{ if .Flash }}<div class="alert alert-success mb-4">{{ .Flash }}</div>{{ end }}
+{{ end }}

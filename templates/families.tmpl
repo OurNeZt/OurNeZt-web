@@ -1,0 +1,46 @@
+{{ define "families" }}
+{{ template "partials/header" . }}
+<div class="grid gap-6 md:grid-cols-2">
+  <section class="card bg-base-100 shadow">
+    <div class="card-body">
+      <h2 class="card-title">Create Family</h2>
+      <form method="post" action="/families" class="space-y-2">
+        <input class="input input-bordered w-full" name="name" placeholder="Family name" required>
+        <input class="input input-bordered w-full" name="family_type" placeholder="family, couple, single" required>
+        <button class="btn btn-primary" type="submit">Create</button>
+      </form>
+    </div>
+  </section>
+  <section class="card bg-base-100 shadow">
+    <div class="card-body">
+      <h2 class="card-title">Join Family</h2>
+      <form method="post" action="/families/join" class="space-y-2">
+        <input class="input input-bordered w-full" name="code" placeholder="Invite code" required>
+        <button class="btn btn-secondary" type="submit">Join</button>
+      </form>
+    </div>
+  </section>
+</div>
+<section class="card bg-base-100 shadow mt-6">
+  <div class="card-body">
+    <h2 class="card-title">Your Families</h2>
+    <div class="overflow-x-auto">
+      <table class="table">
+        <thead><tr><th>Name</th><th>Type</th><th></th></tr></thead>
+        <tbody>
+          {{ range .Data.Families }}
+          <tr>
+            <td>{{ .Name }}</td>
+            <td>{{ .FamilyType }}</td>
+            <td><a class="btn btn-sm" href="/families/{{ .Id }}">Open</a></td>
+          </tr>
+          {{ else }}
+          <tr><td colspan="3" class="opacity-70">No families yet</td></tr>
+          {{ end }}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+{{ template "partials/footer" . }}
+{{ end }}

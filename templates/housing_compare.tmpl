@@ -1,0 +1,33 @@
+{{ define "housing_compare" }}
+{{ template "partials/header" . }}
+<section class="card bg-base-100 shadow">
+  <div class="card-body">
+    <h1 class="card-title">Housing Comparison</h1>
+    {{ if .Data.FamilyID }}
+    <a class="btn btn-sm" href="/housing?family_id={{ .Data.FamilyID }}">Back to Housing</a>
+    {{ else }}
+    <p>Select a family first from <a class="link" href="/dashboard">dashboard</a>.</p>
+    {{ end }}
+    <div class="overflow-x-auto mt-3">
+      <table class="table">
+        <thead><tr><th>Option ID</th><th>Upfront</th><th>Mortgage</th><th>Monthly Cost</th><th>Surplus</th><th>Rating</th></tr></thead>
+        <tbody>
+          {{ range .Data.Rows }}
+          <tr>
+            <td class="font-mono text-xs">{{ .HousingOptionId }}</td>
+            <td>{{ cents .UpfrontCostCents }}</td>
+            <td>{{ cents .MonthlyMortgageCents }}</td>
+            <td>{{ cents .MonthlyHousingCostCents }}</td>
+            <td>{{ cents .MonthlySurplusAfterHousingCents }}</td>
+            <td>{{ .Rating }}</td>
+          </tr>
+          {{ else }}
+          <tr><td colspan="6" class="opacity-70">No comparison rows yet</td></tr>
+          {{ end }}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+{{ template "partials/footer" . }}
+{{ end }}

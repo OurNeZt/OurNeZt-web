@@ -1,0 +1,45 @@
+{{ define "admin_users" }}
+{{ template "partials/header" . }}
+<section class="card bg-base-100 shadow mb-6">
+  <div class="card-body">
+    <h1 class="card-title text-3xl">All Users</h1>
+    <p class="text-sm opacity-70">Admin operations for user lifecycle management using authenticated admin session.</p>
+    <div class="alert oz-alert-soft mt-3">
+      User count/table view will appear here after core exposes a user-list endpoint.
+    </div>
+  </div>
+</section>
+<div class="grid gap-6 md:grid-cols-2">
+  <section class="card bg-base-100 shadow">
+    <div class="card-body">
+      <h2 class="card-title">Create User</h2>
+      <form method="post" action="/admin/users" class="space-y-2">
+        <input class="input input-bordered w-full" name="email" placeholder="Email" required>
+        <input class="input input-bordered w-full" name="display_name" placeholder="Display name" required>
+        <input class="input input-bordered w-full" name="password" placeholder="Temporary password" required>
+        <select class="select select-bordered w-full" name="role">
+          <option value="user">user</option>
+          <option value="admin">admin</option>
+        </select>
+        <button class="btn btn-primary" type="submit">Create user</button>
+      </form>
+    </div>
+  </section>
+  <section class="card bg-base-100 shadow">
+    <div class="card-body">
+      <h2 class="card-title">Disable User</h2>
+      <p class="text-sm opacity-70">Paste the user ID to disable an account.</p>
+      <form method="post" action="/admin/users/placeholder/disable" onsubmit="this.action='/admin/users/' + this.user_id.value + '/disable'" class="space-y-2">
+        <input class="input input-bordered w-full" name="user_id" placeholder="User ID" required>
+        <button class="btn btn-warning" type="submit">Disable user</button>
+      </form>
+      {{ with .Data.JustCreated }}
+      <div class="alert alert-success mt-3">
+        Created: {{ .DisplayName }} ({{ .Email }})<br>ID: {{ .Id }}
+      </div>
+      {{ end }}
+    </div>
+  </section>
+</div>
+{{ template "partials/footer" . }}
+{{ end }}

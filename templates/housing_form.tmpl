@@ -1,0 +1,33 @@
+{{ define "housing_form" }}
+{{ template "partials/header" . }}
+<section class="card bg-base-100 shadow max-w-3xl mx-auto">
+  <div class="card-body">
+    <h1 class="card-title">{{ if .Data.IsEdit }}Edit Housing{{ else }}Add Housing{{ end }}</h1>
+    <form method="post" action="{{ if .Data.IsEdit }}/housing/{{ .Data.Housing.Id }}{{ else }}/housing{{ end }}" class="grid md:grid-cols-2 gap-3">
+      <input type="hidden" name="family_id" value="{{ .Data.FamilyID }}">
+      <input class="input input-bordered" name="name" placeholder="Name" value="{{ .Data.Housing.Name }}" required>
+      <input class="input input-bordered" name="housing_type" placeholder="Housing type" value="{{ .Data.Housing.HousingType }}" required>
+      <input class="input input-bordered" name="location" placeholder="Location" value="{{ .Data.Housing.Location }}">
+      <input class="input input-bordered" name="unit_type" placeholder="Unit type" value="{{ .Data.Housing.UnitType }}">
+      <input class="input input-bordered" name="purchase_price_cents" type="number" placeholder="Purchase price (cents)" value="{{ .Data.Housing.PurchasePriceCents }}">
+      <input class="input input-bordered" name="grant_amount_cents" type="number" placeholder="Grant amount (cents)" value="{{ .Data.Housing.GrantAmountCents }}">
+      <input class="input input-bordered" name="loan_type" placeholder="Loan type" value="{{ .Data.Housing.LoanType }}">
+      <input class="input input-bordered" name="loan_amount_cents" type="number" placeholder="Loan amount (cents)" value="{{ .Data.Housing.LoanAmountCents }}">
+      <input class="input input-bordered" name="interest_rate_bps" type="number" placeholder="Interest rate (bps)" value="{{ .Data.Housing.InterestRateBps }}">
+      <input class="input input-bordered" name="loan_tenure_months" type="number" placeholder="Loan tenure (months)" value="{{ .Data.Housing.LoanTenureMonths }}">
+      <input class="input input-bordered" name="downpayment_percent_bps" type="number" placeholder="Downpayment (bps)" value="{{ .Data.Housing.DownpaymentPercentBps }}">
+      <input class="input input-bordered" name="monthly_maintenance_cents" type="number" placeholder="Monthly maintenance (cents)" value="{{ .Data.Housing.MonthlyMaintenanceCents }}">
+      <input class="input input-bordered" name="renovation_budget_cents" type="number" placeholder="Renovation budget (cents)" value="{{ .Data.Housing.RenovationBudgetCents }}">
+      <input class="input input-bordered" name="furniture_budget_cents" type="number" placeholder="Furniture budget (cents)" value="{{ .Data.Housing.FurnitureBudgetCents }}">
+      <input class="input input-bordered" name="legal_fees_cents" type="number" placeholder="Legal fees (cents)" value="{{ .Data.Housing.LegalFeesCents }}">
+      <input class="input input-bordered" name="buyer_stamp_duty_cents" type="number" placeholder="Buyer stamp duty (cents)" value="{{ .Data.Housing.BuyerStampDutyCents }}">
+      <input class="input input-bordered" name="expected_key_collection_date" placeholder="Key collection date (YYYY-MM-DD)" value="{{ .Data.Housing.ExpectedKeyCollectionDate }}">
+      <div class="md:col-span-2 flex gap-2">
+        <button class="btn btn-primary" type="submit">Save</button>
+        <a class="btn" href="/housing?family_id={{ .Data.FamilyID }}">Cancel</a>
+      </div>
+    </form>
+  </div>
+</section>
+{{ template "partials/footer" . }}
+{{ end }}

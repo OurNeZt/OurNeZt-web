@@ -1,0 +1,22 @@
+{{ define "bootstrap_admin_help" }}
+{{ template "partials/header" . }}
+<section class="card oz-panel max-w-3xl mx-auto">
+  <div class="card-body">
+    <h1 class="card-title">Bootstrap Admin Guide</h1>
+    <p class="opacity-80">Configure this in <strong>ournezt-core</strong> before first admin login.</p>
+
+<pre class="bg-base-200 rounded p-3 text-sm overflow-x-auto"><code>BOOTSTRAP_ADMIN_EMAIL=admin@ournezt.local
+BOOTSTRAP_ADMIN_PASSWORD=TempPass123!
+BOOTSTRAP_ADMIN_DISPLAY_NAME=Bootstrap Admin</code></pre>
+
+    <ul class="list-disc list-inside text-sm space-y-1">
+      <li>If no active admin exists, core creates/promotes this admin at startup.</li>
+      <li>The admin must change password on first login.</li>
+      <li>If an active admin already exists, bootstrap is skipped.</li>
+    </ul>
+
+    <a class="btn btn-primary mt-2 w-fit" href="/login">Back to login</a>
+  </div>
+</section>
+{{ template "partials/footer" . }}
+{{ end }}

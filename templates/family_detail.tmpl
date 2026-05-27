@@ -1,0 +1,36 @@
+{{ define "family_detail" }}
+{{ template "partials/header" . }}
+<section class="card bg-base-100 shadow">
+  <div class="card-body">
+    <h1 class="card-title">{{ .Data.Family.Name }}</h1>
+    <p class="opacity-70">Type: {{ .Data.Family.FamilyType }}</p>
+    <div class="flex gap-2 flex-wrap">
+      <a class="btn btn-sm" href="/dashboard?family_id={{ .Data.Family.Id }}">Dashboard</a>
+      <a class="btn btn-sm" href="/people?family_id={{ .Data.Family.Id }}">People</a>
+      <a class="btn btn-sm" href="/housing?family_id={{ .Data.Family.Id }}">Housing</a>
+      <form method="post" action="/families/{{ .Data.Family.Id }}/invite-code/regenerate" class="inline">
+        <button class="btn btn-sm btn-secondary" type="submit">Regenerate Invite Code</button>
+      </form>
+    </div>
+    {{ if .Data.JoinCode }}<div class="alert alert-info mt-2">New invite code: <strong>{{ .Data.JoinCode }}</strong></div>{{ end }}
+  </div>
+</section>
+<section class="card bg-base-100 shadow mt-6">
+  <div class="card-body">
+    <h2 class="card-title">Members</h2>
+    <div class="overflow-x-auto">
+      <table class="table">
+        <thead><tr><th>Name</th><th>Role</th><th>User ID</th></tr></thead>
+        <tbody>
+          {{ range .Data.Members }}
+          <tr><td>{{ .DisplayName }}</td><td>{{ .Role }}</td><td class="font-mono text-xs">{{ .UserId }}</td></tr>
+          {{ else }}
+          <tr><td colspan="3" class="opacity-70">No members found</td></tr>
+          {{ end }}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+{{ template "partials/footer" . }}
+{{ end }}

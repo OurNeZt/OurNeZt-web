@@ -1,0 +1,32 @@
+{{ define "dashboard" }}
+{{ template "partials/header" . }}
+<section class="card bg-base-100 shadow">
+  <div class="card-body">
+    <h1 class="card-title">Household Dashboard</h1>
+    {{ if .Data.Families }}
+    <form method="get" action="/dashboard" class="flex gap-2">
+      <select class="select select-bordered" name="family_id">
+        {{ range .Data.Families }}<option value="{{ .Id }}" {{ if eq $.Data.FamilyID .Id }}selected{{ end }}>{{ .Name }}</option>{{ end }}
+      </select>
+      <button class="btn" type="submit">Switch</button>
+    </form>
+    {{ else }}
+    <p>No family yet. <a class="link" href="/families">Create or join one</a>.</p>
+    {{ end }}
+  </div>
+</section>
+{{ if .Data.Dashboard }}
+<div class="grid md:grid-cols-4 gap-4 mt-6">
+  <div class="stat bg-base-100 rounded-box shadow"><div class="stat-title">Gross Income</div><div class="stat-value text-lg">{{ cents .Data.Income.CurrentGrossIncomeCents }}</div></div>
+  <div class="stat bg-base-100 rounded-box shadow"><div class="stat-title">Take Home</div><div class="stat-value text-lg">{{ cents .Data.Income.TakeHomeIncomeCents }}</div></div>
+  <div class="stat bg-base-100 rounded-box shadow"><div class="stat-title">Monthly Expenses</div><div class="stat-value text-lg">{{ cents .Data.Income.MonthlyExpensesCents }}</div></div>
+  <div class="stat bg-base-100 rounded-box shadow"><div class="stat-title">Monthly Surplus</div><div class="stat-value text-lg">{{ cents .Data.Income.MonthlySurplusCents }}</div></div>
+</div>
+<div class="mt-6 flex gap-2 flex-wrap">
+  <a class="btn btn-sm" href="/people?family_id={{ .Data.FamilyID }}">Manage People</a>
+  <a class="btn btn-sm" href="/housing?family_id={{ .Data.FamilyID }}">Manage Housing</a>
+  <a class="btn btn-sm" href="/housing/compare?family_id={{ .Data.FamilyID }}">Compare Housing</a>
+</div>
+{{ end }}
+{{ template "partials/footer" . }}
+{{ end }}

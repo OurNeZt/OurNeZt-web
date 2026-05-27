@@ -1,0 +1,30 @@
+{{ define "person_form" }}
+{{ template "partials/header" . }}
+<section class="card bg-base-100 shadow max-w-3xl mx-auto">
+  <div class="card-body">
+    <h1 class="card-title">{{ if .Data.IsEdit }}Edit Person{{ else }}Add Person{{ end }}</h1>
+    <form method="post" action="{{ if .Data.IsEdit }}/people/{{ .Data.Person.Id }}{{ else }}/people{{ end }}" class="grid md:grid-cols-2 gap-3">
+      <input type="hidden" name="family_id" value="{{ .Data.FamilyID }}">
+      <input class="input input-bordered" name="name" placeholder="Name" value="{{ .Data.Person.Name }}" required>
+      <input class="input input-bordered" name="relationship_label" placeholder="Relationship" value="{{ .Data.Person.RelationshipLabel }}" required>
+      <input class="input input-bordered" name="age" type="number" placeholder="Age" value="{{ .Data.Person.Age }}">
+      <input class="input input-bordered" name="employment_status" placeholder="employment_status" value="{{ .Data.Person.EmploymentStatus }}">
+      <input class="input input-bordered" name="gross_monthly_income_cents" type="number" placeholder="Gross monthly income (cents)" value="{{ .Data.Person.GrossMonthlyIncomeCents }}">
+      <input class="input input-bordered" name="expected_future_income_cents" type="number" placeholder="Expected future income (cents)" value="{{ .Data.Person.ExpectedFutureIncomeCents }}">
+      <input class="input input-bordered" name="expected_income_start_date" placeholder="Expected income start (YYYY-MM-DD)" value="{{ .Data.Person.ExpectedIncomeStartDate }}">
+      <input class="input input-bordered" name="graduation_date" placeholder="Graduation date (YYYY-MM-DD)" value="{{ .Data.Person.GraduationDate }}">
+      <input class="input input-bordered" name="ord_date" placeholder="ORD date (YYYY-MM-DD)" value="{{ .Data.Person.OrdDate }}">
+      <input class="input input-bordered" name="cash_savings_cents" type="number" placeholder="Cash savings (cents)" value="{{ .Data.Person.CashSavingsCents }}">
+      <input class="input input-bordered" name="cpf_oa_cents" type="number" placeholder="CPF OA (cents)" value="{{ .Data.Person.CpfOaCents }}">
+      <input class="input input-bordered" name="cpf_sa_cents" type="number" placeholder="CPF SA (cents)" value="{{ .Data.Person.CpfSaCents }}">
+      <input class="input input-bordered" name="cpf_ma_cents" type="number" placeholder="CPF MA (cents)" value="{{ .Data.Person.CpfMaCents }}">
+      <input class="input input-bordered" name="monthly_expenses_cents" type="number" placeholder="Monthly expenses (cents)" value="{{ .Data.Person.MonthlyExpensesCents }}">
+      <div class="md:col-span-2 flex gap-2">
+        <button class="btn btn-primary" type="submit">Save</button>
+        <a class="btn" href="/people?family_id={{ .Data.FamilyID }}">Cancel</a>
+      </div>
+    </form>
+  </div>
+</section>
+{{ template "partials/footer" . }}
+{{ end }}

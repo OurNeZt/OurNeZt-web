@@ -1,0 +1,41 @@
+{{ define "people" }}
+{{ template "partials/header" . }}
+<section class="card bg-base-100 shadow">
+  <div class="card-body">
+    <h1 class="card-title">People</h1>
+    {{ if .Data.FamilyID }}
+    <div class="flex gap-2">
+      <a class="btn btn-primary btn-sm" href="/people/new?family_id={{ .Data.FamilyID }}">Add Person</a>
+      <a class="btn btn-sm" href="/dashboard?family_id={{ .Data.FamilyID }}">Back to Dashboard</a>
+    </div>
+    {{ else }}
+    <p>Select a family from <a class="link" href="/dashboard">dashboard</a>.</p>
+    {{ end }}
+    <div class="overflow-x-auto mt-3">
+      <table class="table">
+        <thead><tr><th>Name</th><th>Status</th><th>Age</th><th>Income</th><th></th></tr></thead>
+        <tbody>
+          {{ range .Data.People }}
+          <tr>
+            <td>{{ .Name }}</td>
+            <td>{{ .EmploymentStatus }}</td>
+            <td>{{ .Age }}</td>
+            <td>{{ cents .GrossMonthlyIncomeCents }}</td>
+            <td>
+              <a class="btn btn-xs" href="/people/{{ .Id }}/edit?family_id={{ $.Data.FamilyID }}">Edit</a>
+              <form method="post" action="/people/{{ .Id }}/delete" class="inline">
+                <input type="hidden" name="family_id" value="{{ $.Data.FamilyID }}">
+                <button class="btn btn-xs btn-error" type="submit">Delete</button>
+              </form>
+            </td>
+          </tr>
+          {{ else }}
+          <tr><td colspan="5" class="opacity-70">No person profiles yet</td></tr>
+          {{ end }}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+{{ template "partials/footer" . }}
+{{ end }}

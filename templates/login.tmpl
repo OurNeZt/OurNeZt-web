@@ -1,0 +1,31 @@
+{{ define "login" }}
+{{ template "partials/header" . }}
+<section class="oz-login-shell">
+  <div class="oz-login-visual">
+    <img src="/static/img/ournezt-logo.png" alt="OurNeZt logo">
+    <h1>Welcome Back</h1>
+    <p>Plan your home, money, and family goals together.</p>
+  </div>
+  <div class="card oz-panel oz-login-card">
+    <div class="card-body">
+      <h2 class="card-title text-2xl">Login</h2>
+      <form method="post" action="/login" class="space-y-4">
+        <label class="oz-field">
+          <span>Email</span>
+          <input class="input input-bordered w-full" name="email" type="email" autocomplete="username" required>
+        </label>
+        <label class="oz-field">
+          <span>Password</span>
+          <input class="input input-bordered w-full" name="password" type="password" autocomplete="current-password" required>
+        </label>
+        <button class="btn btn-primary w-full" type="submit">Sign in</button>
+      </form>
+      <p class="text-xs opacity-70 mt-3 text-center">
+        First-time setup?
+        <a class="link link-primary" href="/bootstrap-admin-help">Bootstrap admin guide</a>
+      </p>
+    </div>
+  </div>
+</section>
+{{ template "partials/footer" . }}
+{{ end }}
