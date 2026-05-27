@@ -1,0 +1,267 @@
+name: prepare-release
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: "Version bump type"
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+      dry_run:
+        description: "Run without pushing branch or PR"
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  prepare-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout dev
+        uses: actions/checkout@v4
+        with:
+          ref: dev
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Fetch tags
+        run: git fetch --tags --force
+
+      - name: Find latest release tag
+        id: latest
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          LAST_TAG="$(git tag --list 'v*' | sort -V | tail -n1 || true)"
+
+          if [ -z "$LAST_TAG" ]; then
+            LAST_TAG="v0.0.0"
+          fi
+
+          echo "last_tag=$LAST_TAG" >> "$GITHUB_OUTPUT"
+          echo "Latest tag: $LAST_TAG"
+
+      - name: Check for web module changes
+        id: module_changes
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          LAST_TAG="${{ steps.latest.outputs.last_tag }}"
+
+          if [ "$LAST_TAG" = "v0.0.0" ]; then
+            RANGE="HEAD"
+          else
+            RANGE="${LAST_TAG}..HEAD"
+          fi
+
+          echo "Checking changed files in range: $RANGE"
+
+          CHANGED_FILES="$(git diff --name-only "$RANGE" || true)"
+
+          echo "Changed files:"
+          echo "$CHANGED_FILES"
+
+          MODULE_CHANGED="false"
+
+          while IFS= read -r file; do
+            case "$file" in
+              cmd/*|internal/*|templates/*|static/*|go.mod|go.sum|Dockerfile|.dockerignore)
+                MODULE_CHANGED="true"
+                ;;
+            esac
+          done <<< "$CHANGED_FILES"
+
+          echo "changed=$MODULE_CHANGED" >> "$GITHUB_OUTPUT"
+
+          if [ "$MODULE_CHANGED" != "true" ]; then
+            echo "No web module changes detected since $LAST_TAG."
+          fi
+
+      - name: Stop if no web module changes
+        if: steps.module_changes.outputs.changed != 'true'
+        shell: bash
+        run: |
+          echo "No web module changes detected. Skipping release preparation."
+          exit 0
+
+      - name: Compute next version
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          BASE="${{ steps.latest.outputs.last_tag }}"
+          BASE="${BASE#v}"
+
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$BASE"
+
+          case "${{ inputs.bump }}" in
+            major)
+              MAJOR=$((MAJOR + 1))
+              MINOR=0
+              PATCH=0
+              ;;
+            minor)
+              MINOR=$((MINOR + 1))
+              PATCH=0
+              ;;
+            patch)
+              PATCH=$((PATCH + 1))
+              ;;
+            *)
+              echo "Invalid bump type: ${{ inputs.bump }}"
+              exit 1
+              ;;
+          esac
+
+          NEXT="${MAJOR}.${MINOR}.${PATCH}"
+          TAG="v${NEXT}"
+
+          echo "next=$NEXT" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+          echo "Next version: $TAG"
+
+      - name: Stop if tag already exists
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          TAG="${{ steps.version.outputs.tag }}"
+
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "Tag $TAG already exists."
+            exit 1
+          fi
+
+      - name: Stop if release branch already exists
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          BRANCH="release/${{ steps.version.outputs.tag }}"
+
+          if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
+            echo "Release branch $BRANCH already exists."
+            exit 1
+          fi
+
+      - name: Create release branch
+        if: ${{ inputs.dry_run == false }}
+        id: branch
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          BRANCH="release/${{ steps.version.outputs.tag }}"
+
+          git checkout -b "$BRANCH"
+
+          echo "name=$BRANCH" >> "$GITHUB_OUTPUT"
+          echo "Created branch: $BRANCH"
+
+      - name: Prepare CHANGELOG.md
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          FILE="CHANGELOG.md"
+          DATE="$(date +'%Y-%m-%d')"
+          TAG="${{ steps.version.outputs.tag }}"
+
+          if [ ! -f "$FILE" ]; then
+            {
+              echo "# Changelog"
+              echo
+              echo "---"
+              echo
+            } > "$FILE"
+          fi
+
+          cat > /tmp/entry.md <<EOF
+          ## [${TAG}] - ${DATE}
+
+          ### Added
+          - (fill)
+
+          ### Changed
+          - (fill)
+
+          ### Fixed
+          - (fill)
+
+          ### Removed
+          - (fill)
+          EOF
+
+          sed -i 's/^          //' /tmp/entry.md
+
+          if grep -q "^## \[${TAG}\]" "$FILE"; then
+            echo "CHANGELOG.md already contains ${TAG}."
+            exit 1
+          fi
+
+          if grep -qx -- '---' "$FILE"; then
+            awk 'NR==FNR{e[n++]=$0; next}
+                 {print}
+                 !ins && $0=="---"{print ""; for(i=0;i<n;i++) print e[i]; ins=1}
+                 END{if(!ins){print ""; for(i=0;i<n;i++) print e[i]; print ""}}
+                ' /tmp/entry.md "$FILE" > /tmp/new && mv /tmp/new "$FILE"
+          else
+            { head -n1 "$FILE"; echo; cat /tmp/entry.md; tail -n +2 "$FILE"; } > /tmp/new && mv /tmp/new "$FILE"
+          fi
+
+      - name: Show dry run result
+        if: ${{ inputs.dry_run == true }}
+        shell: bash
+        run: |
+          echo "Dry run enabled. No branch or PR will be pushed."
+          echo "Next version: ${{ steps.version.outputs.tag }}"
+          echo
+          git diff -- CHANGELOG.md || true
+
+      - name: Commit changelog
+        if: ${{ inputs.dry_run == false }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add CHANGELOG.md
+          git diff --cached --quiet || git commit -m "chore: prepare ${{ steps.version.outputs.tag }} changelog"
+
+      - name: Push release branch
+        if: ${{ inputs.dry_run == false }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}"
+
+          git push origin "${{ steps.branch.outputs.name }}"
+
+      - name: Open PR to stable
+        if: ${{ inputs.dry_run == false }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr create \
+            --title "chore: prepare ${{ steps.version.outputs.tag }} release" \
+            --body "Prepares the changelog for ${{ steps.version.outputs.tag }}. The release tag will be created after this PR is merged into stable." \
+            --head "${{ steps.branch.outputs.name }}" \
+            --base "stable"
