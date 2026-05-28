@@ -127,9 +127,11 @@ func parseTemplates(root string) (*template.Template, error) {
 	}
 	sort.Strings(paths)
 	tpl := template.New("ournezt-web").Funcs(template.FuncMap{
-		"cents":      centsString,
-		"moneyInput": centsInputString,
-		"eqFold":     eqFold,
+		"cents":       centsString,
+		"moneyInput":  centsInputString,
+		"bpsInput":    bpsInputString,
+		"eqFold":      eqFold,
+		"ratingLabel": housingRatingLabel,
 	})
 	return tpl.ParseFiles(paths...)
 }

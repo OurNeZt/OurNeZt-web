@@ -3,23 +3,47 @@
 <section class="card bg-base-100 shadow">
   <div class="card-body">
     <h1 class="card-title">Housing Comparison</h1>
+    {{ if .Data.Families }}
+    <form method="get" action="/housing/compare" class="flex gap-2 flex-wrap">
+      <select class="select select-bordered" name="family_id">
+        {{ range .Data.Families }}<option value="{{ .Id }}" {{ if eq $.Data.FamilyID .Id }}selected{{ end }}>{{ .Name }}</option>{{ end }}
+      </select>
+      <button class="btn btn-sm" type="submit">Switch</button>
+    </form>
+    {{ end }}
     {{ if .Data.FamilyID }}
-    <a class="btn btn-sm" href="/housing?family_id={{ .Data.FamilyID }}">Back to Housing</a>
+    <a class="btn btn-sm mt-2" href="/housing?family_id={{ .Data.FamilyID }}">Back to Housing</a>
     {{ else }}
     <p>Select a family first from <a class="link" href="/dashboard">dashboard</a>.</p>
     {{ end }}
     <div class="overflow-x-auto mt-3">
-      <table class="table">
-        <thead><tr><th>Option ID</th><th>Upfront</th><th>Mortgage</th><th>Monthly Cost</th><th>Surplus</th><th>Rating</th></tr></thead>
+      <table class="table oz-table-compact">
+        <thead>
+          <tr>
+            <th>Option Name</th>
+            <th>Upfront</th>
+            <th>Mortgage</th>
+            <th>Monthly Cost</th>
+            <th>Surplus</th>
+            <th>
+              <span class="inline-flex items-center gap-1">
+                Rating
+                <span class="tooltip tooltip-left" data-tip="Not Recommended means either monthly surplus is negative, take-home is zero, or housing cost is too high vs take-home (above planning threshold).">
+                  <button type="button" class="btn btn-ghost btn-xs btn-circle" aria-label="Rating tips">?</button>
+                </span>
+              </span>
+            </th>
+          </tr>
+        </thead>
         <tbody>
           {{ range .Data.Rows }}
           <tr>
-            <td class="font-mono text-xs">{{ .HousingOptionId }}</td>
-            <td>{{ cents .UpfrontCostCents }}</td>
-            <td>{{ cents .MonthlyMortgageCents }}</td>
-            <td>{{ cents .MonthlyHousingCostCents }}</td>
-            <td>{{ cents .MonthlySurplusAfterHousingCents }}</td>
-            <td>{{ .Rating }}</td>
+            <td class="font-medium">{{ .Name }}</td>
+            <td>{{ cents .Affordability.UpfrontCostCents }}</td>
+            <td>{{ cents .Affordability.MonthlyMortgageCents }}</td>
+            <td>{{ cents .Affordability.MonthlyHousingCostCents }}</td>
+            <td>{{ cents .Affordability.MonthlySurplusAfterHousingCents }}</td>
+            <td>{{ ratingLabel .Affordability.Rating }}</td>
           </tr>
           {{ else }}
           <tr><td colspan="6" class="opacity-70">No comparison rows yet</td></tr>

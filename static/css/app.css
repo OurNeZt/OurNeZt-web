@@ -155,6 +155,21 @@ body {
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--oz-coral) 22%, transparent);
 }
 
+.oz-table-compact th,
+.oz-table-compact td {
+  font-size: 0.83rem;
+  line-height: 1.25rem;
+  white-space: normal;
+  word-break: break-word;
+}
+
+.oz-stat-value {
+  font-size: 1.1rem;
+  line-height: 1.4rem;
+  white-space: normal;
+  word-break: break-word;
+}
+
 @media (min-width: 900px) {
   .oz-login-shell {
     grid-template-columns: 1.1fr 1fr;

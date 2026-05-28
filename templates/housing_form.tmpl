@@ -3,25 +3,100 @@
 <section class="card bg-base-100 shadow max-w-3xl mx-auto">
   <div class="card-body">
     <h1 class="card-title">{{ if .Data.IsEdit }}Edit Housing{{ else }}Add Housing{{ end }}</h1>
+    <p class="text-sm opacity-75">All money inputs are in dollars. Example: 1250.50 means $1,250.50.</p>
     <form method="post" action="{{ if .Data.IsEdit }}/housing/{{ .Data.Housing.Id }}{{ else }}/housing{{ end }}" class="grid md:grid-cols-2 gap-3">
       <input type="hidden" name="family_id" value="{{ .Data.FamilyID }}">
-      <input class="input input-bordered" name="name" placeholder="Name" value="{{ .Data.Housing.Name }}" required>
-      <input class="input input-bordered" name="housing_type" placeholder="Housing type" value="{{ .Data.Housing.HousingType }}" required>
-      <input class="input input-bordered" name="location" placeholder="Location" value="{{ .Data.Housing.Location }}">
-      <input class="input input-bordered" name="unit_type" placeholder="Unit type" value="{{ .Data.Housing.UnitType }}">
-      <input class="input input-bordered" name="purchase_price_cents" type="number" placeholder="Purchase price (cents)" value="{{ .Data.Housing.PurchasePriceCents }}">
-      <input class="input input-bordered" name="grant_amount_cents" type="number" placeholder="Grant amount (cents)" value="{{ .Data.Housing.GrantAmountCents }}">
-      <input class="input input-bordered" name="loan_type" placeholder="Loan type" value="{{ .Data.Housing.LoanType }}">
-      <input class="input input-bordered" name="loan_amount_cents" type="number" placeholder="Loan amount (cents)" value="{{ .Data.Housing.LoanAmountCents }}">
-      <input class="input input-bordered" name="interest_rate_bps" type="number" placeholder="Interest rate (bps)" value="{{ .Data.Housing.InterestRateBps }}">
-      <input class="input input-bordered" name="loan_tenure_months" type="number" placeholder="Loan tenure (months)" value="{{ .Data.Housing.LoanTenureMonths }}">
-      <input class="input input-bordered" name="downpayment_percent_bps" type="number" placeholder="Downpayment (bps)" value="{{ .Data.Housing.DownpaymentPercentBps }}">
-      <input class="input input-bordered" name="monthly_maintenance_cents" type="number" placeholder="Monthly maintenance (cents)" value="{{ .Data.Housing.MonthlyMaintenanceCents }}">
-      <input class="input input-bordered" name="renovation_budget_cents" type="number" placeholder="Renovation budget (cents)" value="{{ .Data.Housing.RenovationBudgetCents }}">
-      <input class="input input-bordered" name="furniture_budget_cents" type="number" placeholder="Furniture budget (cents)" value="{{ .Data.Housing.FurnitureBudgetCents }}">
-      <input class="input input-bordered" name="legal_fees_cents" type="number" placeholder="Legal fees (cents)" value="{{ .Data.Housing.LegalFeesCents }}">
-      <input class="input input-bordered" name="buyer_stamp_duty_cents" type="number" placeholder="Buyer stamp duty (cents)" value="{{ .Data.Housing.BuyerStampDutyCents }}">
-      <input class="input input-bordered" name="expected_key_collection_date" placeholder="Key collection date (YYYY-MM-DD)" value="{{ .Data.Housing.ExpectedKeyCollectionDate }}">
+      <label class="oz-field">
+        <span>Assessment Mode</span>
+        <select class="select select-bordered w-full" name="assessment_mode" id="assessment_mode" required>
+          <option value="standard" {{ if eqFold .Data.AssessmentMode "standard" }}selected{{ end }}>Standard</option>
+          <option value="deferred" {{ if eqFold .Data.AssessmentMode "deferred" }}selected{{ end }}>Deferred Income Assessment (DIA)</option>
+        </select>
+      </label>
+      <label class="oz-field">
+        <span>Option Name</span>
+        <input class="input input-bordered" name="name" placeholder="e.g. Tengah BTO 4-Room" value="{{ .Data.Housing.Name }}" required>
+      </label>
+      <label class="oz-field">
+        <span>Housing Type</span>
+        <select class="select select-bordered w-full" name="housing_type" required>
+          <option value="" {{ if eq .Data.Housing.HousingType "" }}selected{{ end }}>Select housing type</option>
+          <option value="bto" {{ if eqFold .Data.Housing.HousingType "bto" }}selected{{ end }}>BTO</option>
+          <option value="resale_hdb" {{ if eqFold .Data.Housing.HousingType "resale_hdb" }}selected{{ end }}>Resale HDB</option>
+          <option value="executive_condo" {{ if eqFold .Data.Housing.HousingType "executive_condo" }}selected{{ end }}>Executive Condo</option>
+          <option value="private_condo" {{ if eqFold .Data.Housing.HousingType "private_condo" }}selected{{ end }}>Private Condo</option>
+          <option value="landed" {{ if eqFold .Data.Housing.HousingType "landed" }}selected{{ end }}>Landed</option>
+          <option value="other" {{ if eqFold .Data.Housing.HousingType "other" }}selected{{ end }}>Other</option>
+        </select>
+      </label>
+      <label class="oz-field">
+        <span>Location</span>
+        <input class="input input-bordered" name="location" placeholder="e.g. Tengah / Punggol / Tampines" value="{{ .Data.Housing.Location }}">
+      </label>
+      <label class="oz-field">
+        <span>Unit Type</span>
+        <select class="select select-bordered w-full" name="unit_type" required>
+          <option value="" {{ if eq .Data.Housing.UnitType "" }}selected{{ end }}>Select unit type</option>
+          <option value="2-room" {{ if eqFold .Data.Housing.UnitType "2-room" }}selected{{ end }}>2-Room</option>
+          <option value="3-room" {{ if eqFold .Data.Housing.UnitType "3-room" }}selected{{ end }}>3-Room</option>
+          <option value="4-room" {{ if eqFold .Data.Housing.UnitType "4-room" }}selected{{ end }}>4-Room</option>
+          <option value="5-room" {{ if eqFold .Data.Housing.UnitType "5-room" }}selected{{ end }}>5-Room</option>
+          <option value="executive" {{ if eqFold .Data.Housing.UnitType "executive" }}selected{{ end }}>Executive</option>
+          <option value="2-bedder" {{ if eqFold .Data.Housing.UnitType "2-bedder" }}selected{{ end }}>2-Bedder</option>
+          <option value="3-bedder" {{ if eqFold .Data.Housing.UnitType "3-bedder" }}selected{{ end }}>3-Bedder</option>
+          <option value="4-bedder" {{ if eqFold .Data.Housing.UnitType "4-bedder" }}selected{{ end }}>4-Bedder</option>
+          <option value="5-bedder" {{ if eqFold .Data.Housing.UnitType "5-bedder" }}selected{{ end }}>5-Bedder</option>
+          <option value="landed" {{ if eqFold .Data.Housing.UnitType "landed" }}selected{{ end }}>Landed</option>
+          <option value="other" {{ if eqFold .Data.Housing.UnitType "other" }}selected{{ end }}>Other</option>
+        </select>
+      </label>
+      <label class="oz-field">
+        <span>Purchase Price (Dollars)</span>
+        <input class="input input-bordered" name="purchase_price" type="number" min="0" step="0.01" inputmode="decimal" placeholder="e.g. 500000.00" value="{{ moneyInput .Data.Housing.PurchasePriceCents }}" required>
+      </label>
+      <label class="oz-field" id="grant_amount_field">
+        <span>Grant Amount (Dollars)</span>
+        <input class="input input-bordered" id="grant_amount" name="grant_amount" type="number" min="0" step="0.01" inputmode="decimal" placeholder="e.g. 80000.00" value="{{ moneyInput .Data.Housing.GrantAmountCents }}">
+      </label>
+      <label class="oz-field" id="loan_type_field">
+        <span>Loan Type</span>
+        <select class="select select-bordered w-full" name="loan_type" id="loan_type" required>
+          <option value="" {{ if eq .Data.Housing.LoanType "" }}selected{{ end }}>Select loan type</option>
+          <option value="hdb" {{ if eqFold .Data.Housing.LoanType "hdb" }}selected{{ end }}>HDB Loan</option>
+          <option value="bank" {{ if eqFold .Data.Housing.LoanType "bank" }}selected{{ end }}>Bank Loan</option>
+          <option value="cash" {{ if eqFold .Data.Housing.LoanType "cash" }}selected{{ end }}>Cash (No Loan)</option>
+        </select>
+      </label>
+      <label class="oz-field" id="loan_amount_field">
+        <span>Loan Amount (Dollars)</span>
+        <input class="input input-bordered" id="loan_amount" name="loan_amount" type="number" min="0" step="0.01" inputmode="decimal" placeholder="e.g. 400000.00" value="{{ moneyInput .Data.Housing.LoanAmountCents }}">
+      </label>
+      <label class="oz-field" id="interest_rate_field">
+        <span>Interest Rate (%)</span>
+        <input class="input input-bordered" id="interest_rate_percent" name="interest_rate_percent" type="number" min="0" step="0.01" inputmode="decimal" placeholder="e.g. 2.60" value="{{ bpsInput .Data.Housing.InterestRateBps }}">
+      </label>
+      <label class="oz-field" id="loan_tenure_field">
+        <span>Loan Tenure (Months)</span>
+        <input class="input input-bordered" id="loan_tenure_months" name="loan_tenure_months" type="number" min="0" placeholder="e.g. 300" value="{{ .Data.Housing.LoanTenureMonths }}">
+      </label>
+      <label class="oz-field">
+        <span>Estimated Buyer Stamp Duty (Dollars)</span>
+        <input class="input input-bordered" id="buyer_stamp_duty_display" type="text" value="{{ moneyInput .Data.Housing.BuyerStampDutyCents }}" readonly>
+      </label>
+      <label class="oz-field">
+        <span>Monthly Maintenance (Dollars)</span>
+        <input class="input input-bordered" name="monthly_maintenance" type="number" min="0" step="0.01" inputmode="decimal" placeholder="e.g. 350.00" value="{{ moneyInput .Data.Housing.MonthlyMaintenanceCents }}">
+      </label>
+      <input type="hidden" name="renovation_budget" value="0">
+      <input type="hidden" name="furniture_budget" value="0">
+      <label class="oz-field">
+        <span>Legal Fees (Dollars)</span>
+        <input class="input input-bordered" name="legal_fees" type="number" min="0" step="0.01" inputmode="decimal" placeholder="e.g. 3000.00" value="{{ moneyInput .Data.Housing.LegalFeesCents }}">
+      </label>
+      <label class="oz-field">
+        <span>Expected Key Collection Date</span>
+        <input class="input input-bordered" name="expected_key_collection_date" type="date" value="{{ .Data.Housing.ExpectedKeyCollectionDate }}">
+      </label>
       <div class="md:col-span-2 flex gap-2">
         <button class="btn btn-primary" type="submit">Save</button>
         <a class="btn" href="/housing?family_id={{ .Data.FamilyID }}">Cancel</a>
@@ -29,5 +104,102 @@
     </form>
   </div>
 </section>
+<script>
+  (() => {
+    const assessmentMode = document.getElementById("assessment_mode");
+      const loanTypeField = document.getElementById("loan_type_field");
+      const loanType = document.getElementById("loan_type");
+    const grantAmountField = document.getElementById("grant_amount_field");
+    const loanAmountField = document.getElementById("loan_amount_field");
+    const interestRateField = document.getElementById("interest_rate_field");
+    const loanTenureField = document.getElementById("loan_tenure_field");
+    const purchasePriceInput = document.querySelector('input[name="purchase_price"]');
+    const grantAmountInput = document.getElementById("grant_amount");
+    const bsdDisplay = document.getElementById("buyer_stamp_duty_display");
+    const loanAmount = document.getElementById("loan_amount");
+    const interestRate = document.getElementById("interest_rate_percent");
+    const loanTenure = document.getElementById("loan_tenure_months");
+    if (!assessmentMode || !loanTypeField || !loanType || !grantAmountField || !loanAmountField || !interestRateField || !loanTenureField || !purchasePriceInput || !grantAmountInput || !bsdDisplay || !loanAmount || !interestRate || !loanTenure) return;
+
+    const parseMoney = (raw) => {
+      const n = Number((raw || "").toString().replace(/[$,]/g, "").trim());
+      if (Number.isNaN(n) || n < 0) return 0;
+      return Math.round(n * 100);
+    };
+
+    const formatMoney = (cents) => (Math.max(0, cents) / 100).toFixed(2);
+
+    const calcBsd = (purchasePriceCents) => {
+      let amount = Math.max(0, purchasePriceCents);
+      const tiers = [
+        [18000000, 100],
+        [18000000, 200],
+        [64000000, 300],
+        [50000000, 400],
+        [150000000, 500],
+      ];
+      let duty = 0;
+      for (const [limit, bps] of tiers) {
+        if (amount <= 0) break;
+        const taxable = Math.min(amount, limit);
+        duty += Math.floor((taxable * bps) / 10000);
+        amount -= taxable;
+      }
+      if (amount > 0) {
+        duty += Math.floor((amount * 600) / 10000);
+      }
+      return duty;
+    };
+
+    const refreshHousingRules = () => {
+      const isCash = (loanType.value || "").trim().toLowerCase() === "cash";
+      const isHdb = (loanType.value || "").trim().toLowerCase() === "hdb";
+      const isDeferred = (assessmentMode.value || "").trim().toLowerCase() === "deferred";
+      const showLoanType = !isDeferred;
+      const showLoanAmount = showLoanType && !isCash;
+      const showGrant = !isDeferred;
+
+      loanTypeField.style.display = showLoanType ? "" : "none";
+      grantAmountField.style.display = showGrant ? "" : "none";
+      loanAmountField.style.display = showLoanAmount ? "" : "none";
+      interestRateField.style.display = showLoanType && !isCash ? "" : "none";
+      loanTenureField.style.display = showLoanType && !isCash ? "" : "none";
+      loanType.required = showLoanType;
+      loanAmount.required = showLoanAmount;
+      interestRate.required = showLoanType && !isCash;
+      loanTenure.required = showLoanType && !isCash;
+
+      if (isHdb && !isCash) {
+        interestRate.value = "2.60";
+        interestRate.readOnly = true;
+      } else {
+        interestRate.readOnly = false;
+      }
+
+      if (!showLoanAmount) {
+        loanAmount.value = "";
+      }
+      if (!showLoanType) {
+        loanType.value = "";
+        interestRate.value = "";
+        loanTenure.value = "";
+      }
+      if (!showGrant) {
+        grantAmountInput.value = "";
+      }
+      if (isCash) {
+        interestRate.value = "";
+        loanTenure.value = "";
+      }
+
+      bsdDisplay.value = formatMoney(calcBsd(parseMoney(purchasePriceInput.value)));
+    };
+
+    loanType.addEventListener("change", refreshHousingRules);
+    assessmentMode.addEventListener("change", refreshHousingRules);
+    purchasePriceInput.addEventListener("input", refreshHousingRules);
+    refreshHousingRules();
+  })();
+</script>
 {{ template "partials/footer" . }}
 {{ end }}

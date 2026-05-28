@@ -3,8 +3,16 @@
 <section class="card bg-base-100 shadow">
   <div class="card-body">
     <h1 class="card-title">Housing Options</h1>
+    {{ if .Data.Families }}
+    <form method="get" action="/housing" class="flex gap-2 flex-wrap">
+      <select class="select select-bordered" name="family_id">
+        {{ range .Data.Families }}<option value="{{ .Id }}" {{ if eq $.Data.FamilyID .Id }}selected{{ end }}>{{ .Name }}</option>{{ end }}
+      </select>
+      <button class="btn btn-sm" type="submit">Switch</button>
+    </form>
+    {{ end }}
     {{ if .Data.FamilyID }}
-    <div class="flex gap-2">
+    <div class="flex gap-2 mt-2">
       <a class="btn btn-primary btn-sm" href="/housing/new?family_id={{ .Data.FamilyID }}">Add Housing Option</a>
       <a class="btn btn-sm" href="/housing/compare?family_id={{ .Data.FamilyID }}">Compare</a>
       <a class="btn btn-sm" href="/dashboard?family_id={{ .Data.FamilyID }}">Back to Dashboard</a>
