@@ -40,6 +40,7 @@ Implemented Phase 1 page routes:
 - `/login`, `/logout`
 - `/bootstrap-admin-help`
 - `/change-password`
+- `/profile`
 - `/admin`
 - `/admin/users`
 - `/families`, `/families/:id`
@@ -53,5 +54,7 @@ Implemented Phase 1 page routes:
 - Session token is stored in an HTTP-only cookie and sent to core as gRPC metadata (`x-session-token`).
 - First admin provisioning is handled by `ournezt-core` startup bootstrap env vars (`BOOTSTRAP_ADMIN_EMAIL`, `BOOTSTRAP_ADMIN_PASSWORD`, optional `BOOTSTRAP_ADMIN_DISPLAY_NAME`).
 - If `must_change_password=true`, the user is forced through `/change-password` before other authenticated routes.
+- Users can manage password from `/profile` (and are also forced through `/change-password` when required).
+- `/profile` is available to standard users (admin is kept on admin-only navigation/routes).
 - Admin actions in the web UI rely on authenticated admin sessions.
 - Protobuf stubs are currently copied from `OurNeZt-core` for local development. In the target architecture, these should come from a shared `ournezt-proto` repository.
