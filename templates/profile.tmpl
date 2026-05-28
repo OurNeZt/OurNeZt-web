@@ -29,9 +29,17 @@
           <div class="font-mono text-xs">{{ .Data.User.ID }}</div>
         </div>
       </div>
-      <div class="alert oz-alert-soft mt-3 text-sm">
-        Profile edit fields (like display name/email updates) need a dedicated core endpoint and can be added next.
-      </div>
+      <form method="post" action="/profile/account" class="mt-4 space-y-3">
+        <label class="oz-field">
+          <span>Email</span>
+          <input class="input input-bordered w-full" type="email" name="email" value="{{ .Data.User.Email }}" required>
+        </label>
+        <label class="oz-field">
+          <span>Display Name</span>
+          <input class="input input-bordered w-full" type="text" name="display_name" value="{{ .Data.User.DisplayName }}" required>
+        </label>
+        <button class="btn btn-primary" type="submit">Update Account</button>
+      </form>
     </div>
   </section>
 
