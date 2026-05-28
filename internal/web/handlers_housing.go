@@ -4,6 +4,7 @@ import (
 	"math"
 	"net/http"
 	"strings"
+	"time"
 
 	ourneztv1 "github.com/OurNeZt/ournezt-web/internal/gen/proto/ournezt/v1"
 	"github.com/gin-gonic/gin"
@@ -16,10 +17,12 @@ type housingData struct {
 }
 
 type housingFormData struct {
-	FamilyID       string
-	Housing        *ourneztv1.HousingOption
-	IsEdit         bool
-	AssessmentMode string
+	FamilyID               string
+	Housing                *ourneztv1.HousingOption
+	IsEdit                 bool
+	AssessmentMode         string
+	People                 []*ourneztv1.PersonProfile
+	DIAIncomeDefaultInputs map[string]string
 }
 
 type housingDetailData struct {
@@ -76,10 +79,15 @@ func (a *App) housing(c *gin.Context) {
 }
 
 func (a *App) newHousing(c *gin.Context) {
+	familyID := strings.TrimSpace(c.Query("family_id"))
+	people := a.listFamilyPeople(c, familyID)
+
 	a.render(c, "housing_form", "New Housing", housingFormData{
-		FamilyID:       c.Query("family_id"),
-		Housing:        &ourneztv1.HousingOption{},
-		AssessmentMode: "standard",
+		FamilyID:               familyID,
+		Housing:                &ourneztv1.HousingOption{},
+		AssessmentMode:         "standard",
+		People:                 people,
+		DIAIncomeDefaultInputs: buildDIAIncomeDefaultInputs(people),
 	})
 }
 
@@ -99,6 +107,14 @@ func (a *App) createHousing(c *gin.Context) {
 		c.Redirect(http.StatusFound, "/housing/new?family_id="+option.GetFamilyId()+"&error="+urlQuerySafe(grpcMessage(err)))
 		return
 	}
+
+	if assessmentMode == "deferred" {
+		if diaErr := a.applyDIAProjectedIncomes(c, option.GetFamilyId(), option.GetExpectedKeyCollectionDate()); diaErr != "" {
+			c.Redirect(http.StatusFound, "/housing?family_id="+option.GetFamilyId()+"&flash=Housing+option+created&error="+urlQuerySafe(diaErr))
+			return
+		}
+	}
+
 	c.Redirect(http.StatusFound, "/housing?family_id="+option.GetFamilyId()+"&flash=Housing+option+created")
 }
 
@@ -119,12 +135,13 @@ func (a *App) housingDetail(c *gin.Context) {
 		peopleResp, peopleErr := a.clients.Person.ListPersonProfilesByFamily(a.grpcContext(c), &ourneztv1.ListPersonProfilesByFamilyRequest{ViewerUserId: user.ID, FamilyId: familyID})
 		if peopleErr == nil {
 			summary, sumErr := a.clients.Income.CalculateHouseholdIncomeSummary(a.grpcContext(c), &ourneztv1.CalculateHouseholdIncomeSummaryRequest{People: peopleResp.GetPeople()})
-			if sumErr == nil {
+			if sumErr == nil && summary != nil {
+				planningTakeHome := a.projectedHousingTakeHomeCents(c, peopleResp.GetPeople(), summary.GetTakeHomeIncomeCents())
 				affResp, affErr := a.clients.Housing.CalculateHousingAffordability(a.grpcContext(c), &ourneztv1.CalculateHousingAffordabilityRequest{
 					HousingOption:        option,
 					CashSavingsCents:     totalCash(peopleResp.GetPeople()),
 					CpfOaCents:           summary.GetCurrentCpfOaCents(),
-					TakeHomeCents:        summary.GetTakeHomeIncomeCents(),
+					TakeHomeCents:        planningTakeHome,
 					MonthlyExpensesCents: summary.GetMonthlyExpensesCents(),
 				})
 				if affErr == nil {
@@ -148,11 +165,14 @@ func (a *App) editHousing(c *gin.Context) {
 		c.Redirect(http.StatusFound, "/housing?family_id="+familyID+"&error="+urlQuerySafe(grpcMessage(err)))
 		return
 	}
+	people := a.listFamilyPeople(c, familyID)
 	a.render(c, "housing_form", "Edit Housing", housingFormData{
-		FamilyID:       familyID,
-		Housing:        resp,
-		IsEdit:         true,
-		AssessmentMode: inferHousingAssessmentMode(resp),
+		FamilyID:               familyID,
+		Housing:                resp,
+		IsEdit:                 true,
+		AssessmentMode:         inferHousingAssessmentMode(resp),
+		People:                 people,
+		DIAIncomeDefaultInputs: buildDIAIncomeDefaultInputs(people),
 	})
 }
 
@@ -172,6 +192,14 @@ func (a *App) updateHousing(c *gin.Context) {
 		c.Redirect(http.StatusFound, "/housing/"+option.GetId()+"/edit?family_id="+option.GetFamilyId()+"&error="+urlQuerySafe(grpcMessage(err)))
 		return
 	}
+
+	if assessmentMode == "deferred" {
+		if diaErr := a.applyDIAProjectedIncomes(c, option.GetFamilyId(), option.GetExpectedKeyCollectionDate()); diaErr != "" {
+			c.Redirect(http.StatusFound, "/housing?family_id="+option.GetFamilyId()+"&flash=Housing+option+updated&error="+urlQuerySafe(diaErr))
+			return
+		}
+	}
+
 	c.Redirect(http.StatusFound, "/housing?family_id="+option.GetFamilyId()+"&flash=Housing+option+updated")
 }
 
@@ -220,6 +248,10 @@ func (a *App) compareHousing(c *gin.Context) {
 	}
 	pResp, _ := a.clients.Person.ListPersonProfilesByFamily(a.grpcContext(c), &ourneztv1.ListPersonProfilesByFamilyRequest{ViewerUserId: user.ID, FamilyId: familyID})
 	summary, _ := a.clients.Income.CalculateHouseholdIncomeSummary(a.grpcContext(c), &ourneztv1.CalculateHouseholdIncomeSummaryRequest{People: pResp.GetPeople()})
+	if summary == nil {
+		summary = &ourneztv1.HouseholdIncomeSummary{}
+	}
+	planningTakeHome := a.projectedHousingTakeHomeCents(c, pResp.GetPeople(), summary.GetTakeHomeIncomeCents())
 
 	rows := make([]housingCompareRow, 0, len(hResp.GetHousingOptions()))
 	for _, option := range hResp.GetHousingOptions() {
@@ -227,7 +259,7 @@ func (a *App) compareHousing(c *gin.Context) {
 			HousingOption:        option,
 			CashSavingsCents:     totalCash(pResp.GetPeople()),
 			CpfOaCents:           summary.GetCurrentCpfOaCents(),
-			TakeHomeCents:        summary.GetTakeHomeIncomeCents(),
+			TakeHomeCents:        planningTakeHome,
 			MonthlyExpensesCents: summary.GetMonthlyExpensesCents(),
 		})
 		if rowErr == nil {
@@ -289,6 +321,9 @@ func validateHousingOptionInput(option *ourneztv1.HousingOption, assessmentMode 
 	netPurchase := maxInt64(option.GetPurchasePriceCents()-option.GetGrantAmountCents(), 0)
 	if assessmentMode == "deferred" {
 		// DIA mode intentionally omits grant + loan details.
+		if strings.TrimSpace(option.GetExpectedKeyCollectionDate()) == "" {
+			return "expected key collection date is required for DIA mode"
+		}
 	} else {
 		switch option.GetLoanType() {
 		case "hdb", "bank", "cash":
@@ -394,6 +429,84 @@ func normalizeHousingOption(option *ourneztv1.HousingOption, assessmentMode stri
 	option.DownpaymentPercentBps = bps
 }
 
+func assessmentDateFromKeyCollection(keyDate string) string {
+	if !isISODate(keyDate) {
+		return ""
+	}
+	parsed, err := time.Parse("2006-01-02", keyDate)
+	if err != nil {
+		return ""
+	}
+	// DIA is evaluated in the 3-6 month window before key collection.
+	// We anchor projected planning at 6 months before as a conservative baseline.
+	return parsed.AddDate(0, -6, 0).Format("2006-01-02")
+}
+
+func (a *App) listFamilyPeople(c *gin.Context, familyID string) []*ourneztv1.PersonProfile {
+	user := userFromContext(c)
+	if user == nil || strings.TrimSpace(familyID) == "" {
+		return nil
+	}
+	resp, err := a.clients.Person.ListPersonProfilesByFamily(a.grpcContext(c), &ourneztv1.ListPersonProfilesByFamilyRequest{
+		ViewerUserId: user.ID,
+		FamilyId:     familyID,
+	})
+	if err != nil {
+		return nil
+	}
+	return resp.GetPeople()
+}
+
+func (a *App) applyDIAProjectedIncomes(c *gin.Context, familyID, keyCollectionDate string) string {
+	user := userFromContext(c)
+	if user == nil {
+		return "please log in again"
+	}
+	if !isISODate(keyCollectionDate) {
+		return "DIA income setup skipped: expected key collection date is missing/invalid"
+	}
+
+	people := a.listFamilyPeople(c, familyID)
+	if len(people) == 0 {
+		return ""
+	}
+
+	assessmentStartDate := assessmentDateFromKeyCollection(keyCollectionDate)
+	if assessmentStartDate == "" {
+		return "DIA income setup skipped: unable to derive assessment date"
+	}
+
+	updatedCount := 0
+	for _, person := range people {
+		if person == nil {
+			continue
+		}
+		formKey := "dia_income_" + person.GetId()
+		raw := strings.TrimSpace(c.PostForm(formKey))
+		if raw == "" {
+			continue
+		}
+
+		estimated := parseMoneyCents(raw)
+		if estimated < 0 {
+			estimated = 0
+		}
+
+		person.ExpectedFutureIncomeCents = estimated
+		person.ExpectedIncomeStartDate = assessmentStartDate
+		_, err := a.clients.Person.UpdatePersonProfile(a.grpcContext(c), person)
+		if err != nil {
+			return "DIA income setup failed for " + person.GetName() + ": " + grpcMessage(err)
+		}
+		updatedCount++
+	}
+
+	if updatedCount == 0 {
+		return "DIA selected but no estimated income was entered for family members"
+	}
+	return ""
+}
+
 func calculateResidentialBSDCents(purchasePriceCents int64) int64 {
 	amount := maxInt64(purchasePriceCents, 0)
 	type tier struct {
@@ -438,6 +551,24 @@ func maxInt64(a, b int64) int64 {
 		return a
 	}
 	return b
+}
+
+func buildDIAIncomeDefaultInputs(people []*ourneztv1.PersonProfile) map[string]string {
+	defaults := make(map[string]string, len(people))
+	for _, person := range people {
+		if person == nil || strings.TrimSpace(person.GetId()) == "" {
+			continue
+		}
+		defaultIncomeCents := person.GetExpectedFutureIncomeCents()
+		if defaultIncomeCents <= 0 {
+			defaultIncomeCents = person.GetGrossMonthlyIncomeCents()
+		}
+		if defaultIncomeCents < 0 {
+			defaultIncomeCents = 0
+		}
+		defaults[person.GetId()] = centsInputString(defaultIncomeCents)
+	}
+	return defaults
 }
 
 func totalCash(people []*ourneztv1.PersonProfile) int64 {
