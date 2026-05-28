@@ -44,6 +44,29 @@ body {
   box-shadow: 0 2px 10px #0000001f;
 }
 
+.oz-profile-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid color-mix(in srgb, var(--oz-coral) 45%, #d8cbc4);
+  color: var(--oz-ink);
+  background: #fff6f5;
+  transition: background 120ms ease, border-color 120ms ease, transform 120ms ease;
+}
+
+.oz-profile-btn:hover {
+  border-color: var(--oz-coral);
+  background: #fff6f5;
+  transform: translateY(-1px);
+}
+
+.oz-profile-btn svg {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
 .btn-primary {
   background: var(--oz-coral);
   border-color: color-mix(in srgb, var(--oz-coral) 84%, #000 16%);

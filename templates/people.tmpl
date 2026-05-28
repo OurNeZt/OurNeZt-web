@@ -2,10 +2,19 @@
 {{ template "partials/header" . }}
 <section class="card bg-base-100 shadow">
   <div class="card-body">
-    <h1 class="card-title">People</h1>
+    <h1 class="card-title">Household Profiles</h1>
+    <p class="text-sm opacity-75">Account holders should edit their own financial profile from My Profile. Add/edit occupants here for household planning.</p>
+    {{ if .Data.Families }}
+    <form method="get" action="/people" class="flex gap-2 flex-wrap">
+      <select class="select select-bordered" name="family_id">
+        {{ range .Data.Families }}<option value="{{ .Id }}" {{ if eq $.Data.FamilyID .Id }}selected{{ end }}>{{ .Name }}</option>{{ end }}
+      </select>
+      <button class="btn btn-sm" type="submit">Switch</button>
+    </form>
+    {{ end }}
     {{ if .Data.FamilyID }}
-    <div class="flex gap-2">
-      <a class="btn btn-primary btn-sm" href="/people/new?family_id={{ .Data.FamilyID }}">Add Person</a>
+    <div class="flex gap-2 mt-2">
+      <a class="btn btn-primary btn-sm" href="/people/new?family_id={{ .Data.FamilyID }}">Add Occupant</a>
       <a class="btn btn-sm" href="/dashboard?family_id={{ .Data.FamilyID }}">Back to Dashboard</a>
     </div>
     {{ else }}
@@ -13,24 +22,29 @@
     {{ end }}
     <div class="overflow-x-auto mt-3">
       <table class="table">
-        <thead><tr><th>Name</th><th>Status</th><th>Age</th><th>Income</th><th></th></tr></thead>
+        <thead><tr><th>Name</th><th>Relationship</th><th>Status</th><th>Age</th><th>Income</th><th></th></tr></thead>
         <tbody>
-          {{ range .Data.People }}
+          {{ range .Data.Rows }}
           <tr>
-            <td>{{ .Name }}</td>
-            <td>{{ .EmploymentStatus }}</td>
-            <td>{{ .Age }}</td>
-            <td>{{ cents .GrossMonthlyIncomeCents }}</td>
+            <td>{{ .Person.Name }}</td>
+            <td>{{ .Person.RelationshipLabel }}</td>
+            <td>{{ .Person.EmploymentStatus }}</td>
+            <td>{{ .Person.Age }}</td>
+            <td>{{ cents .Person.GrossMonthlyIncomeCents }}</td>
             <td>
-              <a class="btn btn-xs" href="/people/{{ .Id }}/edit?family_id={{ $.Data.FamilyID }}">Edit</a>
-              <form method="post" action="/people/{{ .Id }}/delete" class="inline">
+              {{ if .IsSelf }}
+              <a class="btn btn-xs" href="/profile/person/{{ .Person.Id }}/edit">Edit in My Profile</a>
+              {{ else }}
+              <a class="btn btn-xs" href="/people/{{ .Person.Id }}/edit?family_id={{ $.Data.FamilyID }}">Edit</a>
+              <form method="post" action="/people/{{ .Person.Id }}/delete" class="inline">
                 <input type="hidden" name="family_id" value="{{ $.Data.FamilyID }}">
                 <button class="btn btn-xs btn-error" type="submit">Delete</button>
               </form>
+              {{ end }}
             </td>
           </tr>
           {{ else }}
-          <tr><td colspan="5" class="opacity-70">No person profiles yet</td></tr>
+          <tr><td colspan="6" class="opacity-70">No profiles yet</td></tr>
           {{ end }}
         </tbody>
       </table>

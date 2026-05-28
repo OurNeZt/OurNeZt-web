@@ -1,0 +1,88 @@
+{{ define "profile" }}
+{{ template "partials/header" . }}
+<section class="card oz-panel max-w-4xl mx-auto">
+  <div class="card-body">
+    <h1 class="card-title text-3xl">My Profile</h1>
+    <p class="opacity-80">View your account details, manage your password, and jump to your personal financial profile.</p>
+  </div>
+</section>
+
+<div class="grid gap-6 md:grid-cols-2 mt-6">
+  <section class="card bg-base-100 shadow">
+    <div class="card-body">
+      <h2 class="card-title">Account Details</h2>
+      <div class="space-y-3 text-sm">
+        <div>
+          <div class="opacity-70">Display Name</div>
+          <div class="font-medium">{{ .Data.User.DisplayName }}</div>
+        </div>
+        <div>
+          <div class="opacity-70">Email</div>
+          <div class="font-medium">{{ .Data.User.Email }}</div>
+        </div>
+        <div>
+          <div class="opacity-70">Role</div>
+          <div class="font-medium">{{ .Data.User.Role }}</div>
+        </div>
+        <div>
+          <div class="opacity-70">User ID</div>
+          <div class="font-mono text-xs">{{ .Data.User.ID }}</div>
+        </div>
+      </div>
+      <div class="alert oz-alert-soft mt-3 text-sm">
+        Profile edit fields (like display name/email updates) need a dedicated core endpoint and can be added next.
+      </div>
+    </div>
+  </section>
+
+  <section class="card bg-base-100 shadow">
+    <div class="card-body">
+      <h2 class="card-title">Change Password</h2>
+      <form method="post" action="/profile/password" class="space-y-3">
+        <label class="oz-field">
+          <span>Current password</span>
+          <input class="input input-bordered w-full" name="current_password" type="password" autocomplete="current-password" required>
+        </label>
+        <label class="oz-field">
+          <span>New password</span>
+          <input class="input input-bordered w-full" name="new_password" type="password" autocomplete="new-password" required>
+        </label>
+        <label class="oz-field">
+          <span>Confirm new password</span>
+          <input class="input input-bordered w-full" name="confirm_new_password" type="password" autocomplete="new-password" required>
+        </label>
+        <button class="btn btn-primary" type="submit">Update Password</button>
+      </form>
+    </div>
+  </section>
+</div>
+
+<section class="card bg-base-100 shadow mt-6">
+  <div class="card-body">
+    <h2 class="card-title">My Financial Profile</h2>
+    <p class="text-sm opacity-75">Edit your own planning details here. Occupants without accounts are managed in Household Profiles.</p>
+    {{ if .Data.SelfProfiles }}
+    <div class="grid gap-3 md:grid-cols-2 mt-2">
+      {{ range .Data.SelfProfiles }}
+      <a class="card border border-base-300 hover:shadow-md transition" href="/profile/person/{{ .PersonID }}/edit">
+        <div class="card-body p-4">
+          <div class="font-semibold">{{ .PersonName }}</div>
+          <div class="text-sm opacity-70">{{ .FamilyName }}{{ if .Relationship }} - {{ .Relationship }}{{ end }}</div>
+        </div>
+      </a>
+      {{ end }}
+    </div>
+    {{ else }}
+    <div class="alert oz-alert-soft mt-2 text-sm">
+      No self profile found yet. Create your own profile in one of your families.
+    </div>
+    <div class="flex gap-2 flex-wrap mt-2">
+      {{ range .Data.Families }}
+      <a class="btn btn-sm" href="/profile/person/new?family_id={{ .Id }}">Create in {{ .Name }}</a>
+      {{ end }}
+    </div>
+    {{ end }}
+  </div>
+</section>
+{{ template "partials/footer" . }}
+{{ end }}

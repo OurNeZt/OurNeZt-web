@@ -26,8 +26,15 @@
           {{ else }}
             <a class="btn btn-ghost btn-sm" href="/dashboard">Dashboard</a>
             <a class="btn btn-ghost btn-sm" href="/families">Families</a>
-            <a class="btn btn-ghost btn-sm" href="/people">People</a>
+            <a class="btn btn-ghost btn-sm" href="/people">Profiles</a>
             <a class="btn btn-ghost btn-sm" href="/housing">Housing</a>
+            <a class="btn btn-ghost btn-sm btn-circle oz-profile-btn" href="/profile" aria-label="Profile" title="Profile">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="8" r="4"></circle>
+                <path d="M4 20c1.9-3.4 5-5 8-5s6.1 1.6 8 5"></path>
+              </svg>
+              <span class="sr-only">Profile</span>
+            </a>
           {{ end }}
         {{ end }}
         <form method="post" action="/logout" class="inline"><button class="btn btn-outline btn-sm">Logout</button></form>

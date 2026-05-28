@@ -2,29 +2,125 @@
 {{ template "partials/header" . }}
 <section class="card bg-base-100 shadow max-w-3xl mx-auto">
   <div class="card-body">
-    <h1 class="card-title">{{ if .Data.IsEdit }}Edit Person{{ else }}Add Person{{ end }}</h1>
-    <form method="post" action="{{ if .Data.IsEdit }}/people/{{ .Data.Person.Id }}{{ else }}/people{{ end }}" class="grid md:grid-cols-2 gap-3">
+    <h1 class="card-title">{{ if .Data.IsEdit }}Edit Profile{{ else }}Add Profile{{ end }}</h1>
+    {{ if .Data.ManagedByOwner }}
+    <p class="text-sm opacity-75">Use this form for household occupants who do not have their own account.</p>
+    {{ else }}
+    <p class="text-sm opacity-75">This is your own financial profile for planning and comparisons.</p>
+    {{ end }}
+    <form method="post" action="{{ if .Data.FormAction }}{{ .Data.FormAction }}{{ else }}{{ if .Data.IsEdit }}/people/{{ .Data.Person.Id }}{{ else }}/people{{ end }}{{ end }}" class="grid md:grid-cols-2 gap-3">
       <input type="hidden" name="family_id" value="{{ .Data.FamilyID }}">
-      <input class="input input-bordered" name="name" placeholder="Name" value="{{ .Data.Person.Name }}" required>
-      <input class="input input-bordered" name="relationship_label" placeholder="Relationship" value="{{ .Data.Person.RelationshipLabel }}" required>
-      <input class="input input-bordered" name="age" type="number" placeholder="Age" value="{{ .Data.Person.Age }}">
-      <input class="input input-bordered" name="employment_status" placeholder="employment_status" value="{{ .Data.Person.EmploymentStatus }}">
-      <input class="input input-bordered" name="gross_monthly_income_cents" type="number" placeholder="Gross monthly income (cents)" value="{{ .Data.Person.GrossMonthlyIncomeCents }}">
-      <input class="input input-bordered" name="expected_future_income_cents" type="number" placeholder="Expected future income (cents)" value="{{ .Data.Person.ExpectedFutureIncomeCents }}">
-      <input class="input input-bordered" name="expected_income_start_date" placeholder="Expected income start (YYYY-MM-DD)" value="{{ .Data.Person.ExpectedIncomeStartDate }}">
-      <input class="input input-bordered" name="graduation_date" placeholder="Graduation date (YYYY-MM-DD)" value="{{ .Data.Person.GraduationDate }}">
-      <input class="input input-bordered" name="ord_date" placeholder="ORD date (YYYY-MM-DD)" value="{{ .Data.Person.OrdDate }}">
-      <input class="input input-bordered" name="cash_savings_cents" type="number" placeholder="Cash savings (cents)" value="{{ .Data.Person.CashSavingsCents }}">
-      <input class="input input-bordered" name="cpf_oa_cents" type="number" placeholder="CPF OA (cents)" value="{{ .Data.Person.CpfOaCents }}">
-      <input class="input input-bordered" name="cpf_sa_cents" type="number" placeholder="CPF SA (cents)" value="{{ .Data.Person.CpfSaCents }}">
-      <input class="input input-bordered" name="cpf_ma_cents" type="number" placeholder="CPF MA (cents)" value="{{ .Data.Person.CpfMaCents }}">
-      <input class="input input-bordered" name="monthly_expenses_cents" type="number" placeholder="Monthly expenses (cents)" value="{{ .Data.Person.MonthlyExpensesCents }}">
+      <label class="oz-field">
+        <span>Full Name</span>
+        <input class="input input-bordered" name="name" placeholder="e.g. Alex Tan" value="{{ .Data.Person.Name }}" required>
+      </label>
+      <label class="oz-field">
+        <span>Relationship</span>
+        <select class="select select-bordered w-full" name="relationship_label" required>
+          <option value="" {{ if eq .Data.Person.RelationshipLabel "" }}selected{{ end }}>Select relationship</option>
+          <option value="spouse" {{ if eqFold .Data.Person.RelationshipLabel "spouse" }}selected{{ end }}>Spouse</option>
+          <option value="fiance" {{ if eqFold .Data.Person.RelationshipLabel "fiance" }}selected{{ end }}>Fiance</option>
+          <option value="fiancee" {{ if eqFold .Data.Person.RelationshipLabel "fiancee" }}selected{{ end }}>Fiancee</option>
+          <option value="occupant" {{ if eqFold .Data.Person.RelationshipLabel "occupant" }}selected{{ end }}>Occupant</option>
+        </select>
+      </label>
+      <label class="oz-field">
+        <span>Age</span>
+        <input class="input input-bordered" name="age" type="number" min="0" placeholder="e.g. 32" value="{{ .Data.Person.Age }}">
+      </label>
+      <label class="oz-field">
+        <span>Employment Status</span>
+        <select class="select select-bordered w-full" name="employment_status" id="employment_status" required>
+          <option value="" {{ if eq .Data.Person.EmploymentStatus "" }}selected{{ end }}>Select status</option>
+          <option value="full_time_employee" {{ if eqFold .Data.Person.EmploymentStatus "full_time_employee" }}selected{{ end }}>Employed</option>
+          <option value="student" {{ if eqFold .Data.Person.EmploymentStatus "student" }}selected{{ end }}>Student</option>
+          <option value="full_time_nsf" {{ if eqFold .Data.Person.EmploymentStatus "full_time_nsf" }}selected{{ end }}>NSF</option>
+        </select>
+      </label>
+      <label class="oz-field">
+        <span>Gross Monthly Income (Dollars)</span>
+        <input class="input input-bordered" name="gross_monthly_income" type="number" min="0" step="0.01" inputmode="decimal" placeholder="e.g. 4500.00" value="{{ moneyInput .Data.Person.GrossMonthlyIncomeCents }}">
+      </label>
+      <label class="oz-field">
+        <span>Monthly Expenses (Dollars)</span>
+        <input class="input input-bordered" name="monthly_expenses" type="number" min="0" step="0.01" inputmode="decimal" placeholder="e.g. 1200.00" value="{{ moneyInput .Data.Person.MonthlyExpensesCents }}">
+      </label>
+      <label class="oz-field">
+        <span>Cash Savings (Dollars)</span>
+        <input class="input input-bordered" name="cash_savings" type="number" min="0" step="0.01" inputmode="decimal" placeholder="e.g. 25000.00" value="{{ moneyInput .Data.Person.CashSavingsCents }}">
+      </label>
+      <label class="oz-field" id="expected_future_income_field">
+        <span>Expected Future Income (Dollars)</span>
+        <input class="input input-bordered" id="expected_future_income" name="expected_future_income" type="number" min="0" step="0.01" inputmode="decimal" placeholder="e.g. 5000.00" value="{{ moneyInput .Data.Person.ExpectedFutureIncomeCents }}">
+      </label>
+      <label class="oz-field" id="expected_income_start_date_field">
+        <span>Expected Income Start Date</span>
+        <input class="input input-bordered" id="expected_income_start_date" name="expected_income_start_date" type="date" value="{{ .Data.Person.ExpectedIncomeStartDate }}">
+      </label>
+      <label class="oz-field" id="graduation_date_field">
+        <span>Graduation Date</span>
+        <input class="input input-bordered" id="graduation_date" name="graduation_date" type="date" value="{{ .Data.Person.GraduationDate }}">
+      </label>
+      <label class="oz-field" id="ord_date_field">
+        <span>ORD Date</span>
+        <input class="input input-bordered" id="ord_date" name="ord_date" type="date" value="{{ .Data.Person.OrdDate }}">
+      </label>
+      <label class="oz-field">
+        <span>CPF OA (Dollars)</span>
+        <input class="input input-bordered" name="cpf_oa" type="number" min="0" step="0.01" inputmode="decimal" placeholder="e.g. 14000.00" value="{{ moneyInput .Data.Person.CpfOaCents }}">
+      </label>
+      <label class="oz-field">
+        <span>CPF SA (Dollars)</span>
+        <input class="input input-bordered" name="cpf_sa" type="number" min="0" step="0.01" inputmode="decimal" placeholder="e.g. 6200.00" value="{{ moneyInput .Data.Person.CpfSaCents }}">
+      </label>
+      <label class="oz-field">
+        <span>CPF MA (Dollars)</span>
+        <input class="input input-bordered" name="cpf_ma" type="number" min="0" step="0.01" inputmode="decimal" placeholder="e.g. 4200.00" value="{{ moneyInput .Data.Person.CpfMaCents }}">
+      </label>
       <div class="md:col-span-2 flex gap-2">
         <button class="btn btn-primary" type="submit">Save</button>
-        <a class="btn" href="/people?family_id={{ .Data.FamilyID }}">Cancel</a>
+        <a class="btn" href="{{ if .Data.ReturnTo }}{{ .Data.ReturnTo }}{{ else }}/people?family_id={{ .Data.FamilyID }}{{ end }}">Cancel</a>
       </div>
     </form>
   </div>
 </section>
+<script>
+  (() => {
+    const statusEl = document.getElementById("employment_status");
+    const gradField = document.getElementById("graduation_date_field");
+    const ordField = document.getElementById("ord_date_field");
+    const expectedIncomeField = document.getElementById("expected_future_income_field");
+    const expectedStartField = document.getElementById("expected_income_start_date_field");
+    const gradInput = document.getElementById("graduation_date");
+    const ordInput = document.getElementById("ord_date");
+    const expectedIncomeInput = document.getElementById("expected_future_income");
+    const expectedStartInput = document.getElementById("expected_income_start_date");
+    if (!statusEl || !gradField || !ordField || !expectedIncomeField || !expectedStartField || !gradInput || !ordInput || !expectedIncomeInput || !expectedStartInput) return;
+
+    const toggleByStatus = () => {
+      const status = (statusEl.value || "").trim().toLowerCase();
+      const showStudent = status === "student";
+      const showNsf = status === "full_time_nsf";
+      const showExpectedFuture = status !== "full_time_employee";
+
+      gradField.style.display = showStudent ? "" : "none";
+      ordField.style.display = showNsf ? "" : "none";
+      expectedIncomeField.style.display = showExpectedFuture ? "" : "none";
+      expectedStartField.style.display = showExpectedFuture ? "" : "none";
+      gradInput.required = showStudent;
+      ordInput.required = showNsf;
+
+      if (!showStudent) gradInput.value = "";
+      if (!showNsf) ordInput.value = "";
+      if (!showExpectedFuture) {
+        expectedIncomeInput.value = "";
+        expectedStartInput.value = "";
+      }
+    };
+
+    statusEl.addEventListener("change", toggleByStatus);
+    toggleByStatus();
+  })();
+</script>
 {{ template "partials/footer" . }}
 {{ end }}
