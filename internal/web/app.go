@@ -89,6 +89,12 @@ func NewRouter(cfg config.Config, clients *core.Clients) (*gin.Engine, error) {
 	member.GET("/people/:id/edit", app.editPerson)
 	member.POST("/people/:id", app.updatePerson)
 	member.POST("/people/:id/delete", app.deletePerson)
+	member.GET("/profile", app.profile)
+	member.POST("/profile/password", app.profileChangePassword)
+	member.GET("/profile/person/:id/edit", app.profileEditSelfPerson)
+	member.POST("/profile/person/:id", app.profileUpdateSelfPerson)
+	member.GET("/profile/person/new", app.profileNewSelfPerson)
+	member.POST("/profile/person", app.profileCreateSelfPerson)
 	member.GET("/housing", app.housing)
 	member.GET("/housing/new", app.newHousing)
 	member.POST("/housing", app.createHousing)
@@ -121,7 +127,9 @@ func parseTemplates(root string) (*template.Template, error) {
 	}
 	sort.Strings(paths)
 	tpl := template.New("ournezt-web").Funcs(template.FuncMap{
-		"cents": centsString,
+		"cents":      centsString,
+		"moneyInput": centsInputString,
+		"eqFold":     eqFold,
 	})
 	return tpl.ParseFiles(paths...)
 }

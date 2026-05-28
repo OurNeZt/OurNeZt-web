@@ -108,6 +108,76 @@ func parseInt64(raw string) int64 {
 	return v
 }
 
+func parseMoneyCents(raw string) int64 {
+	s := strings.TrimSpace(raw)
+	if s == "" {
+		return 0
+	}
+	s = strings.ReplaceAll(s, "$", "")
+	s = strings.ReplaceAll(s, ",", "")
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return 0
+	}
+
+	neg := false
+	if strings.HasPrefix(s, "-") {
+		neg = true
+		s = strings.TrimPrefix(s, "-")
+	}
+
+	parts := strings.SplitN(s, ".", 3)
+	if len(parts) == 0 {
+		return 0
+	}
+
+	wholePart := strings.TrimSpace(parts[0])
+	if wholePart == "" {
+		wholePart = "0"
+	}
+	whole, wholeErr := strconv.ParseInt(wholePart, 10, 64)
+	if wholeErr != nil {
+		return 0
+	}
+
+	frac := int64(0)
+	if len(parts) > 1 {
+		fracPart := strings.TrimSpace(parts[1])
+		if len(fracPart) > 2 {
+			fracPart = fracPart[:2]
+		}
+		for len(fracPart) < 2 {
+			fracPart += "0"
+		}
+		if fracPart != "" {
+			fracParsed, fracErr := strconv.ParseInt(fracPart, 10, 64)
+			if fracErr != nil {
+				return 0
+			}
+			frac = fracParsed
+		}
+	}
+
+	total := whole*100 + frac
+	if neg {
+		total = -total
+	}
+	return total
+}
+
+func centsInputString(value int64) string {
+	sign := ""
+	if value < 0 {
+		sign = "-"
+		value = -value
+	}
+	return fmt.Sprintf("%s%d.%02d", sign, value/100, value%100)
+}
+
+func eqFold(a, b string) bool {
+	return strings.EqualFold(strings.TrimSpace(a), strings.TrimSpace(b))
+}
+
 func centsString(value int64) string {
 	sign := ""
 	if value < 0 {
@@ -132,4 +202,17 @@ func userFromProto(u *ourneztv1.User) *CurrentUser {
 
 func urlQuerySafe(value string) string {
 	return url.QueryEscape(strings.TrimSpace(value))
+}
+
+func normalizeLookup(value string) string {
+	return strings.ToLower(strings.TrimSpace(value))
+}
+
+func isISODate(value string) bool {
+	v := strings.TrimSpace(value)
+	if v == "" {
+		return false
+	}
+	_, err := time.Parse("2006-01-02", v)
+	return err == nil
 }
