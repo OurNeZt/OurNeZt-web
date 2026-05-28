@@ -90,6 +90,7 @@ func NewRouter(cfg config.Config, clients *core.Clients) (*gin.Engine, error) {
 	member.POST("/people/:id", app.updatePerson)
 	member.POST("/people/:id/delete", app.deletePerson)
 	member.GET("/profile", app.profile)
+	member.POST("/profile/account", app.profileUpdateAccount)
 	member.POST("/profile/password", app.profileChangePassword)
 	member.GET("/profile/person/:id/edit", app.profileEditSelfPerson)
 	member.POST("/profile/person/:id", app.profileUpdateSelfPerson)

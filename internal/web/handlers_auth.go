@@ -130,6 +130,32 @@ func (a *App) profile(c *gin.Context) {
 	})
 }
 
+func (a *App) profileUpdateAccount(c *gin.Context) {
+	user := userFromContext(c)
+	if user == nil {
+		c.Redirect(http.StatusFound, "/login?error=Please+log+in")
+		return
+	}
+
+	email := strings.TrimSpace(c.PostForm("email"))
+	displayName := strings.TrimSpace(c.PostForm("display_name"))
+	if email == "" || displayName == "" {
+		c.Redirect(http.StatusFound, "/profile?error=Email+and+display+name+are+required")
+		return
+	}
+
+	_, err := a.clients.Auth.UpdateMyAccount(a.grpcContext(c), &ourneztv1.UpdateMyAccountRequest{
+		Email:       email,
+		DisplayName: displayName,
+	})
+	if err != nil {
+		c.Redirect(http.StatusFound, "/profile?error="+urlQuerySafe(grpcMessage(err)))
+		return
+	}
+
+	c.Redirect(http.StatusFound, "/profile?flash=Account+updated")
+}
+
 func (a *App) profileChangePassword(c *gin.Context) {
 	user := userFromContext(c)
 	if user == nil {
@@ -199,6 +225,11 @@ func (a *App) profileUpdateSelfPerson(c *gin.Context) {
 	person := personFromForm(c)
 	person.Id = personID
 	person.FamilyId = current.GetFamilyId()
+	if strings.TrimSpace(current.GetLinkedUserId()) != "" {
+		person.LinkedUserId = current.GetLinkedUserId()
+	} else {
+		person.LinkedUserId = user.ID
+	}
 	if validationErr := validatePersonProfileInput(person); validationErr != "" {
 		c.Redirect(http.StatusFound, "/profile/person/"+personID+"/edit?error="+urlQuerySafe(validationErr))
 		return
@@ -245,6 +276,7 @@ func (a *App) profileCreateSelfPerson(c *gin.Context) {
 	person := personFromForm(c)
 	person.Id = ""
 	person.FamilyId = strings.TrimSpace(c.PostForm("family_id"))
+	person.LinkedUserId = user.ID
 	if person.GetFamilyId() == "" {
 		c.Redirect(http.StatusFound, "/profile?error=Family+is+required")
 		return
@@ -329,6 +361,9 @@ func (a *App) changePasswordFromPost(c *gin.Context) error {
 func matchesCurrentUserProfile(user *CurrentUser, person *ourneztv1.PersonProfile) bool {
 	if user == nil || person == nil {
 		return false
+	}
+	if strings.TrimSpace(person.GetLinkedUserId()) != "" && strings.EqualFold(strings.TrimSpace(person.GetLinkedUserId()), strings.TrimSpace(user.ID)) {
+		return true
 	}
 
 	userName := normalizeLookup(user.DisplayName)
