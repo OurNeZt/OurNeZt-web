@@ -101,13 +101,40 @@
         <button class="btn btn-primary" type="submit">Save</button>
         <a class="btn" href="/housing?family_id={{ .Data.FamilyID }}">Cancel</a>
       </div>
+      <section class="md:col-span-2 card border border-base-300" id="dia_income_section">
+        <div class="card-body p-4">
+          <h3 class="font-semibold">DIA Income Inputs (Per Person)</h3>
+          <p class="text-xs opacity-70">Enter each member's estimated monthly income at the assessment window before key collection. This will update their projected income profile.</p>
+          {{ if .Data.People }}
+          <div class="overflow-x-auto">
+            <table class="table table-sm">
+              <thead><tr><th>Name</th><th>Current Status</th><th>Estimated Monthly Income (Dollars)</th></tr></thead>
+              <tbody>
+                {{ range .Data.People }}
+                <tr>
+                  <td>{{ .Name }}</td>
+                  <td>{{ .EmploymentStatus }}</td>
+                  <td>
+                    <input class="input input-bordered input-sm w-full max-w-xs" type="number" min="0" step="0.01" inputmode="decimal" name="dia_income_{{ .Id }}" value="{{ index $.Data.DIAIncomeDefaultInputs .Id }}" placeholder="e.g. 4200.00">
+                  </td>
+                </tr>
+                {{ end }}
+              </tbody>
+            </table>
+          </div>
+          {{ else }}
+          <div class="alert oz-alert-soft text-sm">No family profiles found yet. Add people in Profiles first.</div>
+          {{ end }}
+        </div>
+      </section>
     </form>
   </div>
 </section>
 <script>
   (() => {
     const assessmentMode = document.getElementById("assessment_mode");
-      const loanTypeField = document.getElementById("loan_type_field");
+    const diaIncomeSection = document.getElementById("dia_income_section");
+    const loanTypeField = document.getElementById("loan_type_field");
       const loanType = document.getElementById("loan_type");
     const grantAmountField = document.getElementById("grant_amount_field");
     const loanAmountField = document.getElementById("loan_amount_field");
@@ -119,7 +146,7 @@
     const loanAmount = document.getElementById("loan_amount");
     const interestRate = document.getElementById("interest_rate_percent");
     const loanTenure = document.getElementById("loan_tenure_months");
-    if (!assessmentMode || !loanTypeField || !loanType || !grantAmountField || !loanAmountField || !interestRateField || !loanTenureField || !purchasePriceInput || !grantAmountInput || !bsdDisplay || !loanAmount || !interestRate || !loanTenure) return;
+    if (!assessmentMode || !diaIncomeSection || !loanTypeField || !loanType || !grantAmountField || !loanAmountField || !interestRateField || !loanTenureField || !purchasePriceInput || !grantAmountInput || !bsdDisplay || !loanAmount || !interestRate || !loanTenure) return;
 
     const parseMoney = (raw) => {
       const n = Number((raw || "").toString().replace(/[$,]/g, "").trim());
@@ -159,6 +186,7 @@
       const showLoanAmount = showLoanType && !isCash;
       const showGrant = !isDeferred;
 
+      diaIncomeSection.style.display = isDeferred ? "" : "none";
       loanTypeField.style.display = showLoanType ? "" : "none";
       grantAmountField.style.display = showGrant ? "" : "none";
       loanAmountField.style.display = showLoanAmount ? "" : "none";

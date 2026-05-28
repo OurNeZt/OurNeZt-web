@@ -22,11 +22,261 @@
   <div class="stat bg-base-100 rounded-box shadow"><div class="stat-title">Monthly Expenses</div><div class="stat-value text-lg">{{ cents .Data.Income.MonthlyExpensesCents }}</div></div>
   <div class="stat bg-base-100 rounded-box shadow"><div class="stat-title">Monthly Surplus</div><div class="stat-value text-lg">{{ cents .Data.Income.MonthlySurplusCents }}</div></div>
 </div>
+<div class="grid gap-4 mt-6 md:grid-cols-2">
+  <section class="card bg-base-100 shadow">
+    <div class="card-body">
+      <h2 class="card-title text-base">Income Overview</h2>
+      <p class="text-xs opacity-70">Monthly time series of gross income with DIA projected gross shown as a future point.</p>
+      <div class="oz-chart-box"><canvas id="incomeChart" aria-label="Income overview chart"></canvas></div>
+    </div>
+  </section>
+  <section class="card bg-base-100 shadow">
+    <div class="card-body">
+      <h2 class="card-title text-base">Housing Scenario Impact</h2>
+      <p class="text-xs opacity-70">Monthly housing cost and surplus after housing by option.</p>
+      {{ if .Data.UsesProjected }}
+      <div class="alert oz-alert-soft text-xs">Projected take-home is used for this housing view because future income profiles are present.</div>
+      {{ end }}
+      {{ if .Data.HousingCharts }}
+      <div class="oz-chart-box"><canvas id="housingImpactChart" aria-label="Housing impact chart"></canvas></div>
+      {{ else }}
+      <div class="alert oz-alert-soft text-sm">Add at least one housing option to see comparison impact here.</div>
+      {{ end }}
+    </div>
+  </section>
+</div>
+<section class="card bg-base-100 shadow mt-4">
+  <div class="card-body">
+    <h2 class="card-title text-base">Payment vs Income Timeline</h2>
+    <p class="text-xs opacity-70">Compare monthly payment need against one estimated take-home line that rises at assessment, by housing option.</p>
+    {{ if .Data.TimelineSeries }}
+    <label class="oz-field max-w-sm">
+      <span>Housing Option</span>
+      <select id="timelineHousingSelect" class="select select-bordered w-full">
+        {{ range .Data.TimelineSeries }}
+        <option value="{{ .HousingID }}">{{ .HousingName }}</option>
+        {{ end }}
+      </select>
+    </label>
+    <div class="oz-chart-box"><canvas id="timelineChart" aria-label="Payment and income timeline chart"></canvas></div>
+    {{ else }}
+    <div class="alert oz-alert-soft text-sm">Add at least one housing option to show payment timeline.</div>
+    {{ end }}
+  </div>
+</section>
 <div class="mt-6 flex gap-2 flex-wrap">
   <a class="btn btn-sm" href="/people?family_id={{ .Data.FamilyID }}">Manage Profiles</a>
   <a class="btn btn-sm" href="/housing?family_id={{ .Data.FamilyID }}">Manage Housing</a>
   <a class="btn btn-sm" href="/housing/compare?family_id={{ .Data.FamilyID }}">Compare Housing</a>
 </div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script>
+  (() => {
+    if (!window.Chart) return;
+
+    const incomeCtx = document.getElementById("incomeChart");
+    if (incomeCtx) {
+      new Chart(incomeCtx, {
+        type: "line",
+        data: {
+          labels: [
+            {{- range $i, $label := .Data.IncomeTrendLabels -}}
+              {{- if $i }},{{ end -}}
+              {{ printf "%q" $label }}
+            {{- end -}}
+          ],
+          datasets: [{
+            label: "Recorded Gross Income (SGD)",
+            data: [
+              {{- range $i, $gross := .Data.IncomeTrendGrossCents -}}
+                {{- if $i }},{{ end -}}
+                {{ $gross }} / 100
+              {{- end -}}
+            ],
+            borderColor: "#ef7f7a",
+            backgroundColor: "rgba(239,127,122,0.18)",
+            tension: 0.28,
+            fill: true,
+            pointRadius: 3,
+            pointHoverRadius: 5,
+            borderWidth: 2
+          },
+          {
+            label: "Projected Gross (DIA)",
+            data: [
+              {{- range $i, $gross := .Data.IncomeTrendProjectedGrossCents -}}
+                {{- if $i }},{{ end -}}
+                {{ if lt $gross 0 }}null{{ else }}{{ $gross }} / 100{{ end }}
+              {{- end -}}
+            ],
+            borderColor: "#385a82",
+            backgroundColor: "rgba(56,90,130,0.12)",
+            borderDash: [6, 4],
+            showLine: true,
+            spanGaps: true,
+            tension: 0.18,
+            pointRadius: 5,
+            pointHoverRadius: 7
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: "bottom" } },
+          scales: {
+            x: {
+              title: {
+                display: true,
+                text: "Month"
+              }
+            },
+            y: {
+              ticks: {
+                callback: (v) => "$" + Number(v).toLocaleString()
+              }
+            }
+          }
+        }
+      });
+    }
+
+    const housingCtx = document.getElementById("housingImpactChart");
+    if (housingCtx) {
+      new Chart(housingCtx, {
+        type: "bar",
+        data: {
+          labels: [
+            {{- range $i, $r := .Data.HousingCharts -}}
+              {{- if $i }},{{ end -}}
+              {{ printf "%q" $r.Name }}
+            {{- end -}}
+          ],
+          datasets: [
+            {
+              label: "Monthly Housing Cost",
+              data: [
+                {{- range $i, $r := .Data.HousingCharts -}}
+                  {{- if $i }},{{ end -}}
+                  {{ $r.MonthlyHousingCostCents }} / 100
+                {{- end -}}
+              ],
+              backgroundColor: "rgba(56,90,130,0.72)",
+              borderColor: "#385a82",
+              borderWidth: 1
+            },
+            {
+              label: "Surplus After Housing",
+              data: [
+                {{- range $i, $r := .Data.HousingCharts -}}
+                  {{- if $i }},{{ end -}}
+                  {{ $r.MonthlySurplusAfterCents }} / 100
+                {{- end -}}
+              ],
+              backgroundColor: "rgba(126,161,61,0.72)",
+              borderColor: "#7ea13d",
+              borderWidth: 1
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: "bottom" }
+          },
+          scales: {
+            y: {
+              ticks: {
+                callback: (v) => "$" + Number(v).toLocaleString()
+              }
+            }
+          }
+        }
+      });
+    }
+
+    const timelineCtx = document.getElementById("timelineChart");
+    if (timelineCtx) {
+      const timelineHousingSelect = document.getElementById("timelineHousingSelect");
+      const currentTakeHome = {{ .Data.Income.TakeHomeIncomeCents }} / 100;
+      const timelineSeries = [
+        {{- range $i, $s := .Data.TimelineSeries -}}
+          {{- if $i }},{{ end -}}
+          {
+            id: {{ printf "%q" $s.HousingID }},
+            name: {{ printf "%q" $s.HousingName }},
+            years: [{{ $s.YearNow }}, {{ $s.YearAssessment }}, {{ $s.YearPostKeyCollection }}],
+            estimatedTakeHome: [currentTakeHome, {{ $s.EstimatedTakeHomeCents }} / 100, {{ $s.EstimatedTakeHomeCents }} / 100],
+            monthlyPaymentNeed: [0, {{ $s.PaymentNeedCents }} / 100, {{ $s.PaymentNeedCents }} / 100]
+          }
+        {{- end -}}
+      ];
+      if (!timelineSeries.length) return;
+
+      const toMoneyTick = (v) => "$" + Number(v).toLocaleString();
+      const resolveSelectedSeries = () => {
+        if (!timelineHousingSelect) return timelineSeries[0];
+        const selectedID = (timelineHousingSelect.value || "").trim();
+        return timelineSeries.find((item) => item.id === selectedID) || timelineSeries[0];
+      };
+
+      const initialSeries = resolveSelectedSeries();
+      const timelineChart = new Chart(timelineCtx, {
+        type: "line",
+        data: {
+          labels: initialSeries.years,
+          datasets: [
+            {
+              label: "Estimated Take-Home",
+              data: initialSeries.estimatedTakeHome,
+              borderColor: "#7ea13d",
+              backgroundColor: "rgba(126,161,61,0.12)",
+              tension: 0.22,
+              pointRadius: 3
+            },
+            {
+              label: "Monthly Housing Payment Need",
+              data: initialSeries.monthlyPaymentNeed,
+              borderColor: "#ef7f7a",
+              backgroundColor: "rgba(239,127,122,0.1)",
+              borderDash: [6, 4],
+              tension: 0.15,
+              pointRadius: 3
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: "bottom" } },
+          scales: {
+            x: {
+              title: {
+                display: true,
+                text: "Year"
+              }
+            },
+            y: {
+              ticks: {
+                callback: toMoneyTick
+              }
+            }
+          }
+        }
+      });
+
+      if (timelineHousingSelect) {
+        timelineHousingSelect.addEventListener("change", () => {
+          const selected = resolveSelectedSeries();
+          timelineChart.data.labels = selected.years;
+          timelineChart.data.datasets[0].data = selected.estimatedTakeHome;
+          timelineChart.data.datasets[1].data = selected.monthlyPaymentNeed;
+          timelineChart.update();
+        });
+      }
+    }
+  })();
+</script>
 {{ end }}
 {{ template "partials/footer" . }}
 {{ end }}

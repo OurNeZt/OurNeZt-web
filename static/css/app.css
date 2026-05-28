@@ -170,6 +170,19 @@ body {
   word-break: break-word;
 }
 
+.tooltip[data-tip]::before {
+  max-width: min(20rem, 85vw);
+  white-space: normal;
+  text-align: left;
+  font-size: 0.78rem;
+  line-height: 1.1rem;
+}
+
+.oz-chart-box {
+  height: 18rem;
+  width: 100%;
+}
+
 @media (min-width: 900px) {
   .oz-login-shell {
     grid-template-columns: 1.1fr 1fr;
