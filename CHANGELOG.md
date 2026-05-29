@@ -1,0 +1,39 @@
+# Changelog
+All notable changes to this project will be documented in this file.
+ 
+The format is based on [Keep a Changelog](http://keepachangelog.com/)
+and this project adheres to [Semantic Versioning](http://semver.org/).
+
+---
+
+## [v1.0.0] - 2026-05-29
+
+### Added
+- Role-based web experience with separate admin and user navigation paths.
+- Admin dashboard and user management page (create/list/disable user workflows).
+- User profile/account management (account details update and password change flow).
+- Household planning modules for families, profiles (people), housing options, and housing comparison.
+- Dashboard charts for income and housing impact/timeline.
+- First-time onboarding flow with interactive tips/tour and per-user preference persistence.
+- Footer and shared layout components aligned to Phase 1 branding.
+
+### Changed
+- Refactored web flows to align with latest OurNeZt-core contract and user detail updates.
+- Improved housing forms and affordability flow (including DIA-related behavior and projected-income handling).
+- Updated forms to use clearer input behavior (dropdowns, required fields, date inputs, money formatting patterns).
+- Updated responsive behavior across key pages (navigation, forms, actions, and chart containers).
+- Aligned CI/workflow and lint expectations for release readiness.
+
+### Fixed
+- Admin and user routing/visibility inconsistencies.
+- First-login password-change prompt and onboarding behavior issues.
+- Multiple mobile UI issues:
+    - Hamburger menu layering/interaction issues.
+    - Edit Housing page overflow/styling problems.
+    - Table/action button wrapping issues on small screens.
+    - Footer positioning inconsistencies on short pages.
+- Lint findings and related code-quality issues from CI checks.
+
+### Removed
+- Redundant admin dashboard bootstrap guidance after login.
+- Admin-facing access to non-admin planning sections in navbar/dashboard context.
