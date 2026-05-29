@@ -103,11 +103,6 @@ func parseInt32(raw string) int32 {
 	return int32(v)
 }
 
-func parseInt64(raw string) int64 {
-	v, _ := strconv.ParseInt(strings.TrimSpace(raw), 10, 64)
-	return v
-}
-
 func parseMoneyCents(raw string) int64 {
 	s := strings.TrimSpace(raw)
 	if s == "" {
