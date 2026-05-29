@@ -12,20 +12,20 @@ import (
 )
 
 type dashboardData struct {
-	FamilyID      string
-	Families      []*ourneztv1.Family
-	Dashboard     *ourneztv1.HouseholdDashboard
-	People        []*ourneztv1.PersonProfile
-	Housing       []*ourneztv1.HousingOption
-	Income        *ourneztv1.HouseholdIncomeSummary
-	HousingCharts        []dashboardHousingChartRow
-	UsesProjected        bool
-	IncomeCurrentYear    int
-	IncomeProjectedYear  int
-	IncomeTrendLabels    []string
-	IncomeTrendGrossCents []int64
+	FamilyID                       string
+	Families                       []*ourneztv1.Family
+	Dashboard                      *ourneztv1.HouseholdDashboard
+	People                         []*ourneztv1.PersonProfile
+	Housing                        []*ourneztv1.HousingOption
+	Income                         *ourneztv1.HouseholdIncomeSummary
+	HousingCharts                  []dashboardHousingChartRow
+	UsesProjected                  bool
+	IncomeCurrentYear              int
+	IncomeProjectedYear            int
+	IncomeTrendLabels              []string
+	IncomeTrendGrossCents          []int64
 	IncomeTrendProjectedGrossCents []int64
-	TimelineSeries       []dashboardTimelineSeries
+	TimelineSeries                 []dashboardTimelineSeries
 }
 
 type dashboardTimelineSeries struct {
@@ -146,20 +146,20 @@ func (a *App) dashboard(c *gin.Context) {
 	}
 
 	a.render(c, "dashboard", "Dashboard", dashboardData{
-		FamilyID:      familyID,
-		Families:      families,
-		Dashboard:     dResp,
-		People:        peopleResp.GetPeople(),
-		Housing:       housingResp.GetHousingOptions(),
-		Income:        incomeResp,
-		HousingCharts: housingCharts,
-		UsesProjected: planningTakeHome > incomeResp.GetTakeHomeIncomeCents(),
-		IncomeCurrentYear: currentYear,
-		IncomeProjectedYear: projectedIncomeYear,
-		IncomeTrendLabels: incomeTrendLabels,
-		IncomeTrendGrossCents: incomeTrendGross,
+		FamilyID:                       familyID,
+		Families:                       families,
+		Dashboard:                      dResp,
+		People:                         peopleResp.GetPeople(),
+		Housing:                        housingResp.GetHousingOptions(),
+		Income:                         incomeResp,
+		HousingCharts:                  housingCharts,
+		UsesProjected:                  planningTakeHome > incomeResp.GetTakeHomeIncomeCents(),
+		IncomeCurrentYear:              currentYear,
+		IncomeProjectedYear:            projectedIncomeYear,
+		IncomeTrendLabels:              incomeTrendLabels,
+		IncomeTrendGrossCents:          incomeTrendGross,
 		IncomeTrendProjectedGrossCents: incomeTrendProjectedGross,
-		TimelineSeries: timelineSeries,
+		TimelineSeries:                 timelineSeries,
 	})
 }
 
