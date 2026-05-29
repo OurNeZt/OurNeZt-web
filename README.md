@@ -20,7 +20,7 @@
 <br />
 <div align="center">
   <a href="https://github.com/OurNeZt/OurNeZt-web">
-    <img src="assets/OurNeZt-web-logo.png" alt="OurNeZt Web Logo" width="450">
+    <img src="assets/OurNeZt-web-logo-no-bg.png" alt="OurNeZt Web Logo" width="450">
   </a>
 
   <h1 align="center">OurNeZt Web</h1>
