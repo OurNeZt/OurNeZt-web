@@ -47,6 +47,17 @@
 
   <script>
     (() => {
+      const mobileMenu = document.querySelector(".oz-mobile-menu");
+      if (mobileMenu) {
+        const closeMobileMenu = () => mobileMenu.removeAttribute("open");
+        mobileMenu.querySelectorAll("a, button[type='submit']").forEach((node) => {
+          node.addEventListener("click", closeMobileMenu);
+        });
+        document.addEventListener("click", (event) => {
+          if (!mobileMenu.contains(event.target)) closeMobileMenu();
+        });
+      }
+
       const yearEl = document.getElementById("ozFooterYear");
       if (yearEl) yearEl.textContent = "(c) " + String(new Date().getFullYear());
 

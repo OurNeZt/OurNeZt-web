@@ -1,10 +1,10 @@
 {{ define "housing_form" }}
 {{ template "partials/header" . }}
-<section class="card bg-base-100 shadow max-w-3xl mx-auto">
+<section class="card bg-base-100 shadow max-w-5xl mx-auto w-full">
   <div class="card-body">
     <h1 class="card-title">{{ if .Data.IsEdit }}Edit Housing{{ else }}Add Housing{{ end }}</h1>
     <p class="text-sm opacity-75">All money inputs are in dollars. Example: 1250.50 means $1,250.50.</p>
-    <form method="post" action="{{ if .Data.IsEdit }}/housing/{{ .Data.Housing.Id }}{{ else }}/housing{{ end }}" class="grid md:grid-cols-2 gap-3">
+    <form method="post" action="{{ if .Data.IsEdit }}/housing/{{ .Data.Housing.Id }}{{ else }}/housing{{ end }}" class="grid grid-cols-1 md:grid-cols-2 gap-3 oz-form-grid">
       <input type="hidden" name="family_id" value="{{ .Data.FamilyID }}">
       <label class="oz-field">
         <span>Assessment Mode</span>
@@ -97,7 +97,7 @@
         <span>Expected Key Collection Date</span>
         <input class="input input-bordered" name="expected_key_collection_date" type="date" value="{{ .Data.Housing.ExpectedKeyCollectionDate }}">
       </label>
-      <div class="md:col-span-2 flex gap-2">
+      <div class="md:col-span-2 flex flex-wrap gap-2">
         <button class="btn btn-primary" type="submit">Save</button>
         <a class="btn" href="/housing?family_id={{ .Data.FamilyID }}">Cancel</a>
       </div>
