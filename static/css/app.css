@@ -14,6 +14,7 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  overflow-x: hidden;
   background:
     radial-gradient(circle at 0% 0%, #ffe6e1 0%, transparent 28%),
     radial-gradient(circle at 100% 0%, #f4ece8 0%, transparent 32%),
@@ -21,6 +22,9 @@ body {
 }
 
 .oz-navbar {
+  position: relative;
+  z-index: 120;
+  overflow: visible;
   border-bottom: 1px solid #eadfd8;
   background: color-mix(in srgb, white 86%, var(--oz-coral) 14%);
   backdrop-filter: blur(12px);
@@ -184,8 +188,25 @@ body {
 }
 
 .oz-chart-box {
+  position: relative;
   height: 18rem;
   width: 100%;
+  overflow: hidden;
+}
+
+.oz-chart-box canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.oz-form-grid {
+  min-width: 0;
+}
+
+.oz-form-grid .input,
+.oz-form-grid .select {
+  width: 100%;
+  max-width: 100%;
 }
 
 .oz-footer {
@@ -270,6 +291,35 @@ body {
   animation: oz-pulse 1.6s ease-out infinite;
 }
 
+.oz-mobile-menu {
+  position: relative;
+}
+
+.oz-mobile-menu > summary {
+  list-style: none;
+}
+
+.oz-mobile-menu > summary::-webkit-details-marker {
+  display: none;
+}
+
+.oz-mobile-menu-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.45rem);
+  z-index: 140;
+  width: min(16rem, calc(100vw - 1rem));
+  border: 1px solid #e5d9d2;
+  border-radius: 0.75rem;
+  padding: 0.35rem;
+  background: #fffdfb;
+  box-shadow: 0 14px 28px -18px #00000066;
+}
+
+.oz-mobile-menu:not([open]) .oz-mobile-menu-panel {
+  display: none;
+}
+
 @media (min-width: 900px) {
   .oz-login-shell {
     grid-template-columns: 1.1fr 1fr;
@@ -290,6 +340,16 @@ body {
 }
 
 @media (max-width: 640px) {
+  .oz-brand {
+    font-size: 1.05rem;
+    gap: 0.5rem;
+  }
+
+  .oz-brand img {
+    width: 1.75rem;
+    height: 1.75rem;
+  }
+
   .oz-footer-inner {
     font-size: 0.76rem;
   }
@@ -297,6 +357,15 @@ body {
   .oz-tour-coach {
     width: calc(100vw - 1rem);
     max-width: none;
+  }
+
+  .oz-chart-box {
+    height: 12.5rem;
+  }
+
+  .stat .stat-value {
+    font-size: 1rem;
+    line-height: 1.35rem;
   }
 }
 
