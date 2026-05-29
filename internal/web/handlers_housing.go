@@ -371,7 +371,24 @@ func inferHousingAssessmentMode(option *ourneztv1.HousingOption) string {
 	if option == nil {
 		return "standard"
 	}
-	if option.GetLoanType() != "cash" && option.GetLoanAmountCents() == 0 && option.GetDownpaymentPercentBps() == 2500 {
+
+	loanType := normalizeLookup(option.GetLoanType())
+	if loanType == "cash" {
+		return "standard"
+	}
+
+	hasValidKeyDate := isISODate(option.GetExpectedKeyCollectionDate())
+	looksDeferredByLegacyShape := option.GetLoanAmountCents() == 0 && option.GetDownpaymentPercentBps() == 2500
+	looksDeferredByKeyDate := hasValidKeyDate &&
+		option.GetLoanAmountCents() == 0 &&
+		option.GetGrantAmountCents() == 0 &&
+		(loanType == "" || loanType == "bank" || loanType == "hdb")
+	looksDeferredByDefaultedLoan := hasValidKeyDate &&
+		loanType == "bank" &&
+		option.GetLoanAmountCents() == 0 &&
+		option.GetLoanTenureMonths() == 300
+
+	if looksDeferredByLegacyShape || looksDeferredByKeyDate || looksDeferredByDefaultedLoan {
 		return "deferred"
 	}
 	return "standard"

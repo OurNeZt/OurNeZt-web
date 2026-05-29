@@ -13,7 +13,7 @@
     </form>
     {{ end }}
     {{ if .Data.FamilyID }}
-    <div class="flex gap-2 mt-2">
+    <div class="flex flex-wrap gap-2 mt-2">
       <a class="btn btn-primary btn-sm" href="/people/new?family_id={{ .Data.FamilyID }}">Add Occupant</a>
       <a class="btn btn-sm" href="/dashboard?family_id={{ .Data.FamilyID }}">Back to Dashboard</a>
     </div>
@@ -31,15 +31,19 @@
             <td>{{ .Person.EmploymentStatus }}</td>
             <td>{{ .Person.Age }}</td>
             <td>{{ cents .Person.GrossMonthlyIncomeCents }}</td>
-            <td>
+            <td class="min-w-[9rem]">
               {{ if .IsSelf }}
-              <a class="btn btn-xs" href="/profile/person/{{ .Person.Id }}/edit">Edit in My Profile</a>
+              <div class="flex flex-wrap gap-1">
+                <a class="btn btn-xs" href="/profile/person/{{ .Person.Id }}/edit">Edit in My Profile</a>
+              </div>
               {{ else }}
-              <a class="btn btn-xs" href="/people/{{ .Person.Id }}/edit?family_id={{ $.Data.FamilyID }}">Edit</a>
-              <form method="post" action="/people/{{ .Person.Id }}/delete" class="inline">
-                <input type="hidden" name="family_id" value="{{ $.Data.FamilyID }}">
-                <button class="btn btn-xs btn-error" type="submit">Delete</button>
-              </form>
+              <div class="flex flex-wrap gap-1">
+                <a class="btn btn-xs" href="/people/{{ .Person.Id }}/edit?family_id={{ $.Data.FamilyID }}">Edit</a>
+                <form method="post" action="/people/{{ .Person.Id }}/delete" class="m-0">
+                  <input type="hidden" name="family_id" value="{{ $.Data.FamilyID }}">
+                  <button class="btn btn-xs btn-error" type="submit">Delete</button>
+                </form>
+              </div>
               {{ end }}
             </td>
           </tr>

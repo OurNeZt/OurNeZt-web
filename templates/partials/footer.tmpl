@@ -1,5 +1,633 @@
-{{ define "partials/footer" }}
+﻿{{ define "partials/footer" }}
   </main>
+  <footer class="oz-footer">
+    <div class="max-w-6xl mx-auto px-6 py-4 oz-footer-inner">
+      <p class="text-xs">
+        <span id="ozFooterYear"></span> OurNeZt. Plan home, family, and finances with confidence.
+      </p>
+      <p class="text-xs opacity-70">Built for practical first-home planning.</p>
+    </div>
+  </footer>
+
+  {{ if .User }}
+  <div id="ozTourPromptBackdrop" class="oz-tour-prompt-backdrop hidden" aria-hidden="true">
+    <section class="oz-tour-prompt" role="dialog" aria-modal="true" aria-labelledby="ozTourPromptTitle">
+      <h2 id="ozTourPromptTitle" class="text-base font-semibold">Start Interactive Tour?</h2>
+      <p class="text-sm opacity-80 mt-1">We can guide you step by step and highlight important areas without blocking the full page.</p>
+      <label class="label cursor-pointer justify-start gap-2 p-0 mt-3">
+        <input id="ozTourPromptDontAsk" type="checkbox" class="checkbox checkbox-xs">
+        <span class="label-text text-xs">Do not ask again</span>
+      </label>
+      <div class="flex gap-2 mt-3">
+        <button id="ozTourPromptStart" type="button" class="btn btn-primary btn-sm">Start Tour</button>
+        <button id="ozTourPromptLater" type="button" class="btn btn-ghost btn-sm">Not Now</button>
+      </div>
+    </section>
+  </div>
+
+  <aside id="ozTourCoach" class="oz-tour-coach hidden" aria-live="polite" aria-label="Quick Tips">
+    <div class="oz-tour-header">
+      <h2 id="ozTourTitle" class="text-sm font-semibold">Quick Tips</h2>
+      <button type="button" id="ozTourSkip" class="btn btn-ghost btn-xs" aria-label="Skip tips">Skip</button>
+    </div>
+    <p id="ozTourSubtitle" class="text-xs opacity-80">Short walkthrough for this page.</p>
+    <ul id="ozTourItems" class="list-disc pl-5 text-xs space-y-1"></ul>
+    <p id="ozTourMeta" class="text-xs opacity-70"></p>
+    <label class="label cursor-pointer justify-start gap-2 p-0 mt-1">
+      <input id="ozTourDontShowAgain" type="checkbox" class="checkbox checkbox-xs">
+      <span class="label-text text-xs">Do not show tips again</span>
+    </label>
+    <div class="flex flex-wrap items-center gap-2 mt-2">
+      <a id="ozTourAction" class="btn btn-primary btn-xs hidden" href="#">Open</a>
+      <button type="button" id="ozTourBack" class="btn btn-ghost btn-xs">Back</button>
+      <button type="button" id="ozTourNext" class="btn btn-outline btn-xs">Continue</button>
+    </div>
+  </aside>
+  {{ end }}
+
+  <script>
+    (() => {
+      const mobileMenu = document.querySelector(".oz-mobile-menu");
+      if (mobileMenu) {
+        const closeMobileMenu = () => mobileMenu.removeAttribute("open");
+        mobileMenu.querySelectorAll("a, button[type='submit']").forEach((node) => {
+          node.addEventListener("click", closeMobileMenu);
+        });
+        document.addEventListener("click", (event) => {
+          if (!mobileMenu.contains(event.target)) closeMobileMenu();
+        });
+      }
+
+      const yearEl = document.getElementById("ozFooterYear");
+      if (yearEl) yearEl.textContent = "(c) " + String(new Date().getFullYear());
+
+      const promptBackdrop = document.getElementById("ozTourPromptBackdrop");
+      const promptStartBtn = document.getElementById("ozTourPromptStart");
+      const promptLaterBtn = document.getElementById("ozTourPromptLater");
+      const promptDontAsk = document.getElementById("ozTourPromptDontAsk");
+
+      const coach = document.getElementById("ozTourCoach");
+      if (!coach) return;
+
+      const titleEl = document.getElementById("ozTourTitle");
+      const subtitleEl = document.getElementById("ozTourSubtitle");
+      const itemsEl = document.getElementById("ozTourItems");
+      const metaEl = document.getElementById("ozTourMeta");
+      const skipBtn = document.getElementById("ozTourSkip");
+      const backBtn = document.getElementById("ozTourBack");
+      const nextBtn = document.getElementById("ozTourNext");
+      const actionBtn = document.getElementById("ozTourAction");
+      const dontShowAgain = document.getElementById("ozTourDontShowAgain");
+
+      const forcePasswordChange = {{ if .User.MustChangePassword }}true{{ else }}false{{ end }};
+      const isAdmin = {{ if eq .User.Role "admin" }}true{{ else }}false{{ end }};
+      const userID = {{ printf "%q" .User.ID }};
+      const storage = window.localStorage;
+      const path = window.location.pathname;
+      const isFamilyDetail = /^\/families\/[^/]+$/.test(path);
+      const normalizedPath = path === "/" ? "root" : path.replace(/[^a-zA-Z0-9]/g, "_");
+
+      const hideAllKey = "ournezt_tips_hidden_" + userID;
+      const promptSeenKey = "ournezt_tour_prompt_seen_" + userID;
+      const tourEnabledKey = "ournezt_tour_enabled_" + userID;
+      const seenPageKey = "ournezt_tips_seen_" + userID + "_" + normalizedPath;
+      const stateKey = "ournezt_tips_state_" + userID + "_" + normalizedPath;
+
+      const safeGet = (key) => {
+        try {
+          return storage.getItem(key);
+        } catch (error) {
+          return null;
+        }
+      };
+
+      const safeSet = (key, value) => {
+        try {
+          storage.setItem(key, value);
+        } catch (error) {
+          // Ignore blocked storage.
+        }
+      };
+
+      const safeRemove = (key) => {
+        try {
+          storage.removeItem(key);
+        } catch (error) {
+          // Ignore blocked storage.
+        }
+      };
+
+      const hasSelector = (selector) => Boolean(selector && document.querySelector(selector));
+
+      const pageSteps = (() => {
+        const steps = [];
+
+        if (forcePasswordChange) {
+          if (hasSelector("form[action='/change-password']")) {
+            steps.push({
+              title: "Security First",
+              subtitle: "Password update is required.",
+              items: [
+                "Update your password now to secure your account.",
+                "Use a strong password that you do not reuse elsewhere."
+              ],
+              selector: "form[action='/change-password']",
+              actionPath: "/change-password",
+              actionLabel: "Open Password Form"
+            });
+          }
+        }
+
+        if (isAdmin) {
+          if (path === "/admin") {
+            steps.push(
+              {
+                title: "Admin Overview",
+                subtitle: "Track account health at a glance.",
+                items: [
+                  "Cards show total users, active/disabled counts, and password-reset status.",
+                  "Use this page as your starting point for admin checks."
+                ],
+                selector: "h1.card-title"
+              },
+              {
+                title: "Open All Users",
+                subtitle: "Run account operations from one page.",
+                items: [
+                  "Create users, set roles, and disable accounts from All Users.",
+                  "This keeps administration centralized and auditable."
+                ],
+                selector: "a[href='/admin/users']",
+                actionPath: "/admin/users",
+                actionLabel: "Open All Users"
+              }
+            );
+          }
+
+          if (path === "/admin/users") {
+            steps.push(
+              {
+                title: "Create User",
+                subtitle: "Add account holders from this form.",
+                items: [
+                  "Set email, display name, temporary password, and role.",
+                  "New users can update credentials after first login."
+                ],
+                selector: "form[action='/admin/users']"
+              },
+              {
+                title: "User Table",
+                subtitle: "Review lifecycle status quickly.",
+                items: [
+                  "Verify role, active/disabled status, and password state.",
+                  "Disable is available for non-current active accounts."
+                ],
+                selector: "table.table-zebra"
+              }
+            );
+          }
+        } else {
+          if (path === "/dashboard") {
+            steps.push(
+              {
+                title: "Dashboard",
+                subtitle: "Your household planning summary.",
+                items: [
+                  "Top cards show income, expenses, and surplus.",
+                  "Use this as your quick financial snapshot."
+                ],
+                selector: "h1.card-title"
+              },
+              {
+                title: "Income Chart",
+                subtitle: "Track current and projected gross trends.",
+                items: [
+                  "Projected values help estimate future affordability.",
+                  "Use this with housing comparisons for decisions."
+                ],
+                selector: "#incomeChart"
+              },
+              {
+                title: "Families",
+                subtitle: "Manage family groups and memberships.",
+                items: [
+                  "Open Families to create or join planning families.",
+                  "Each family can have its own profiles and housing scenarios."
+                ],
+                selector: "a[href='/families']",
+                actionPath: "/families",
+                actionLabel: "Open Families"
+              },
+              {
+                title: "Housing",
+                subtitle: "Add and compare housing options.",
+                items: [
+                  "Open Housing to create options and compare impact.",
+                  "This is where affordability scenarios are maintained."
+                ],
+                selector: "a[href='/housing']",
+                actionPath: "/housing",
+                actionLabel: "Open Housing"
+              }
+            );
+          }
+
+          if (path === "/families") {
+            steps.push(
+              {
+                title: "Create Family",
+                subtitle: "Start a new planning family.",
+                items: [
+                  "Create a family for your household planning context.",
+                  "Family type helps label your planning setup."
+                ],
+                selector: "form[action='/families']"
+              },
+              {
+                title: "Join Family",
+                subtitle: "Join via invite code.",
+                items: [
+                  "Use invite code when another member already created the family.",
+                  "This helps couples collaborate in one shared space."
+                ],
+                selector: "form[action='/families/join']"
+              },
+              {
+                title: "Your Families",
+                subtitle: "Open a family to access details and members.",
+                items: [
+                  "Use Open to enter the family detail screen.",
+                  "From there, jump quickly to dashboard, people, and housing."
+                ],
+                selector: "table.table"
+              }
+            );
+          }
+
+          if (isFamilyDetail) {
+            steps.push(
+              {
+                title: "Family Detail",
+                subtitle: "This is your selected family workspace.",
+                items: [
+                  "Use shortcuts to jump to dashboard, people, and housing for this family.",
+                  "This keeps planning tied to the right family context."
+                ],
+                selector: "h1.card-title"
+              },
+              {
+                title: "Invite Code",
+                subtitle: "Regenerate invite code when needed.",
+                items: [
+                  "Use this when sharing access with another member.",
+                  "Regeneration invalidates old invite links/codes."
+                ],
+                selector: "form[action*='/invite-code/regenerate']"
+              },
+              {
+                title: "Members",
+                subtitle: "Review linked members for this family.",
+                items: [
+                  "Check roles and member IDs in this table.",
+                  "Keep membership clean before planning changes."
+                ],
+                selector: "table.table"
+              }
+            );
+          }
+
+          if (path === "/people") {
+            steps.push(
+              {
+                title: "Household Profiles",
+                subtitle: "Manage occupants and planning participants.",
+                items: [
+                  "Account holders can edit self profiles via My Profile.",
+                  "Use this page for occupants without accounts."
+                ],
+                selector: "h1.card-title"
+              },
+              {
+                title: "Add Occupant",
+                subtitle: "Create profile records for household members.",
+                items: [
+                  "Relationship and employment status are key fields.",
+                  "Better inputs improve affordability outputs."
+                ],
+                selector: "a[href*='/people/new']"
+              },
+              {
+                title: "Profiles Table",
+                subtitle: "Edit existing profiles quickly.",
+                items: [
+                  "Use Edit in My Profile for self-linked records.",
+                  "Use Edit/Delete for occupants managed by you."
+                ],
+                selector: "table.table"
+              }
+            );
+          }
+
+          if (path === "/housing") {
+            steps.push(
+              {
+                title: "Housing Options",
+                subtitle: "Store candidate housing scenarios.",
+                items: [
+                  "Each option captures assumptions used by affordability logic.",
+                  "Use family switch if you manage multiple contexts."
+                ],
+                selector: "h1.card-title"
+              },
+              {
+                title: "Add Housing Option",
+                subtitle: "Create a scenario for planning.",
+                items: [
+                  "Add one entry per housing candidate.",
+                  "Then compare options for clearer decisions."
+                ],
+                selector: "a[href*='/housing/new']"
+              },
+              {
+                title: "Compare Options",
+                subtitle: "Open the side-by-side comparison table.",
+                items: [
+                  "Compare monthly impact and recommendation labels.",
+                  "Use this together with projected income assumptions."
+                ],
+                selector: "a[href*='/housing/compare']",
+                actionSelector: "a[href*='/housing/compare']",
+                actionLabel: "Open Comparison"
+              },
+              {
+                title: "Housing Table",
+                subtitle: "Maintain saved options here.",
+                items: [
+                  "Use View for details and Edit for assumption updates.",
+                  "Clear naming keeps reports readable."
+                ],
+                selector: "table.table"
+              }
+            );
+          }
+
+          if (path === "/housing/compare") {
+            steps.push(
+              {
+                title: "Comparison Table",
+                subtitle: "Review affordability side by side.",
+                items: [
+                  "Use upfront, monthly cost, and surplus columns together.",
+                  "Recommendation helps flag high-risk scenarios quickly."
+                ],
+                selector: "table.oz-table-compact"
+              },
+              {
+                title: "Rating Help",
+                subtitle: "Understand recommendation labels.",
+                items: [
+                  "Use this help icon to read rating interpretation.",
+                  "Not Recommended usually means risky monthly affordability."
+                ],
+                selector: "button[aria-label='Rating tips']"
+              }
+            );
+          }
+
+          if (path === "/profile") {
+            steps.push(
+              {
+                title: "My Profile",
+                subtitle: "Manage account-level details and password.",
+                items: [
+                  "Update email/display name in account section.",
+                  "Change password regularly for security."
+                ],
+                selector: "h1.card-title"
+              },
+              {
+                title: "My Financial Profile",
+                subtitle: "Open your self financial profile entries.",
+                items: [
+                  "Edit your own planning record from here.",
+                  "Occupants remain managed in Household Profiles."
+                ],
+                selector: "section.card.bg-base-100.shadow.mt-6"
+              }
+            );
+          }
+        }
+
+        return steps.filter((step) => hasSelector(step.selector));
+      })();
+
+      if (!pageSteps.length) return;
+
+      const clearTargets = () => {
+        document.querySelectorAll(".oz-tour-highlight").forEach((el) => el.classList.remove("oz-tour-highlight"));
+      };
+
+      const closePrompt = () => {
+        if (!promptBackdrop) return;
+        promptBackdrop.classList.add("hidden");
+        promptBackdrop.setAttribute("aria-hidden", "true");
+      };
+
+      const openPrompt = () => {
+        if (!promptBackdrop) return;
+        promptBackdrop.classList.remove("hidden");
+        promptBackdrop.setAttribute("aria-hidden", "false");
+      };
+
+      const placeCoachNear = (target) => {
+        const rect = target.getBoundingClientRect();
+        const coachRect = coach.getBoundingClientRect();
+        const gap = 12;
+        let top = rect.bottom + gap;
+        let left = rect.left;
+
+        if (top + coachRect.height > window.innerHeight - gap) {
+          top = rect.top - coachRect.height - gap;
+        }
+        if (left + coachRect.width > window.innerWidth - gap) {
+          left = window.innerWidth - coachRect.width - gap;
+        }
+        if (left < gap) left = gap;
+        if (top < gap) top = gap;
+
+        coach.style.top = String(Math.round(top)) + "px";
+        coach.style.left = String(Math.round(left)) + "px";
+      };
+
+      const resolveActionHref = (step) => {
+        if (step.actionPath) return step.actionPath;
+        if (step.actionSelector) {
+          const node = document.querySelector(step.actionSelector);
+          return node ? (node.getAttribute("href") || "") : "";
+        }
+        return "";
+      };
+
+      let currentIndex = 0;
+
+      const closeCoach = () => {
+        if (dontShowAgain && dontShowAgain.checked) {
+          safeSet(hideAllKey, "1");
+          safeSet(tourEnabledKey, "0");
+        }
+        safeSet(seenPageKey, "1");
+        safeRemove(stateKey);
+        clearTargets();
+        coach.classList.add("hidden");
+      };
+
+      const renderStep = (index, scrollToTarget) => {
+        const safeIndex = Math.min(Math.max(index, 0), pageSteps.length - 1);
+        currentIndex = safeIndex;
+        safeSet(stateKey, String(safeIndex));
+
+        const step = pageSteps[safeIndex];
+        const target = document.querySelector(step.selector);
+        if (!target) return;
+
+        clearTargets();
+        target.classList.add("oz-tour-highlight");
+
+        if (scrollToTarget) {
+          target.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
+        }
+
+        titleEl.textContent = step.title;
+        subtitleEl.textContent = step.subtitle;
+        itemsEl.innerHTML = "";
+        step.items.forEach((item) => {
+          const li = document.createElement("li");
+          li.textContent = item;
+          itemsEl.appendChild(li);
+        });
+
+        metaEl.textContent = "Tip " + String(safeIndex + 1) + " of " + String(pageSteps.length);
+        backBtn.disabled = safeIndex === 0;
+        nextBtn.textContent = safeIndex === pageSteps.length - 1 ? "Done" : "Continue";
+
+        const href = resolveActionHref(step);
+        if (href) {
+          actionBtn.classList.remove("hidden");
+          actionBtn.textContent = step.actionLabel || "Open";
+          actionBtn.setAttribute("href", href);
+        } else {
+          actionBtn.classList.add("hidden");
+          actionBtn.textContent = "Open";
+          actionBtn.setAttribute("href", "#");
+        }
+
+        coach.classList.remove("hidden");
+        placeCoachNear(target);
+      };
+
+      const startCoach = (initialIndex) => {
+        closePrompt();
+        coach.classList.remove("hidden");
+        const safeIndex = Number.isFinite(initialIndex) ? initialIndex : 0;
+        renderStep(safeIndex, true);
+      };
+
+      const rerender = () => {
+        if (coach.classList.contains("hidden")) return;
+        renderStep(currentIndex, false);
+      };
+
+      const hiddenByPreference = safeGet(hideAllKey) === "1";
+      if (hiddenByPreference && !forcePasswordChange) return;
+
+      const promptSeen = safeGet(promptSeenKey) === "1";
+      const tourEnabled = safeGet(tourEnabledKey) === "1";
+      const seenThisPage = safeGet(seenPageKey) === "1";
+
+      const url = new URL(window.location.href);
+      const tourRequested = url.searchParams.get("tour") === "1";
+      if (tourRequested) {
+        safeSet(promptSeenKey, "1");
+        safeSet(tourEnabledKey, "1");
+        url.searchParams.delete("tour");
+        window.history.replaceState({}, "", url.toString());
+      }
+
+      const savedStateRaw = safeGet(stateKey);
+      if (savedStateRaw !== null) {
+        const parsed = Number(savedStateRaw);
+        if (Number.isFinite(parsed) && parsed >= 0 && parsed < pageSteps.length) {
+          currentIndex = parsed;
+        }
+      }
+
+      if (forcePasswordChange) {
+        startCoach(currentIndex);
+      } else if (tourRequested || (tourEnabled && !seenThisPage)) {
+        startCoach(currentIndex);
+      } else if (!promptSeen && promptBackdrop) {
+        openPrompt();
+      }
+
+      if (promptStartBtn) {
+        promptStartBtn.addEventListener("click", () => {
+          safeSet(promptSeenKey, "1");
+          safeSet(tourEnabledKey, "1");
+          safeSet(seenPageKey, "0");
+          startCoach(0);
+        });
+      }
+
+      if (promptLaterBtn) {
+        promptLaterBtn.addEventListener("click", () => {
+          if (promptDontAsk && promptDontAsk.checked) {
+            safeSet(hideAllKey, "1");
+            safeSet(tourEnabledKey, "0");
+          }
+          safeSet(promptSeenKey, "1");
+          closePrompt();
+        });
+      }
+
+      if (skipBtn) {
+        skipBtn.addEventListener("click", closeCoach);
+      }
+      if (backBtn) {
+        backBtn.addEventListener("click", () => {
+          if (currentIndex <= 0) return;
+          renderStep(currentIndex - 1, true);
+        });
+      }
+      if (nextBtn) {
+        nextBtn.addEventListener("click", () => {
+          if (currentIndex >= pageSteps.length - 1) {
+            closeCoach();
+            return;
+          }
+          renderStep(currentIndex + 1, true);
+        });
+      }
+
+      window.addEventListener("resize", rerender);
+      window.addEventListener("scroll", rerender, { passive: true });
+      document.addEventListener("keydown", (event) => {
+        if (!promptBackdrop.classList.contains("hidden") && event.key === "Escape") {
+          closePrompt();
+          return;
+        }
+        if (!coach.classList.contains("hidden") && event.key === "Escape") {
+          closeCoach();
+        }
+      });
+      if (promptBackdrop) {
+        promptBackdrop.addEventListener("click", (event) => {
+          if (event.target === promptBackdrop) {
+            closePrompt();
+          }
+        });
+      }
+    })();
+  </script>
 </body>
 </html>
 {{ end }}

@@ -27,7 +27,11 @@ func main() {
 		logger.Error("dial core grpc", "addr", cfg.CoreGRPCAddr, "error", err)
 		os.Exit(1)
 	}
-	defer clients.Close()
+	defer func() {
+		if closeErr := clients.Close(); closeErr != nil {
+			logger.Error("close core grpc clients", "error", closeErr)
+		}
+	}()
 
 	router, err := web.NewRouter(cfg, clients)
 	if err != nil {
