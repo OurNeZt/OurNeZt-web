@@ -302,7 +302,7 @@ docker run --rm \
   -e WEB_ADDR=":8080" \
   -e CORE_GRPC_ADDR="host.docker.internal:50051" \
   -e SESSION_COOKIE_NAME="ournezt_session" \
-  -e SESSION_COOKIE_MAX_AGE="24h" \
+  -e SESSION_COOKIE_MAX_AGE="12h" \
   -e SESSION_COOKIE_SECURE="true" \
   -e REQUEST_TIMEOUT="5s" \
   ournezt-web:local
