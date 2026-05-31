@@ -9,16 +9,24 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [v1.1.0] - 2026-05-31
 
 ### Added
-- (fill)
+- Per-housing DIA income overrides so each housing option stores its own projected income inputs by person.
+- New database migration to support housing-level DIA overrides (000004_housing_dia_overrides).
+- Housing-aware dashboard scenario impact logic that computes projected take-home per housing option.
 
 ### Changed
-- (fill)
+- DIA flow now uses housing-specific projected incomes instead of globally overwriting shared person profile future income.
+- Dashboard housing impact and payment timeline now evaluate affordability with per-option projected income when DIA data exists.
+- Protobuf/contracts and server mapping updated to include DIA override payloads on housing options.
+- Documentation updated to reflect the DIA behavior and latest profile/update flow expectations.
 
 ### Fixed
-- (fill)
+- Personal finance profile edit failure caused by backend SQL placeholder mismatch in UpdatePersonProfile.
+- DIA sync/update failures related to profile update path and legacy linked-user compatibility handling.
+- Form/input handling reliability for DIA income updates and profile updates.
+- Lint issue (SA9003 empty branch) in housing projection logic.
 
 ### Removed
-- (fill)
+- Legacy behavior that tied DIA projected income updates directly to shared person profile updates during housing save.
 
 ## [v1.0.0] - 2026-05-29
 
