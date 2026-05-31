@@ -53,8 +53,8 @@
     <label class="oz-field max-w-sm">
       <span>Housing Option</span>
       <select id="timelineHousingSelect" class="select select-bordered w-full">
-        {{ range .Data.TimelineSeries }}
-        <option value="{{ .HousingID }}">{{ .HousingName }}</option>
+        {{ range $i, $series := .Data.TimelineSeries }}
+        <option value="{{ $i }}">{{ $series.HousingName }}</option>
         {{ end }}
       </select>
     </label>
@@ -216,8 +216,11 @@
       const toMoneyTick = (v) => "$" + Number(v).toLocaleString();
       const resolveSelectedSeries = () => {
         if (!timelineHousingSelect) return timelineSeries[0];
-        const selectedID = (timelineHousingSelect.value || "").trim();
-        return timelineSeries.find((item) => item.id === selectedID) || timelineSeries[0];
+        const selectedIndex = Number.parseInt((timelineHousingSelect.value || "0").trim(), 10);
+        if (Number.isNaN(selectedIndex) || selectedIndex < 0 || selectedIndex >= timelineSeries.length) {
+          return timelineSeries[0];
+        }
+        return timelineSeries[selectedIndex];
       };
 
       const initialSeries = resolveSelectedSeries();
