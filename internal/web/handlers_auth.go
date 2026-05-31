@@ -10,7 +10,10 @@ import (
 )
 
 type loginPayload struct{}
-type changePasswordPayload struct{}
+type changePasswordPayload struct {
+	IsAdmin  bool
+	IsForced bool
+}
 type bootstrapAdminHelpPayload struct{}
 
 type profilePersonShortcut struct {
@@ -92,11 +95,20 @@ func (a *App) settings(c *gin.Context) {
 }
 
 func (a *App) showChangePassword(c *gin.Context) {
-	if userFromContext(c) == nil {
+	user := userFromContext(c)
+	if user == nil {
 		c.Redirect(http.StatusFound, "/login?error=Please+log+in")
 		return
 	}
-	a.render(c, "change_password", "Change Password", changePasswordPayload{})
+	isAdmin := strings.EqualFold(strings.TrimSpace(user.Role), "admin")
+	if !user.MustChangePassword && !isAdmin {
+		c.Redirect(http.StatusFound, "/profile?error=Please+change+password+from+My+Profile")
+		return
+	}
+	a.render(c, "change_password", "Change Password", changePasswordPayload{
+		IsAdmin:  isAdmin,
+		IsForced: user.MustChangePassword,
+	})
 }
 
 func (a *App) changePassword(c *gin.Context) {
@@ -105,12 +117,20 @@ func (a *App) changePassword(c *gin.Context) {
 		c.Redirect(http.StatusFound, "/login?error=Please+log+in")
 		return
 	}
+	isAdmin := strings.EqualFold(strings.TrimSpace(user.Role), "admin")
+	if !user.MustChangePassword && !isAdmin {
+		c.Redirect(http.StatusFound, "/profile?error=Please+change+password+from+My+Profile")
+		return
+	}
 
 	if err := a.changePasswordFromPost(c); err != nil {
 		c.Redirect(http.StatusFound, "/change-password?error="+urlQuerySafe(err.Error()))
 		return
 	}
-
+	if isAdmin {
+		c.Redirect(http.StatusFound, "/admin?flash=Password+updated")
+		return
+	}
 	c.Redirect(http.StatusFound, "/dashboard?flash=Password+updated")
 }
 
