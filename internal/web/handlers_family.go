@@ -35,16 +35,34 @@ func (a *App) newFamily(c *gin.Context) {
 
 func (a *App) createFamily(c *gin.Context) {
 	user := userFromContext(c)
+	familyType := normalizeCreateFamilyType(strings.TrimSpace(c.PostForm("family_type")))
+	if familyType == "" {
+		c.Redirect(http.StatusFound, "/families?error="+urlQuerySafe("family type is required"))
+		return
+	}
 	_, err := a.clients.Family.CreateFamily(a.grpcContext(c), &ourneztv1.CreateFamilyRequest{
 		OwnerUserId: user.ID,
 		Name:        strings.TrimSpace(c.PostForm("name")),
-		FamilyType:  strings.TrimSpace(c.PostForm("family_type")),
+		FamilyType:  familyType,
 	})
 	if err != nil {
 		c.Redirect(http.StatusFound, "/families?error="+urlQuerySafe(grpcMessage(err)))
 		return
 	}
 	c.Redirect(http.StatusFound, "/families?flash=Family+created")
+}
+
+func normalizeCreateFamilyType(raw string) string {
+	switch normalizeLookup(raw) {
+	case "single":
+		return "single"
+	case "couple":
+		return "couple"
+	case "family":
+		return "family"
+	default:
+		return ""
+	}
 }
 
 func (a *App) familyDetail(c *gin.Context) {
