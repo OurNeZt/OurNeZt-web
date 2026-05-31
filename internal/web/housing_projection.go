@@ -1,13 +1,34 @@
 package web
 
 import (
+	"strings"
+
 	ourneztv1 "github.com/OurNeZt/ournezt-web/internal/gen/proto/ournezt/v1"
 	"github.com/gin-gonic/gin"
 )
 
-func (a *App) projectedHousingTakeHomeCents(c *gin.Context, people []*ourneztv1.PersonProfile, fallback int64) int64 {
+func (a *App) projectedHousingTakeHomeCents(c *gin.Context, people []*ourneztv1.PersonProfile, option *ourneztv1.HousingOption, fallback int64) int64 {
 	if len(people) == 0 {
 		return fallback
+	}
+
+	overrideByPersonID := make(map[string]int64)
+	if option != nil {
+		for _, override := range option.GetDiaIncomeOverrides() {
+			if override == nil {
+				continue
+			}
+			personID := strings.TrimSpace(override.GetPersonId())
+			if personID == "" {
+				continue
+			}
+			projected := override.GetProjectedIncomeCents()
+			if projected < 0 {
+				projected = 0
+			}
+			overrideByPersonID[personID] = projected
+			overrideByPersonID[strings.ToLower(personID)] = projected
+		}
 	}
 
 	var total int64
@@ -17,9 +38,24 @@ func (a *App) projectedHousingTakeHomeCents(c *gin.Context, people []*ourneztv1.
 		}
 
 		wage := person.GetGrossMonthlyIncomeCents()
-		hasFuture := person.GetExpectedFutureIncomeCents() > 0
-		if hasFuture {
+		personID := strings.TrimSpace(person.GetId())
+		if value, ok := overrideByPersonID[personID]; ok {
+			wage = value
+		} else if value, ok := overrideByPersonID[strings.ToLower(personID)]; ok {
+			wage = value
+		} else if person.GetExpectedFutureIncomeCents() > 0 {
 			wage = person.GetExpectedFutureIncomeCents()
+		}
+
+		hasFuture := false
+		if person.GetExpectedFutureIncomeCents() > 0 {
+			hasFuture = true
+		}
+		if value, ok := overrideByPersonID[personID]; ok && value > 0 {
+			hasFuture = true
+		}
+		if value, ok := overrideByPersonID[strings.ToLower(personID)]; ok && value > 0 {
+			hasFuture = true
 		}
 		if wage <= 0 {
 			continue

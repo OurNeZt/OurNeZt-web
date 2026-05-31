@@ -115,7 +115,7 @@
                   <td>{{ .Name }}</td>
                   <td>{{ .EmploymentStatus }}</td>
                   <td>
-                    <input class="input input-bordered input-sm w-full max-w-xs" type="number" min="0" step="0.01" inputmode="decimal" name="dia_income_{{ .Id }}" value="{{ index $.Data.DIAIncomeDefaultInputs .Id }}" placeholder="e.g. 4200.00">
+                    <input class="input input-bordered input-sm w-full max-w-xs" type="number" min="0" step="0.01" inputmode="decimal" name="dia_income[{{ .Id }}]" value="{{ index $.Data.DIAIncomeDefaultInputs .Id }}" placeholder="e.g. 4200.00">
                   </td>
                 </tr>
                 {{ end }}

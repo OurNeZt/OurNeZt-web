@@ -10,7 +10,10 @@ import (
 )
 
 type loginPayload struct{}
-type changePasswordPayload struct{}
+type changePasswordPayload struct {
+	IsAdmin  bool
+	IsForced bool
+}
 type bootstrapAdminHelpPayload struct{}
 
 type profilePersonShortcut struct {
@@ -92,11 +95,20 @@ func (a *App) settings(c *gin.Context) {
 }
 
 func (a *App) showChangePassword(c *gin.Context) {
-	if userFromContext(c) == nil {
+	user := userFromContext(c)
+	if user == nil {
 		c.Redirect(http.StatusFound, "/login?error=Please+log+in")
 		return
 	}
-	a.render(c, "change_password", "Change Password", changePasswordPayload{})
+	isAdmin := strings.EqualFold(strings.TrimSpace(user.Role), "admin")
+	if !user.MustChangePassword && !isAdmin {
+		c.Redirect(http.StatusFound, "/profile?error=Please+change+password+from+My+Profile")
+		return
+	}
+	a.render(c, "change_password", "Change Password", changePasswordPayload{
+		IsAdmin:  isAdmin,
+		IsForced: user.MustChangePassword,
+	})
 }
 
 func (a *App) changePassword(c *gin.Context) {
@@ -105,12 +117,20 @@ func (a *App) changePassword(c *gin.Context) {
 		c.Redirect(http.StatusFound, "/login?error=Please+log+in")
 		return
 	}
+	isAdmin := strings.EqualFold(strings.TrimSpace(user.Role), "admin")
+	if !user.MustChangePassword && !isAdmin {
+		c.Redirect(http.StatusFound, "/profile?error=Please+change+password+from+My+Profile")
+		return
+	}
 
 	if err := a.changePasswordFromPost(c); err != nil {
 		c.Redirect(http.StatusFound, "/change-password?error="+urlQuerySafe(err.Error()))
 		return
 	}
-
+	if isAdmin {
+		c.Redirect(http.StatusFound, "/admin?flash=Password+updated")
+		return
+	}
 	c.Redirect(http.StatusFound, "/dashboard?flash=Password+updated")
 }
 
@@ -225,10 +245,10 @@ func (a *App) profileUpdateSelfPerson(c *gin.Context) {
 	person := personFromForm(c)
 	person.Id = personID
 	person.FamilyId = current.GetFamilyId()
-	if strings.TrimSpace(current.GetLinkedUserId()) != "" {
-		person.LinkedUserId = current.GetLinkedUserId()
+	if linked := normalizeOptionalUUID(current.GetLinkedUserId()); linked != "" {
+		person.LinkedUserId = linked
 	} else {
-		person.LinkedUserId = user.ID
+		person.LinkedUserId = normalizeOptionalUUID(user.ID)
 	}
 	if validationErr := validatePersonProfileInput(person); validationErr != "" {
 		c.Redirect(http.StatusFound, "/profile/person/"+personID+"/edit?error="+urlQuerySafe(validationErr))
@@ -276,7 +296,7 @@ func (a *App) profileCreateSelfPerson(c *gin.Context) {
 	person := personFromForm(c)
 	person.Id = ""
 	person.FamilyId = strings.TrimSpace(c.PostForm("family_id"))
-	person.LinkedUserId = user.ID
+	person.LinkedUserId = normalizeOptionalUUID(user.ID)
 	if person.GetFamilyId() == "" {
 		c.Redirect(http.StatusFound, "/profile?error=Family+is+required")
 		return

@@ -318,3 +318,39 @@ func formatThousands(value int64) string {
 	}
 	return b.String()
 }
+
+func normalizeOptionalUUID(value string) string {
+	trimmed := strings.TrimSpace(value)
+	if trimmed == "" {
+		return ""
+	}
+	if isCanonicalUUID(trimmed) {
+		return strings.ToLower(trimmed)
+	}
+	return ""
+}
+
+func isCanonicalUUID(value string) bool {
+	if len(value) != 36 {
+		return false
+	}
+	for i, ch := range value {
+		switch i {
+		case 8, 13, 18, 23:
+			if ch != '-' {
+				return false
+			}
+		default:
+			if !isHexRune(ch) {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+func isHexRune(ch rune) bool {
+	return (ch >= '0' && ch <= '9') ||
+		(ch >= 'a' && ch <= 'f') ||
+		(ch >= 'A' && ch <= 'F')
+}
