@@ -21,7 +21,7 @@
           <option value="spouse" {{ if eqFold .Data.Person.RelationshipLabel "spouse" }}selected{{ end }}>Spouse</option>
           <option value="fiance" {{ if eqFold .Data.Person.RelationshipLabel "fiance" }}selected{{ end }}>Fiance</option>
           <option value="fiancee" {{ if eqFold .Data.Person.RelationshipLabel "fiancee" }}selected{{ end }}>Fiancee</option>
-          <option value="occupant" {{ if eqFold .Data.Person.RelationshipLabel "occupant" }}selected{{ end }}>Occupant</option>
+          <option value="occupant" {{ if or (eqFold .Data.Person.RelationshipLabel "occupant") (eqFold .Data.Person.RelationshipLabel "self") (eqFold .Data.Person.RelationshipLabel "me") }}selected{{ end }}>Occupant</option>
         </select>
       </label>
       <label class="oz-field">

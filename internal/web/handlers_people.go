@@ -204,6 +204,8 @@ func validatePersonProfileInput(person *ourneztv1.PersonProfile) string {
 
 	switch person.GetRelationshipLabel() {
 	case "spouse", "fiance", "fiancee", "occupant":
+	case "self", "me":
+		person.RelationshipLabel = "occupant"
 	default:
 		return "relationship is required"
 	}
