@@ -57,9 +57,6 @@ func (a *App) projectedHousingTakeHomeCents(c *gin.Context, people []*ourneztv1.
 		if value, ok := overrideByPersonID[strings.ToLower(personID)]; ok && value > 0 {
 			hasFuture = true
 		}
-		if hasFuture {
-			// wage has already been selected from override or profile future income.
-		}
 		if wage <= 0 {
 			continue
 		}
