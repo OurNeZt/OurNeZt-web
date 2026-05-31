@@ -6,7 +6,12 @@
       <h2 class="card-title">Create Family</h2>
       <form method="post" action="/families" class="space-y-2">
         <input class="input input-bordered w-full" name="name" placeholder="Family name" required>
-        <input class="input input-bordered w-full" name="family_type" placeholder="family, couple, single" required>
+        <select class="select select-bordered w-full" name="family_type" required>
+          <option value="">Select family type</option>
+          <option value="single">Single</option>
+          <option value="couple">Couple</option>
+          <option value="family">Family</option>
+        </select>
         <button class="btn btn-primary" type="submit">Create</button>
       </form>
     </div>
