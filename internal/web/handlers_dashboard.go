@@ -90,7 +90,8 @@ func (a *App) dashboard(c *gin.Context) {
 	if incomeResp == nil {
 		incomeResp = &ourneztv1.HouseholdIncomeSummary{}
 	}
-	planningTakeHome := a.projectedHousingTakeHomeCents(c, peopleResp.GetPeople(), incomeResp.GetTakeHomeIncomeCents())
+	baseTakeHome := incomeResp.GetTakeHomeIncomeCents()
+	usesProjected := false
 	historyEntries := []*ourneztv1.IncomeHistoryEntry(nil)
 	historyResp, historyErr := a.clients.Person.ListIncomeHistoryByFamily(a.grpcContext(c), &ourneztv1.ListIncomeHistoryByFamilyRequest{
 		ViewerUserId: user.ID,
@@ -114,11 +115,15 @@ func (a *App) dashboard(c *gin.Context) {
 	housingCharts := make([]dashboardHousingChartRow, 0, len(housingResp.GetHousingOptions()))
 	timelineSeries := make([]dashboardTimelineSeries, 0, len(housingResp.GetHousingOptions()))
 	for i, option := range housingResp.GetHousingOptions() {
+		optionTakeHome := a.projectedHousingTakeHomeCents(c, peopleResp.GetPeople(), option, baseTakeHome)
+		if optionTakeHome > baseTakeHome {
+			usesProjected = true
+		}
 		aff, affErr := a.clients.Housing.CalculateHousingAffordability(a.grpcContext(c), &ourneztv1.CalculateHousingAffordabilityRequest{
 			HousingOption:        option,
 			CashSavingsCents:     totalCash(peopleResp.GetPeople()),
 			CpfOaCents:           incomeResp.GetCurrentCpfOaCents(),
-			TakeHomeCents:        planningTakeHome,
+			TakeHomeCents:        optionTakeHome,
 			MonthlyExpensesCents: incomeResp.GetMonthlyExpensesCents(),
 		})
 		if affErr != nil {
@@ -140,7 +145,7 @@ func (a *App) dashboard(c *gin.Context) {
 			YearNow:                currentYear,
 			YearAssessment:         assessmentYear,
 			YearPostKeyCollection:  postYear,
-			EstimatedTakeHomeCents: planningTakeHome,
+			EstimatedTakeHomeCents: optionTakeHome,
 			PaymentNeedCents:       aff.GetMonthlyHousingCostCents(),
 		})
 	}
@@ -153,7 +158,7 @@ func (a *App) dashboard(c *gin.Context) {
 		Housing:                        housingResp.GetHousingOptions(),
 		Income:                         incomeResp,
 		HousingCharts:                  housingCharts,
-		UsesProjected:                  planningTakeHome > incomeResp.GetTakeHomeIncomeCents(),
+		UsesProjected:                  usesProjected,
 		IncomeCurrentYear:              currentYear,
 		IncomeProjectedYear:            projectedIncomeYear,
 		IncomeTrendLabels:              incomeTrendLabels,

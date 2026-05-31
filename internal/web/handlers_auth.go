@@ -245,10 +245,10 @@ func (a *App) profileUpdateSelfPerson(c *gin.Context) {
 	person := personFromForm(c)
 	person.Id = personID
 	person.FamilyId = current.GetFamilyId()
-	if strings.TrimSpace(current.GetLinkedUserId()) != "" {
-		person.LinkedUserId = current.GetLinkedUserId()
+	if linked := normalizeOptionalUUID(current.GetLinkedUserId()); linked != "" {
+		person.LinkedUserId = linked
 	} else {
-		person.LinkedUserId = user.ID
+		person.LinkedUserId = normalizeOptionalUUID(user.ID)
 	}
 	if validationErr := validatePersonProfileInput(person); validationErr != "" {
 		c.Redirect(http.StatusFound, "/profile/person/"+personID+"/edit?error="+urlQuerySafe(validationErr))
@@ -296,7 +296,7 @@ func (a *App) profileCreateSelfPerson(c *gin.Context) {
 	person := personFromForm(c)
 	person.Id = ""
 	person.FamilyId = strings.TrimSpace(c.PostForm("family_id"))
-	person.LinkedUserId = user.ID
+	person.LinkedUserId = normalizeOptionalUUID(user.ID)
 	if person.GetFamilyId() == "" {
 		c.Redirect(http.StatusFound, "/profile?error=Family+is+required")
 		return
