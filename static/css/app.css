@@ -237,11 +237,21 @@ body {
   max-height: calc(100dvh - 1rem - env(safe-area-inset-top) - env(safe-area-inset-bottom));
   overflow-y: auto;
   overscroll-behavior: contain;
+  transform: none;
   z-index: 2100;
 }
 
 .oz-tour-coach.hidden {
   display: none !important;
+}
+
+.oz-tour-coach.oz-tour-coach-docked {
+  left: 50% !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: max(0.5rem, env(safe-area-inset-bottom)) !important;
+  width: min(32rem, calc(100vw - 1rem));
+  transform: translateX(-50%);
 }
 
 .oz-tour-prompt-backdrop {
@@ -371,6 +381,17 @@ body {
   .stat .stat-value {
     font-size: 1rem;
     line-height: 1.35rem;
+  }
+}
+
+@media (max-width: 1024px), (max-height: 760px) {
+  .oz-tour-coach {
+    width: min(30rem, calc(100vw - 1rem));
+    max-height: calc(100dvh - 5rem - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  }
+
+  .oz-tour-prompt {
+    width: min(30rem, calc(100vw - 1rem));
   }
 }
 

@@ -439,7 +439,20 @@
         promptBackdrop.setAttribute("aria-hidden", "false");
       };
 
+      const shouldDockCoach = () => window.matchMedia("(max-width: 1024px), (max-height: 760px)").matches;
+
       const placeCoachNear = (target) => {
+        if (shouldDockCoach()) {
+          coach.classList.add("oz-tour-coach-docked");
+          coach.style.left = "";
+          coach.style.top = "";
+          coach.style.bottom = "";
+          return;
+        }
+
+        coach.classList.remove("oz-tour-coach-docked");
+        coach.style.bottom = "";
+        coach.style.transform = "";
         const rect = target.getBoundingClientRect();
         const coachRect = coach.getBoundingClientRect();
         const gap = 12;
@@ -494,7 +507,11 @@
         target.classList.add("oz-tour-highlight");
 
         if (scrollToTarget) {
-          target.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
+          target.scrollIntoView({
+            behavior: "smooth",
+            block: shouldDockCoach() ? "start" : "center",
+            inline: "nearest",
+          });
         }
 
         titleEl.textContent = step.title;
