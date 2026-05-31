@@ -509,9 +509,20 @@ func (a *App) applyDIAProjectedIncomes(c *gin.Context, familyID, keyCollectionDa
 			estimated = 0
 		}
 
-		person.ExpectedFutureIncomeCents = estimated
-		person.ExpectedIncomeStartDate = assessmentStartDate
-		_, err := a.clients.Person.UpdatePersonProfile(a.grpcContext(c), person)
+		// Use full profile payload for update so required fields like
+		// graduation/ORD dates are preserved for student/NSF profiles.
+		fullProfile := person
+		fullResp, fullErr := a.clients.Person.GetPersonProfile(a.grpcContext(c), &ourneztv1.GetPersonProfileRequest{
+			ViewerUserId: user.ID,
+			PersonId:     person.GetId(),
+		})
+		if fullErr == nil && fullResp != nil {
+			fullProfile = fullResp
+		}
+
+		fullProfile.ExpectedFutureIncomeCents = estimated
+		fullProfile.ExpectedIncomeStartDate = assessmentStartDate
+		_, err := a.clients.Person.UpdatePersonProfile(a.grpcContext(c), fullProfile)
 		if err != nil {
 			return "DIA income setup failed for " + person.GetName() + ": " + grpcMessage(err)
 		}
