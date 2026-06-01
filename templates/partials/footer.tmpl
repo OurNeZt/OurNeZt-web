@@ -48,12 +48,26 @@
   <script>
     (() => {
       const mobileMenu = document.querySelector(".oz-mobile-menu");
+      let mobileMenuForcedOpenByTour = false;
+      const setMobileMenuForcedOpen = (open) => {
+        if (!mobileMenu) return;
+        mobileMenuForcedOpenByTour = open;
+        if (open) {
+          mobileMenu.setAttribute("open", "");
+          return;
+        }
+        mobileMenu.removeAttribute("open");
+      };
       if (mobileMenu) {
-        const closeMobileMenu = () => mobileMenu.removeAttribute("open");
+        const closeMobileMenu = () => {
+          if (mobileMenuForcedOpenByTour) return;
+          mobileMenu.removeAttribute("open");
+        };
         mobileMenu.querySelectorAll("a, button[type='submit']").forEach((node) => {
           node.addEventListener("click", closeMobileMenu);
         });
         document.addEventListener("click", (event) => {
+          if (mobileMenuForcedOpenByTour) return;
           if (!mobileMenu.contains(event.target)) closeMobileMenu();
         });
       }
@@ -117,7 +131,60 @@
         }
       };
 
-      const hasSelector = (selector) => Boolean(selector && document.querySelector(selector));
+      const isVisibleNode = (node) => {
+        if (!node) return false;
+        const style = window.getComputedStyle(node);
+        if (style.display === "none" || style.visibility === "hidden" || style.opacity === "0") return false;
+        const rect = node.getBoundingClientRect();
+        return rect.width > 0 && rect.height > 0;
+      };
+
+      const isTopNavLinkSelector = (selector) => /^a\[href='\/[^']+'\]$/.test(selector || "");
+
+      const resolveVisibleNode = (selector) => {
+        if (!selector) return null;
+        const matches = Array.from(document.querySelectorAll(selector));
+        if (!matches.length) return null;
+        const visibleMatches = matches.filter(isVisibleNode);
+        if (!visibleMatches.length) return null;
+        visibleMatches.sort((a, b) => {
+          const aRect = a.getBoundingClientRect();
+          const bRect = b.getBoundingClientRect();
+          return bRect.width * bRect.height - aRect.width * aRect.height;
+        });
+        return visibleMatches[0] || null;
+      };
+
+      const resolveVisibleNodeWithMenu = (selector) => {
+        let node = resolveVisibleNode(selector);
+        if (node) return node;
+
+        if (mobileMenu && isTopNavLinkSelector(selector)) {
+          setMobileMenuForcedOpen(true);
+          node = resolveVisibleNode(selector);
+          if (node) return node;
+        }
+
+        return null;
+      };
+
+      const resolveHighlightNode = (selector) => {
+        const base = resolveVisibleNodeWithMenu(selector);
+        if (!base) return null;
+        if (base.matches("canvas")) {
+          return base.closest(".oz-chart-box") || base.closest(".card") || base;
+        }
+        if (base.matches("table")) {
+          return base.closest(".overflow-x-auto") || base.closest(".card") || base;
+        }
+        return base;
+      };
+
+      const hasSelector = (selector) => {
+        if (resolveVisibleNode(selector)) return true;
+        if (isTopNavLinkSelector(selector) && document.querySelector(selector)) return true;
+        return false;
+      };
 
       const pageSteps = (() => {
         const steps = [];
@@ -439,30 +506,75 @@
         promptBackdrop.setAttribute("aria-hidden", "false");
       };
 
+      const shouldPreferDockCoach = () => window.matchMedia("(max-height: 560px)").matches;
+
+      const rectsOverlap = (a, b, gap = 8) => {
+        return !(
+          a.right + gap < b.left ||
+          a.left - gap > b.right ||
+          a.bottom + gap < b.top ||
+          a.top - gap > b.bottom
+        );
+      };
+
       const placeCoachNear = (target) => {
+        const gap = 12;
+        coach.classList.remove("oz-tour-coach-docked");
+        coach.style.bottom = "";
+        coach.style.transform = "";
+        coach.style.left = "";
+        coach.style.top = "";
+
         const rect = target.getBoundingClientRect();
         const coachRect = coach.getBoundingClientRect();
-        const gap = 12;
-        let top = rect.bottom + gap;
-        let left = rect.left;
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
 
-        if (top + coachRect.height > window.innerHeight - gap) {
-          top = rect.top - coachRect.height - gap;
-        }
-        if (left + coachRect.width > window.innerWidth - gap) {
-          left = window.innerWidth - coachRect.width - gap;
-        }
-        if (left < gap) left = gap;
-        if (top < gap) top = gap;
+        const clampLeft = (left) => Math.max(gap, Math.min(viewportWidth - coachRect.width - gap, left));
+        const clampTop = (top) => Math.max(gap, Math.min(viewportHeight - coachRect.height - gap, top));
 
-        coach.style.top = String(Math.round(top)) + "px";
-        coach.style.left = String(Math.round(left)) + "px";
+        const centerLeft = clampLeft(rect.left + (rect.width / 2) - (coachRect.width / 2));
+        const candidates = [
+          { top: clampTop(rect.bottom + gap), left: centerLeft }, // below
+          { top: clampTop(rect.top - coachRect.height - gap), left: centerLeft }, // above
+          { top: clampTop(rect.top), left: clampLeft(rect.right + gap) }, // right
+          { top: clampTop(rect.top), left: clampLeft(rect.left - coachRect.width - gap) }, // left
+        ];
+
+        const targetRect = rect;
+        let chosen = null;
+        for (const candidate of candidates) {
+          const coachCandidateRect = {
+            left: candidate.left,
+            top: candidate.top,
+            right: candidate.left + coachRect.width,
+            bottom: candidate.top + coachRect.height,
+          };
+          if (!rectsOverlap(targetRect, coachCandidateRect, 10)) {
+            chosen = candidate;
+            break;
+          }
+        }
+
+        if (!chosen) {
+          if (shouldPreferDockCoach()) {
+            coach.classList.add("oz-tour-coach-docked");
+            return;
+          }
+          chosen = {
+            top: clampTop(rect.top + (rect.height / 2) - (coachRect.height / 2)),
+            left: centerLeft,
+          };
+        }
+
+        coach.style.top = String(Math.round(chosen.top)) + "px";
+        coach.style.left = String(Math.round(chosen.left)) + "px";
       };
 
       const resolveActionHref = (step) => {
         if (step.actionPath) return step.actionPath;
         if (step.actionSelector) {
-          const node = document.querySelector(step.actionSelector);
+          const node = resolveVisibleNodeWithMenu(step.actionSelector);
           return node ? (node.getAttribute("href") || "") : "";
         }
         return "";
@@ -471,6 +583,7 @@
       let currentIndex = 0;
 
       const closeCoach = () => {
+        setMobileMenuForcedOpen(false);
         if (dontShowAgain && dontShowAgain.checked) {
           safeSet(hideAllKey, "1");
           safeSet(tourEnabledKey, "0");
@@ -487,14 +600,21 @@
         safeSet(stateKey, String(safeIndex));
 
         const step = pageSteps[safeIndex];
-        const target = document.querySelector(step.selector);
+        if (!isTopNavLinkSelector(step.selector)) {
+          setMobileMenuForcedOpen(false);
+        }
+        const target = resolveHighlightNode(step.selector);
         if (!target) return;
 
         clearTargets();
         target.classList.add("oz-tour-highlight");
 
         if (scrollToTarget) {
-          target.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
+          target.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+            inline: "nearest",
+          });
         }
 
         titleEl.textContent = step.title;
@@ -609,7 +729,15 @@
       }
 
       window.addEventListener("resize", rerender);
+      window.addEventListener("orientationchange", () => {
+        window.setTimeout(rerender, 120);
+      });
       window.addEventListener("scroll", rerender, { passive: true });
+      document.addEventListener("scroll", rerender, { passive: true, capture: true });
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener("resize", rerender);
+        window.visualViewport.addEventListener("scroll", rerender);
+      }
       document.addEventListener("keydown", (event) => {
         if (!promptBackdrop.classList.contains("hidden") && event.key === "Escape") {
           closePrompt();
