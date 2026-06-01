@@ -125,12 +125,14 @@
         return rect.width > 0 && rect.height > 0;
       };
 
+      const isTopNavLinkSelector = (selector) => /^a\[href='\/[^']+'\]$/.test(selector || "");
+
       const resolveVisibleNode = (selector) => {
         if (!selector) return null;
         const matches = Array.from(document.querySelectorAll(selector));
         if (!matches.length) return null;
         const visibleMatches = matches.filter(isVisibleNode);
-        if (!visibleMatches.length) return matches[0] || null;
+        if (!visibleMatches.length) return null;
         visibleMatches.sort((a, b) => {
           const aRect = a.getBoundingClientRect();
           const bRect = b.getBoundingClientRect();
@@ -139,8 +141,21 @@
         return visibleMatches[0] || null;
       };
 
+      const resolveVisibleNodeWithMenu = (selector) => {
+        let node = resolveVisibleNode(selector);
+        if (node) return node;
+
+        if (mobileMenu && isTopNavLinkSelector(selector)) {
+          mobileMenu.setAttribute("open", "");
+          node = resolveVisibleNode(selector);
+          if (node) return node;
+        }
+
+        return null;
+      };
+
       const resolveHighlightNode = (selector) => {
-        const base = resolveVisibleNode(selector);
+        const base = resolveVisibleNodeWithMenu(selector);
         if (!base) return null;
         if (base.matches("canvas")) {
           return base.closest(".oz-chart-box") || base.closest(".card") || base;
@@ -151,7 +166,11 @@
         return base;
       };
 
-      const hasSelector = (selector) => Boolean(resolveVisibleNode(selector));
+      const hasSelector = (selector) => {
+        if (resolveVisibleNode(selector)) return true;
+        if (isTopNavLinkSelector(selector) && document.querySelector(selector)) return true;
+        return false;
+      };
 
       const pageSteps = (() => {
         const steps = [];
@@ -541,7 +560,7 @@
       const resolveActionHref = (step) => {
         if (step.actionPath) return step.actionPath;
         if (step.actionSelector) {
-          const node = resolveVisibleNode(step.actionSelector);
+          const node = resolveVisibleNodeWithMenu(step.actionSelector);
           return node ? (node.getAttribute("href") || "") : "";
         }
         return "";
