@@ -293,7 +293,7 @@ body {
   outline: 2px solid color-mix(in srgb, var(--oz-coral) 70%, white);
   outline-offset: 2px;
   border-radius: 0.65rem;
-  box-shadow: 0 0 0 6px color-mix(in srgb, var(--oz-coral) 18%, transparent);
+  box-shadow: 0 0 0 8px color-mix(in srgb, var(--oz-coral) 22%, transparent);
 }
 
 .oz-tour-highlight::after {
@@ -304,6 +304,22 @@ body {
   border-radius: inherit;
   pointer-events: none;
   animation: oz-pulse 1.6s ease-out infinite;
+}
+
+.oz-tour-spotlight {
+  position: fixed;
+  pointer-events: none;
+  border: 3px solid color-mix(in srgb, var(--oz-coral) 78%, white);
+  border-radius: 0.85rem;
+  box-shadow:
+    0 0 0 6px color-mix(in srgb, var(--oz-coral) 24%, transparent),
+    0 0 0 9999px rgba(26, 18, 22, 0.34);
+  z-index: 1700;
+  transition: top 120ms ease, left 120ms ease, width 120ms ease, height 120ms ease;
+}
+
+.oz-tour-spotlight.hidden {
+  display: none !important;
 }
 
 .oz-mobile-menu {

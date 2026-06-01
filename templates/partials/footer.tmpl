@@ -68,6 +68,10 @@
 
       const coach = document.getElementById("ozTourCoach");
       if (!coach) return;
+      const spotlight = document.createElement("div");
+      spotlight.id = "ozTourSpotlight";
+      spotlight.className = "oz-tour-spotlight hidden";
+      document.body.appendChild(spotlight);
 
       const titleEl = document.getElementById("ozTourTitle");
       const subtitleEl = document.getElementById("ozTourSubtitle");
@@ -117,7 +121,41 @@
         }
       };
 
-      const hasSelector = (selector) => Boolean(selector && document.querySelector(selector));
+      const isVisibleNode = (node) => {
+        if (!node) return false;
+        const style = window.getComputedStyle(node);
+        if (style.display === "none" || style.visibility === "hidden" || style.opacity === "0") return false;
+        const rect = node.getBoundingClientRect();
+        return rect.width > 0 && rect.height > 0;
+      };
+
+      const resolveVisibleNode = (selector) => {
+        if (!selector) return null;
+        const matches = Array.from(document.querySelectorAll(selector));
+        if (!matches.length) return null;
+        const visibleMatches = matches.filter(isVisibleNode);
+        if (!visibleMatches.length) return matches[0] || null;
+        visibleMatches.sort((a, b) => {
+          const aRect = a.getBoundingClientRect();
+          const bRect = b.getBoundingClientRect();
+          return bRect.width * bRect.height - aRect.width * aRect.height;
+        });
+        return visibleMatches[0] || null;
+      };
+
+      const resolveHighlightNode = (selector) => {
+        const base = resolveVisibleNode(selector);
+        if (!base) return null;
+        if (base.matches("canvas")) {
+          return base.closest(".oz-chart-box") || base.closest(".card") || base;
+        }
+        if (base.matches("table")) {
+          return base.closest(".overflow-x-auto") || base.closest(".card") || base;
+        }
+        return base;
+      };
+
+      const hasSelector = (selector) => Boolean(resolveVisibleNode(selector));
 
       const pageSteps = (() => {
         const steps = [];
@@ -425,6 +463,7 @@
 
       const clearTargets = () => {
         document.querySelectorAll(".oz-tour-highlight").forEach((el) => el.classList.remove("oz-tour-highlight"));
+        spotlight.classList.add("hidden");
       };
 
       const closePrompt = () => {
@@ -440,6 +479,26 @@
       };
 
       const shouldDockCoach = () => window.matchMedia("(max-width: 1024px), (max-height: 760px)").matches;
+
+      const placeSpotlight = (target) => {
+        if (!target) {
+          spotlight.classList.add("hidden");
+          return;
+        }
+        const rect = target.getBoundingClientRect();
+        const pad = 6;
+        const gap = 6;
+        const width = Math.max(20, Math.min(window.innerWidth - (gap * 2), rect.width + (pad * 2)));
+        const height = Math.max(20, Math.min(window.innerHeight - (gap * 2), rect.height + (pad * 2)));
+        const left = Math.max(gap, Math.min(window.innerWidth - width - gap, rect.left - pad));
+        const top = Math.max(gap, Math.min(window.innerHeight - height - gap, rect.top - pad));
+
+        spotlight.style.left = String(Math.round(left)) + "px";
+        spotlight.style.top = String(Math.round(top)) + "px";
+        spotlight.style.width = String(Math.round(width)) + "px";
+        spotlight.style.height = String(Math.round(height)) + "px";
+        spotlight.classList.remove("hidden");
+      };
 
       const placeCoachNear = (target) => {
         if (shouldDockCoach()) {
@@ -475,7 +534,7 @@
       const resolveActionHref = (step) => {
         if (step.actionPath) return step.actionPath;
         if (step.actionSelector) {
-          const node = document.querySelector(step.actionSelector);
+          const node = resolveVisibleNode(step.actionSelector);
           return node ? (node.getAttribute("href") || "") : "";
         }
         return "";
@@ -500,11 +559,12 @@
         safeSet(stateKey, String(safeIndex));
 
         const step = pageSteps[safeIndex];
-        const target = document.querySelector(step.selector);
+        const target = resolveHighlightNode(step.selector);
         if (!target) return;
 
         clearTargets();
         target.classList.add("oz-tour-highlight");
+        placeSpotlight(target);
 
         if (scrollToTarget) {
           target.scrollIntoView({
@@ -626,7 +686,14 @@
       }
 
       window.addEventListener("resize", rerender);
+      window.addEventListener("orientationchange", () => {
+        window.setTimeout(rerender, 120);
+      });
       window.addEventListener("scroll", rerender, { passive: true });
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener("resize", rerender);
+        window.visualViewport.addEventListener("scroll", rerender);
+      }
       document.addEventListener("keydown", (event) => {
         if (!promptBackdrop.classList.contains("hidden") && event.key === "Escape") {
           closePrompt();
