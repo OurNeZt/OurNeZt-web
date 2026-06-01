@@ -475,6 +475,15 @@
 
       const shouldPreferDockCoach = () => window.matchMedia("(max-height: 560px)").matches;
 
+      const rectsOverlap = (a, b, gap = 8) => {
+        return !(
+          a.right + gap < b.left ||
+          a.left - gap > b.right ||
+          a.bottom + gap < b.top ||
+          a.top - gap > b.bottom
+        );
+      };
+
       const placeCoachNear = (target) => {
         const gap = 12;
         coach.classList.remove("oz-tour-coach-docked");
@@ -488,32 +497,45 @@
         const viewportWidth = window.innerWidth;
         const viewportHeight = window.innerHeight;
 
-        const spaceBelow = viewportHeight - rect.bottom - gap;
-        const spaceAbove = rect.top - gap;
+        const clampLeft = (left) => Math.max(gap, Math.min(viewportWidth - coachRect.width - gap, left));
+        const clampTop = (top) => Math.max(gap, Math.min(viewportHeight - coachRect.height - gap, top));
 
-        let top = rect.bottom + gap;
-        if (spaceBelow < coachRect.height && spaceAbove >= coachRect.height) {
-          top = rect.top - coachRect.height - gap;
-        } else if (spaceBelow < coachRect.height && spaceAbove < coachRect.height) {
+        const centerLeft = clampLeft(rect.left + (rect.width / 2) - (coachRect.width / 2));
+        const candidates = [
+          { top: clampTop(rect.bottom + gap), left: centerLeft }, // below
+          { top: clampTop(rect.top - coachRect.height - gap), left: centerLeft }, // above
+          { top: clampTop(rect.top), left: clampLeft(rect.right + gap) }, // right
+          { top: clampTop(rect.top), left: clampLeft(rect.left - coachRect.width - gap) }, // left
+        ];
+
+        const targetRect = rect;
+        let chosen = null;
+        for (const candidate of candidates) {
+          const coachCandidateRect = {
+            left: candidate.left,
+            top: candidate.top,
+            right: candidate.left + coachRect.width,
+            bottom: candidate.top + coachRect.height,
+          };
+          if (!rectsOverlap(targetRect, coachCandidateRect, 10)) {
+            chosen = candidate;
+            break;
+          }
+        }
+
+        if (!chosen) {
           if (shouldPreferDockCoach()) {
             coach.classList.add("oz-tour-coach-docked");
             return;
           }
-          top = Math.max(gap, Math.min(viewportHeight - coachRect.height - gap, rect.top + (rect.height / 2) - (coachRect.height / 2)));
+          chosen = {
+            top: clampTop(rect.top + (rect.height / 2) - (coachRect.height / 2)),
+            left: centerLeft,
+          };
         }
 
-        let left = rect.left;
-        if (left + coachRect.width > viewportWidth - gap) {
-          left = viewportWidth - coachRect.width - gap;
-        }
-        if (left < gap) {
-          left = gap;
-        }
-
-        top = Math.max(gap, Math.min(viewportHeight - coachRect.height - gap, top));
-
-        coach.style.top = String(Math.round(top)) + "px";
-        coach.style.left = String(Math.round(left)) + "px";
+        coach.style.top = String(Math.round(chosen.top)) + "px";
+        coach.style.left = String(Math.round(chosen.left)) + "px";
       };
 
       const resolveActionHref = (step) => {
