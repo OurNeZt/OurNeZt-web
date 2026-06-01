@@ -9,16 +9,29 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [v1.1.2] - 2026-06-01
 
 ### Added
-- (fill)
+- Optional TLS startup support for web server via `WEB_TLS_CERT_FILE` and `WEB_TLS_KEY_FILE`.
+- Optional TLS support for web-to-core gRPC via:
+    - `CORE_GRPC_USE_TLS`
+    - `CORE_GRPC_TLS_CA_FILE`
+    - `CORE_GRPC_TLS_SERVER_NAME`
+    - `CORE_GRPC_TLS_INSECURE_SKIP_VERIFY`
+- Mobile/tablet tour improvements:
+    - Auto-open hamburger menu for nav-link guide steps.
+    - Better orientation/resize/scroll reflow behavior for guide positioning.
 
 ### Changed
-- (fill)
+- Core gRPC client initialization now accepts full app config to support secure transport options.
+- Session cookie security default behavior tightened for production-oriented usage.
+- Guide placement logic now prefers non-overlapping positions near highlighted targets.
 
 ### Fixed
-- (fill)
+- Tour popup layering/cutoff issues on small screens and tablets.
+- Tour highlight failing on mobile nav items (hidden desktop link vs hamburger menu link mismatch).
+- Payment-vs-income timeline selector update reliability on dashboard.
+- Dashboard gross income display consistency with household summary updates.
 
 ### Removed
-- (fill)
+- Shadow/dim overlay spotlight approach for tour highlights (reverted to attached highlight style).
 
 
 ## [v1.1.1] - 2026-06-01
