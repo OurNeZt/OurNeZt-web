@@ -22,9 +22,9 @@ func main() {
 	cfg := config.Load()
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: cfg.LogLevel()}))
 
-	clients, err := core.NewClients(ctx, cfg.CoreGRPCAddr)
+	clients, err := core.NewClients(ctx, cfg)
 	if err != nil {
-		logger.Error("dial core grpc", "addr", cfg.CoreGRPCAddr, "error", err)
+		logger.Error("dial core grpc", "addr", cfg.CoreGRPCAddr, "tls", cfg.CoreGRPCUseTLS, "error", err)
 		os.Exit(1)
 	}
 	defer func() {
@@ -46,8 +46,15 @@ func main() {
 	}
 
 	go func() {
-		logger.Info("ournezt web started", "web_addr", cfg.WebAddr, "core_grpc_addr", cfg.CoreGRPCAddr)
-		if serveErr := httpServer.ListenAndServe(); serveErr != nil && !errors.Is(serveErr, http.ErrServerClosed) {
+		webTLS := cfg.WebTLSCertFile != "" && cfg.WebTLSKeyFile != ""
+		logger.Info("ournezt web started", "web_addr", cfg.WebAddr, "web_tls", webTLS, "core_grpc_addr", cfg.CoreGRPCAddr, "core_grpc_tls", cfg.CoreGRPCUseTLS)
+		var serveErr error
+		if webTLS {
+			serveErr = httpServer.ListenAndServeTLS(cfg.WebTLSCertFile, cfg.WebTLSKeyFile)
+		} else {
+			serveErr = httpServer.ListenAndServe()
+		}
+		if serveErr != nil && !errors.Is(serveErr, http.ErrServerClosed) {
 			logger.Error("http server stopped unexpectedly", "error", serveErr)
 			stop()
 		}
