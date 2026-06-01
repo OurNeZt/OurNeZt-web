@@ -20,6 +20,31 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Removed
 - (fill)
 
+
+## [v1.1.1] - 2026-06-01
+
+### Added
+- Mobile/tablet tour behavior improvements for responsive layouts and orientation changes.
+- Automatic mobile hamburger-menu handling during tour steps so nav-item highlights can appear correctly.
+
+### Changed
+- Family creation now uses controlled family-type selection (`single`, `couple`, `family`) instead of free-form input.
+- Housing `unit type` options standardized to room/category-based values (removed `-bedder` style options).
+- Dashboard timeline chart housing selector behavior updated to switch chart data reliably.
+
+### Fixed
+- Create Family no longer rejects uppercase/mixed-case input unexpectedly.
+- Dashboard gross income now correctly includes all relevant users, fixing dependent card calculations.
+- Mobile tips/guide layering and positioning issues:
+    - tour no longer gets cut off
+    - z-index/placement issues on phone/tablet and smaller landscape screens are fixed
+    - highlight and guide alignment improved across scroll/orientation
+- Payment vs Income Timeline now updates correctly when switching housing options.
+
+### Removed
+- Redundant/free-text family type entry path in create-family flow.
+- `-bedder` style unit-type choices from housing form.
+
 ## [v1.1.0] - 2026-05-31
 
 ### Added
