@@ -48,12 +48,26 @@
   <script>
     (() => {
       const mobileMenu = document.querySelector(".oz-mobile-menu");
+      let mobileMenuForcedOpenByTour = false;
+      const setMobileMenuForcedOpen = (open) => {
+        if (!mobileMenu) return;
+        mobileMenuForcedOpenByTour = open;
+        if (open) {
+          mobileMenu.setAttribute("open", "");
+          return;
+        }
+        mobileMenu.removeAttribute("open");
+      };
       if (mobileMenu) {
-        const closeMobileMenu = () => mobileMenu.removeAttribute("open");
+        const closeMobileMenu = () => {
+          if (mobileMenuForcedOpenByTour) return;
+          mobileMenu.removeAttribute("open");
+        };
         mobileMenu.querySelectorAll("a, button[type='submit']").forEach((node) => {
           node.addEventListener("click", closeMobileMenu);
         });
         document.addEventListener("click", (event) => {
+          if (mobileMenuForcedOpenByTour) return;
           if (!mobileMenu.contains(event.target)) closeMobileMenu();
         });
       }
@@ -146,7 +160,7 @@
         if (node) return node;
 
         if (mobileMenu && isTopNavLinkSelector(selector)) {
-          mobileMenu.setAttribute("open", "");
+          setMobileMenuForcedOpen(true);
           node = resolveVisibleNode(selector);
           if (node) return node;
         }
@@ -569,6 +583,7 @@
       let currentIndex = 0;
 
       const closeCoach = () => {
+        setMobileMenuForcedOpen(false);
         if (dontShowAgain && dontShowAgain.checked) {
           safeSet(hideAllKey, "1");
           safeSet(tourEnabledKey, "0");
@@ -585,6 +600,9 @@
         safeSet(stateKey, String(safeIndex));
 
         const step = pageSteps[safeIndex];
+        if (!isTopNavLinkSelector(step.selector)) {
+          setMobileMenuForcedOpen(false);
+        }
         const target = resolveHighlightNode(step.selector);
         if (!target) return;
 
