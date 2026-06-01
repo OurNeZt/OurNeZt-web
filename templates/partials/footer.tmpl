@@ -68,10 +68,6 @@
 
       const coach = document.getElementById("ozTourCoach");
       if (!coach) return;
-      const spotlight = document.createElement("div");
-      spotlight.id = "ozTourSpotlight";
-      spotlight.className = "oz-tour-spotlight hidden";
-      document.body.appendChild(spotlight);
 
       const titleEl = document.getElementById("ozTourTitle");
       const subtitleEl = document.getElementById("ozTourSubtitle");
@@ -463,7 +459,6 @@
 
       const clearTargets = () => {
         document.querySelectorAll(".oz-tour-highlight").forEach((el) => el.classList.remove("oz-tour-highlight"));
-        spotlight.classList.add("hidden");
       };
 
       const closePrompt = () => {
@@ -478,54 +473,44 @@
         promptBackdrop.setAttribute("aria-hidden", "false");
       };
 
-      const shouldDockCoach = () => window.matchMedia("(max-width: 1024px), (max-height: 760px)").matches;
-
-      const placeSpotlight = (target) => {
-        if (!target) {
-          spotlight.classList.add("hidden");
-          return;
-        }
-        const rect = target.getBoundingClientRect();
-        const pad = 6;
-        const gap = 6;
-        const width = Math.max(20, Math.min(window.innerWidth - (gap * 2), rect.width + (pad * 2)));
-        const height = Math.max(20, Math.min(window.innerHeight - (gap * 2), rect.height + (pad * 2)));
-        const left = Math.max(gap, Math.min(window.innerWidth - width - gap, rect.left - pad));
-        const top = Math.max(gap, Math.min(window.innerHeight - height - gap, rect.top - pad));
-
-        spotlight.style.left = String(Math.round(left)) + "px";
-        spotlight.style.top = String(Math.round(top)) + "px";
-        spotlight.style.width = String(Math.round(width)) + "px";
-        spotlight.style.height = String(Math.round(height)) + "px";
-        spotlight.classList.remove("hidden");
-      };
+      const shouldPreferDockCoach = () => window.matchMedia("(max-height: 560px)").matches;
 
       const placeCoachNear = (target) => {
-        if (shouldDockCoach()) {
-          coach.classList.add("oz-tour-coach-docked");
-          coach.style.left = "";
-          coach.style.top = "";
-          coach.style.bottom = "";
-          return;
-        }
-
+        const gap = 12;
         coach.classList.remove("oz-tour-coach-docked");
         coach.style.bottom = "";
         coach.style.transform = "";
+        coach.style.left = "";
+        coach.style.top = "";
+
         const rect = target.getBoundingClientRect();
         const coachRect = coach.getBoundingClientRect();
-        const gap = 12;
-        let top = rect.bottom + gap;
-        let left = rect.left;
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
 
-        if (top + coachRect.height > window.innerHeight - gap) {
+        const spaceBelow = viewportHeight - rect.bottom - gap;
+        const spaceAbove = rect.top - gap;
+
+        let top = rect.bottom + gap;
+        if (spaceBelow < coachRect.height && spaceAbove >= coachRect.height) {
           top = rect.top - coachRect.height - gap;
+        } else if (spaceBelow < coachRect.height && spaceAbove < coachRect.height) {
+          if (shouldPreferDockCoach()) {
+            coach.classList.add("oz-tour-coach-docked");
+            return;
+          }
+          top = Math.max(gap, Math.min(viewportHeight - coachRect.height - gap, rect.top + (rect.height / 2) - (coachRect.height / 2)));
         }
-        if (left + coachRect.width > window.innerWidth - gap) {
-          left = window.innerWidth - coachRect.width - gap;
+
+        let left = rect.left;
+        if (left + coachRect.width > viewportWidth - gap) {
+          left = viewportWidth - coachRect.width - gap;
         }
-        if (left < gap) left = gap;
-        if (top < gap) top = gap;
+        if (left < gap) {
+          left = gap;
+        }
+
+        top = Math.max(gap, Math.min(viewportHeight - coachRect.height - gap, top));
 
         coach.style.top = String(Math.round(top)) + "px";
         coach.style.left = String(Math.round(left)) + "px";
@@ -564,12 +549,11 @@
 
         clearTargets();
         target.classList.add("oz-tour-highlight");
-        placeSpotlight(target);
 
         if (scrollToTarget) {
           target.scrollIntoView({
             behavior: "smooth",
-            block: shouldDockCoach() ? "start" : "center",
+            block: "center",
             inline: "nearest",
           });
         }
@@ -690,6 +674,7 @@
         window.setTimeout(rerender, 120);
       });
       window.addEventListener("scroll", rerender, { passive: true });
+      document.addEventListener("scroll", rerender, { passive: true, capture: true });
       if (window.visualViewport) {
         window.visualViewport.addEventListener("resize", rerender);
         window.visualViewport.addEventListener("scroll", rerender);
