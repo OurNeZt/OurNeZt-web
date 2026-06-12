@@ -1,0 +1,184 @@
+{
+  "assessment_mode": {
+    "label": "Assessment Mode",
+    "meaning": "Chooses whether we assess the option using today's housing setup or a Deferred Income Assessment scenario.",
+    "calculation": "Standard uses the loan details you enter. Deferred assumes a 75% bank loan, 25% downpayment, 2.60% interest, and a 25-year tenure.",
+    "assumptions": "Deferred planning is anchored to the assessment window before key collection.",
+    "source": "User-selected scenario."
+  },
+  "purchase_price": {
+    "label": "Purchase Price",
+    "meaning": "The full agreed flat or property price before grants.",
+    "calculation": "Used to estimate buyer stamp duty and to derive net purchase price, downpayment, and loan sizing.",
+    "assumptions": "Enter the best current estimate for the home price.",
+    "source": "User-provided."
+  },
+  "grant_amount": {
+    "label": "Grant Amount",
+    "meaning": "The housing grant amount you expect to receive.",
+    "calculation": "Subtracted from purchase price to get net purchase price before downpayment and loan calculations.",
+    "assumptions": "Deferred mode ignores grants in this form's planning assumptions.",
+    "source": "User-provided estimate."
+  },
+  "loan_amount": {
+    "label": "Loan Amount",
+    "meaning": "The amount you plan to borrow for this option.",
+    "calculation": "Used directly for mortgage repayment when provided. If it is left at zero in derived views, the system estimates it from net price minus downpayment.",
+    "assumptions": "Loan amount should not exceed net purchase price.",
+    "source": "User-provided or system-derived depending on the view."
+  },
+  "interest_rate": {
+    "label": "Interest Rate",
+    "meaning": "The annual loan interest rate used for repayment estimation.",
+    "calculation": "Monthly mortgage is calculated from loan amount, interest rate, and tenure.",
+    "assumptions": "HDB loans are fixed here at 2.60%.",
+    "source": "User-provided except for HDB and Deferred defaults."
+  },
+  "loan_tenure": {
+    "label": "Loan Tenure",
+    "meaning": "The total number of years used to spread the loan repayment.",
+    "calculation": "A longer tenure usually lowers the monthly mortgage but stretches repayment over a longer period.",
+    "assumptions": "Deferred mode assumes a 25-year tenure.",
+    "source": "User-provided or defaulted by scenario."
+  },
+  "buyer_stamp_duty": {
+    "label": "Buyer Stamp Duty",
+    "meaning": "An estimated BSD amount for the purchase price entered above.",
+    "calculation": "Calculated using the current progressive residential BSD tiers coded in the app.",
+    "assumptions": "This is an estimate for planning and does not include every possible tax variation.",
+    "source": "System-derived."
+  },
+  "monthly_maintenance": {
+    "label": "Monthly Maintenance",
+    "meaning": "The recurring monthly maintenance or conservancy cost for the home.",
+    "calculation": "Added on top of the monthly mortgage to produce monthly housing cost.",
+    "assumptions": "Use an estimate if the final fee is not confirmed yet.",
+    "source": "User-provided."
+  },
+  "legal_fees": {
+    "label": "Legal Fees",
+    "meaning": "Expected legal and conveyancing costs for the purchase.",
+    "calculation": "Added into upfront cost together with downpayment and stamp duty.",
+    "assumptions": "This is a planning estimate unless you already have a confirmed quote.",
+    "source": "User-provided estimate."
+  },
+  "expected_key_collection_date": {
+    "label": "Expected Key Collection Date",
+    "meaning": "The target date when you expect to collect keys for the home.",
+    "calculation": "Deferred planning uses this to anchor the assessment window before collection.",
+    "assumptions": "The app treats the planning point as roughly six months before key collection.",
+    "source": "User-provided estimate."
+  },
+  "dia_income_section": {
+    "label": "DIA Income Inputs",
+    "meaning": "Projected monthly incomes for each person at the Deferred Income Assessment window.",
+    "calculation": "These values feed the projected take-home used in affordability estimates for this housing option only.",
+    "assumptions": "Student, NSF, unemployed, and future employee statuses are treated as full-time employee when a future income is supplied.",
+    "source": "User-provided estimates."
+  },
+  "dia_income_estimated_income": {
+    "label": "Estimated Monthly Income",
+    "meaning": "The expected gross monthly income for that person at the assessment period.",
+    "calculation": "Used to estimate projected household take-home after employee CPF deductions.",
+    "assumptions": "Leave it aligned with your best expected starting pay, not bonuses.",
+    "source": "User-provided estimate."
+  },
+  "gross_income_used": {
+    "label": "Gross Income Used",
+    "meaning": "The household gross monthly income used for this scenario.",
+    "calculation": "Built from current incomes unless future income profiles or DIA overrides are present for this housing option.",
+    "assumptions": "This is scenario-based and can differ from today's dashboard income.",
+    "source": "System-derived from household profiles and housing-specific overrides."
+  },
+  "take_home_used": {
+    "label": "Take-Home Used",
+    "meaning": "The monthly take-home income used in the affordability calculation.",
+    "calculation": "Derived from the scenario wages after estimated employee CPF deductions for each person.",
+    "assumptions": "Projected income inputs can change this value for Deferred scenarios.",
+    "source": "System-derived."
+  },
+  "cpf_oa_used": {
+    "label": "CPF OA Used",
+    "meaning": "The current household CPF Ordinary Account balance available for planning.",
+    "calculation": "Used to offset part of the required downpayment before cash top-up is needed.",
+    "assumptions": "This uses the current CPF OA saved in member profiles.",
+    "source": "System-derived from household profiles."
+  },
+  "cash_savings_used": {
+    "label": "Cash Savings Used",
+    "meaning": "The current household cash savings available for planning.",
+    "calculation": "Compared against the cash top-up required after CPF OA is applied to upfront costs.",
+    "assumptions": "This uses the current cash balances saved in member profiles.",
+    "source": "System-derived from household profiles."
+  },
+  "monthly_expenses_used": {
+    "label": "Monthly Expenses Used",
+    "meaning": "The household monthly expenses already committed outside the housing payment.",
+    "calculation": "Subtracted from take-home together with housing cost to estimate surplus after housing.",
+    "assumptions": "This is based on the current expenses saved in member profiles.",
+    "source": "System-derived from household profiles."
+  },
+  "upfront_cost": {
+    "label": "Upfront Cost",
+    "meaning": "The total cash-and-CPF amount needed upfront for this option.",
+    "calculation": "Downpayment + legal fees + buyer stamp duty + any renovation and furniture budgets tracked for the option.",
+    "assumptions": "Current housing form keeps renovation and furniture budgets at zero.",
+    "source": "System-derived."
+  },
+  "required_downpayment": {
+    "label": "Required Downpayment",
+    "meaning": "The upfront downpayment portion required before the loan starts.",
+    "calculation": "Calculated from net purchase price and the option's downpayment percentage.",
+    "assumptions": "Deferred mode assumes a 25% downpayment.",
+    "source": "System-derived."
+  },
+  "estimated_loan_amount": {
+    "label": "Estimated Loan Amount",
+    "meaning": "The loan value used in the affordability calculation.",
+    "calculation": "Uses the entered loan amount when available, otherwise estimates net purchase price minus downpayment.",
+    "assumptions": "Deferred mode derives this from the default 75% loan assumption.",
+    "source": "User-provided or system-derived depending on scenario."
+  },
+  "cpf_used": {
+    "label": "CPF Used",
+    "meaning": "The CPF OA amount applied toward the required downpayment.",
+    "calculation": "This is the smaller of available household CPF OA and the required downpayment.",
+    "assumptions": "Only CPF OA is considered here.",
+    "source": "System-derived."
+  },
+  "cash_top_up_required": {
+    "label": "Cash Top-Up Required",
+    "meaning": "The cash still needed after CPF OA is used toward upfront cost.",
+    "calculation": "Upfront cost minus CPF used, floored at zero.",
+    "assumptions": "A positive value means CPF OA alone is not enough for upfront costs.",
+    "source": "System-derived."
+  },
+  "monthly_mortgage": {
+    "label": "Monthly Mortgage",
+    "meaning": "The estimated monthly loan repayment for this option.",
+    "calculation": "Computed from loan amount, interest rate, and loan tenure using a standard amortized repayment formula.",
+    "assumptions": "If interest is zero, repayment is spread evenly across the tenure.",
+    "source": "System-derived."
+  },
+  "monthly_housing_cost": {
+    "label": "Monthly Housing Cost",
+    "meaning": "The recurring monthly housing burden used for affordability.",
+    "calculation": "Monthly mortgage + monthly maintenance.",
+    "assumptions": "This excludes non-monthly upfront costs.",
+    "source": "System-derived."
+  },
+  "monthly_surplus_after_housing": {
+    "label": "Monthly Surplus After Housing",
+    "meaning": "What remains each month after expenses and housing costs.",
+    "calculation": "Take-home used - monthly expenses used - monthly housing cost.",
+    "assumptions": "A negative value signals the option is not affordable on current scenario assumptions.",
+    "source": "System-derived."
+  },
+  "rating": {
+    "label": "Affordability Rating",
+    "meaning": "A quick planning label for how heavy the housing option looks against take-home pay.",
+    "calculation": "The app compares monthly housing cost against take-home and also checks whether monthly surplus stays non-negative.",
+    "assumptions": "Higher housing-cost-to-income ratios move the rating from Comfortable toward Not Recommended.",
+    "source": "System-derived."
+  }
+}

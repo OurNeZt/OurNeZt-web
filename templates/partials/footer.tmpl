@@ -75,6 +75,28 @@
       const yearEl = document.getElementById("ozFooterYear");
       if (yearEl) yearEl.textContent = "(c) " + String(new Date().getFullYear());
 
+      const helpTooltips = Array.from(document.querySelectorAll(".oz-help-tooltip"));
+      const updateHelpTooltipPlacement = (tooltip) => {
+        if (!tooltip) return;
+        const bubble = tooltip.querySelector(".oz-help-bubble");
+        if (!bubble) return;
+
+        tooltip.classList.remove("oz-help-tooltip-below");
+
+        const nav = document.querySelector(".oz-navbar");
+        const minTop = nav ? nav.getBoundingClientRect().bottom + 8 : 8;
+        const bubbleRect = bubble.getBoundingClientRect();
+
+        if (bubbleRect.top < minTop) {
+          tooltip.classList.add("oz-help-tooltip-below");
+        }
+      };
+
+      helpTooltips.forEach((tooltip) => {
+        tooltip.addEventListener("mouseenter", () => updateHelpTooltipPlacement(tooltip));
+        tooltip.addEventListener("focusin", () => updateHelpTooltipPlacement(tooltip));
+      });
+
       const promptBackdrop = document.getElementById("ozTourPromptBackdrop");
       const promptStartBtn = document.getElementById("ozTourPromptStart");
       const promptLaterBtn = document.getElementById("ozTourPromptLater");

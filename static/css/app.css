@@ -187,6 +187,102 @@ body {
   line-height: 1.1rem;
 }
 
+.oz-help-tooltip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  z-index: 1300;
+}
+
+.oz-help-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 0.95rem;
+  height: 0.95rem;
+  min-height: 0.95rem;
+  border-radius: 9999px;
+  border: 1px solid #e4d8d1;
+  background: transparent;
+  color: #8b7781;
+  font-size: 0.62rem;
+  font-weight: 600;
+  line-height: 1;
+  cursor: help;
+  transition: color 120ms ease, border-color 120ms ease, background 120ms ease;
+  position: relative;
+  z-index: 2;
+}
+
+.oz-help-trigger:hover,
+.oz-help-trigger:focus-visible {
+  border-color: #cdbdb4;
+  background: #fffaf8;
+  color: #6b5961;
+  outline: none;
+}
+
+.oz-help-bubble {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 0.45rem);
+  transform: translateX(-50%);
+  width: min(19rem, calc(100vw - 1.5rem));
+  padding: 0.55rem 0.7rem;
+  border-radius: 0.7rem;
+  background: rgba(41, 36, 40, 0.96);
+  color: #fffdfb !important;
+  box-shadow: 0 10px 24px -16px #000000c0;
+  font-size: 0.77rem;
+  line-height: 1.25rem;
+  font-weight: 500 !important;
+  text-align: left;
+  white-space: normal;
+  display: block;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 120ms ease, visibility 120ms ease;
+  z-index: 1;
+}
+
+.oz-help-tooltip .oz-help-bubble,
+.oz-field .oz-help-tooltip .oz-help-bubble {
+  color: #fffdfb !important;
+  font-weight: 500 !important;
+}
+
+.oz-help-bubble::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  transform: translateX(-50%);
+  border-width: 0.35rem 0.35rem 0;
+  border-style: solid;
+  border-color: rgba(41, 36, 40, 0.96) transparent transparent;
+}
+
+.oz-help-tooltip.oz-help-tooltip-below .oz-help-bubble {
+  top: calc(100% + 0.45rem);
+  bottom: auto;
+}
+
+.oz-help-tooltip.oz-help-tooltip-below .oz-help-bubble::after {
+  top: auto;
+  bottom: 100%;
+  border-width: 0 0.35rem 0.35rem;
+  border-color: transparent transparent rgba(41, 36, 40, 0.96);
+}
+
+.oz-help-tooltip:hover .oz-help-bubble,
+.oz-help-tooltip:focus-within .oz-help-bubble {
+  opacity: 1;
+  visibility: visible;
+}
+
 .oz-chart-box {
   position: relative;
   height: 18rem;

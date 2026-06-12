@@ -21,16 +21,14 @@
         <thead>
           <tr>
             <th>Option Name</th>
-            <th>Upfront</th>
-            <th>Mortgage</th>
-            <th>Monthly Cost</th>
-            <th>Surplus</th>
+            <th><span class="inline-flex items-center gap-1">Upfront{{ template "partials/help_tooltip" (dict "Key" "upfront_cost" "Label" "Upfront Cost") }}</span></th>
+            <th><span class="inline-flex items-center gap-1">Mortgage{{ template "partials/help_tooltip" (dict "Key" "monthly_mortgage" "Label" "Monthly Mortgage") }}</span></th>
+            <th><span class="inline-flex items-center gap-1">Monthly Cost{{ template "partials/help_tooltip" (dict "Key" "monthly_housing_cost" "Label" "Monthly Housing Cost") }}</span></th>
+            <th><span class="inline-flex items-center gap-1">Surplus{{ template "partials/help_tooltip" (dict "Key" "monthly_surplus_after_housing" "Label" "Monthly Surplus After Housing") }}</span></th>
             <th>
               <span class="inline-flex items-center gap-1">
                 Rating
-                <span class="tooltip tooltip-left" data-tip="Not Recommended means either monthly surplus is negative, take-home is zero, or housing cost is too high vs take-home (above planning threshold).">
-                  <button type="button" class="btn btn-ghost btn-xs btn-circle" aria-label="Rating tips">?</button>
-                </span>
+                {{ template "partials/help_tooltip" (dict "Key" "rating" "Label" "Affordability Rating") }}
               </span>
             </th>
           </tr>
