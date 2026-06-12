@@ -113,10 +113,7 @@ func resolvedProjectedHousingWage(person *ourneztv1.PersonProfile, overrideByPer
 		wage = person.GetExpectedFutureIncomeCents()
 	}
 
-	hasFuture := false
-	if person.GetExpectedFutureIncomeCents() > 0 {
-		hasFuture = true
-	}
+	hasFuture := person.GetExpectedFutureIncomeCents() > 0
 	if value, ok := overrideByPersonID[personID]; ok && value > 0 {
 		hasFuture = true
 	}
