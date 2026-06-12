@@ -29,6 +29,7 @@ type housingDetailData struct {
 	FamilyID      string
 	Housing       *ourneztv1.HousingOption
 	Affordability *ourneztv1.HousingAffordability
+	Inputs        housingEstimateInputs
 }
 
 type housingCompareData struct {
@@ -40,6 +41,14 @@ type housingCompareData struct {
 type housingCompareRow struct {
 	Name          string
 	Affordability *ourneztv1.HousingAffordability
+}
+
+type housingEstimateInputs struct {
+	GrossIncomeUsedCents     int64
+	TakeHomeUsedCents        int64
+	CPFOAUsedCents           int64
+	CashSavingsUsedCents     int64
+	MonthlyExpensesUsedCents int64
 }
 
 func (a *App) housing(c *gin.Context) {
@@ -125,15 +134,23 @@ func (a *App) housingDetail(c *gin.Context) {
 	}
 
 	aff := &ourneztv1.HousingAffordability{}
+	inputs := housingEstimateInputs{}
 	if familyID != "" {
 		peopleResp, peopleErr := a.clients.Person.ListPersonProfilesByFamily(a.grpcContext(c), &ourneztv1.ListPersonProfilesByFamilyRequest{ViewerUserId: user.ID, FamilyId: familyID})
 		if peopleErr == nil {
 			summary, sumErr := a.clients.Income.CalculateHouseholdIncomeSummary(a.grpcContext(c), &ourneztv1.CalculateHouseholdIncomeSummaryRequest{People: peopleResp.GetPeople()})
 			if sumErr == nil && summary != nil {
 				planningTakeHome := a.projectedHousingTakeHomeCents(c, peopleResp.GetPeople(), option, summary.GetTakeHomeIncomeCents())
+				inputs = housingEstimateInputs{
+					GrossIncomeUsedCents:     a.projectedHousingGrossIncomeCents(peopleResp.GetPeople(), option, summary.GetCurrentGrossIncomeCents()),
+					TakeHomeUsedCents:        planningTakeHome,
+					CPFOAUsedCents:           summary.GetCurrentCpfOaCents(),
+					CashSavingsUsedCents:     totalCash(peopleResp.GetPeople()),
+					MonthlyExpensesUsedCents: summary.GetMonthlyExpensesCents(),
+				}
 				affResp, affErr := a.clients.Housing.CalculateHousingAffordability(a.grpcContext(c), &ourneztv1.CalculateHousingAffordabilityRequest{
 					HousingOption:        option,
-					CashSavingsCents:     totalCash(peopleResp.GetPeople()),
+					CashSavingsCents:     inputs.CashSavingsUsedCents,
 					CpfOaCents:           summary.GetCurrentCpfOaCents(),
 					TakeHomeCents:        planningTakeHome,
 					MonthlyExpensesCents: summary.GetMonthlyExpensesCents(),
@@ -145,7 +162,7 @@ func (a *App) housingDetail(c *gin.Context) {
 		}
 	}
 
-	a.render(c, "housing_detail", "Housing Detail", housingDetailData{FamilyID: familyID, Housing: option, Affordability: aff})
+	a.render(c, "housing_detail", "Housing Detail", housingDetailData{FamilyID: familyID, Housing: option, Affordability: aff, Inputs: inputs})
 }
 
 func (a *App) editHousing(c *gin.Context) {
