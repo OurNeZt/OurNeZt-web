@@ -6,6 +6,58 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ---
 
+## [v1.1.2] - 2026-06-01
+
+### Added
+- Optional TLS startup support for web server via `WEB_TLS_CERT_FILE` and `WEB_TLS_KEY_FILE`.
+- Optional TLS support for web-to-core gRPC via:
+    - `CORE_GRPC_USE_TLS`
+    - `CORE_GRPC_TLS_CA_FILE`
+    - `CORE_GRPC_TLS_SERVER_NAME`
+    - `CORE_GRPC_TLS_INSECURE_SKIP_VERIFY`
+- Mobile/tablet tour improvements:
+    - Auto-open hamburger menu for nav-link guide steps.
+    - Better orientation/resize/scroll reflow behavior for guide positioning.
+
+### Changed
+- Core gRPC client initialization now accepts full app config to support secure transport options.
+- Session cookie security default behavior tightened for production-oriented usage.
+- Guide placement logic now prefers non-overlapping positions near highlighted targets.
+
+### Fixed
+- Tour popup layering/cutoff issues on small screens and tablets.
+- Tour highlight failing on mobile nav items (hidden desktop link vs hamburger menu link mismatch).
+- Payment-vs-income timeline selector update reliability on dashboard.
+- Dashboard gross income display consistency with household summary updates.
+
+### Removed
+- Shadow/dim overlay spotlight approach for tour highlights (reverted to attached highlight style).
+
+
+## [v1.1.1] - 2026-06-01
+
+### Added
+- Mobile/tablet tour behavior improvements for responsive layouts and orientation changes.
+- Automatic mobile hamburger-menu handling during tour steps so nav-item highlights can appear correctly.
+
+### Changed
+- Family creation now uses controlled family-type selection (`single`, `couple`, `family`) instead of free-form input.
+- Housing `unit type` options standardized to room/category-based values (removed `-bedder` style options).
+- Dashboard timeline chart housing selector behavior updated to switch chart data reliably.
+
+### Fixed
+- Create Family no longer rejects uppercase/mixed-case input unexpectedly.
+- Dashboard gross income now correctly includes all relevant users, fixing dependent card calculations.
+- Mobile tips/guide layering and positioning issues:
+    - tour no longer gets cut off
+    - z-index/placement issues on phone/tablet and smaller landscape screens are fixed
+    - highlight and guide alignment improved across scroll/orientation
+- Payment vs Income Timeline now updates correctly when switching housing options.
+
+### Removed
+- Redundant/free-text family type entry path in create-family flow.
+- `-bedder` style unit-type choices from housing form.
+
 ## [v1.1.0] - 2026-05-31
 
 ### Added

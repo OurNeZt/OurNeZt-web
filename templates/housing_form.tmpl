@@ -6,13 +6,13 @@
     <p class="text-sm opacity-75">All money inputs are in dollars. Example: 1250.50 means $1,250.50.</p>
     <form method="post" action="{{ if .Data.IsEdit }}/housing/{{ .Data.Housing.Id }}{{ else }}/housing{{ end }}" class="grid grid-cols-1 md:grid-cols-2 gap-3 oz-form-grid">
       <input type="hidden" name="family_id" value="{{ .Data.FamilyID }}">
-      <label class="oz-field">
-        <span>Assessment Mode</span>
+      <div class="oz-field">
+        <label class="oz-field-label" for="assessment_mode"><span class="inline-flex items-center gap-1">Assessment Mode{{ template "partials/help_tooltip" (dict "Key" "assessment_mode" "Label" "Assessment Mode") }}</span></label>
         <select class="select select-bordered w-full" name="assessment_mode" id="assessment_mode" required>
           <option value="standard" {{ if eqFold .Data.AssessmentMode "standard" }}selected{{ end }}>Standard</option>
           <option value="deferred" {{ if eqFold .Data.AssessmentMode "deferred" }}selected{{ end }}>Deferred Income Assessment (DIA)</option>
         </select>
-      </label>
+      </div>
       <label class="oz-field">
         <span>Option Name</span>
         <input class="input input-bordered" name="name" placeholder="e.g. Tengah BTO 4-Room" value="{{ .Data.Housing.Name }}" required>
@@ -46,14 +46,14 @@
           <option value="other" {{ if eqFold .Data.Housing.UnitType "other" }}selected{{ end }}>Other</option>
         </select>
       </label>
-      <label class="oz-field">
-        <span>Purchase Price (Dollars)</span>
-        <input class="input input-bordered" name="purchase_price" type="number" min="0" step="0.01" inputmode="decimal" placeholder="e.g. 500000.00" value="{{ moneyInput .Data.Housing.PurchasePriceCents }}" required>
-      </label>
-      <label class="oz-field" id="grant_amount_field">
-        <span>Grant Amount (Dollars)</span>
+      <div class="oz-field">
+        <label class="oz-field-label" for="purchase_price"><span class="inline-flex items-center gap-1">Purchase Price (Dollars){{ template "partials/help_tooltip" (dict "Key" "purchase_price" "Label" "Purchase Price") }}</span></label>
+        <input class="input input-bordered" id="purchase_price" name="purchase_price" type="number" min="0" step="0.01" inputmode="decimal" placeholder="e.g. 500000.00" value="{{ moneyInput .Data.Housing.PurchasePriceCents }}" required>
+      </div>
+      <div class="oz-field" id="grant_amount_field">
+        <label class="oz-field-label" for="grant_amount"><span class="inline-flex items-center gap-1">Grant Amount (Dollars){{ template "partials/help_tooltip" (dict "Key" "grant_amount" "Label" "Grant Amount") }}</span></label>
         <input class="input input-bordered" id="grant_amount" name="grant_amount" type="number" min="0" step="0.01" inputmode="decimal" placeholder="e.g. 80000.00" value="{{ moneyInput .Data.Housing.GrantAmountCents }}">
-      </label>
+      </div>
       <label class="oz-field" id="loan_type_field">
         <span>Loan Type</span>
         <select class="select select-bordered w-full" name="loan_type" id="loan_type" required>
@@ -63,48 +63,48 @@
           <option value="cash" {{ if eqFold .Data.Housing.LoanType "cash" }}selected{{ end }}>Cash (No Loan)</option>
         </select>
       </label>
-      <label class="oz-field" id="loan_amount_field">
-        <span>Loan Amount (Dollars)</span>
+      <div class="oz-field" id="loan_amount_field">
+        <label class="oz-field-label" for="loan_amount"><span class="inline-flex items-center gap-1">Loan Amount (Dollars){{ template "partials/help_tooltip" (dict "Key" "loan_amount" "Label" "Loan Amount") }}</span></label>
         <input class="input input-bordered" id="loan_amount" name="loan_amount" type="number" min="0" step="0.01" inputmode="decimal" placeholder="e.g. 400000.00" value="{{ moneyInput .Data.Housing.LoanAmountCents }}">
-      </label>
-      <label class="oz-field" id="interest_rate_field">
-        <span>Interest Rate (%)</span>
+      </div>
+      <div class="oz-field" id="interest_rate_field">
+        <label class="oz-field-label" for="interest_rate_percent"><span class="inline-flex items-center gap-1">Interest Rate (%){{ template "partials/help_tooltip" (dict "Key" "interest_rate" "Label" "Interest Rate") }}</span></label>
         <input class="input input-bordered" id="interest_rate_percent" name="interest_rate_percent" type="number" min="0" step="0.01" inputmode="decimal" placeholder="e.g. 2.60" value="{{ bpsInput .Data.Housing.InterestRateBps }}">
-      </label>
-      <label class="oz-field" id="loan_tenure_field">
-        <span>Loan Tenure (Months)</span>
+      </div>
+      <div class="oz-field" id="loan_tenure_field">
+        <label class="oz-field-label" for="loan_tenure_months"><span class="inline-flex items-center gap-1">Loan Tenure (Months){{ template "partials/help_tooltip" (dict "Key" "loan_tenure" "Label" "Loan Tenure") }}</span></label>
         <input class="input input-bordered" id="loan_tenure_months" name="loan_tenure_months" type="number" min="0" placeholder="e.g. 300" value="{{ .Data.Housing.LoanTenureMonths }}">
-      </label>
-      <label class="oz-field">
-        <span>Estimated Buyer Stamp Duty (Dollars)</span>
+      </div>
+      <div class="oz-field">
+        <label class="oz-field-label" for="buyer_stamp_duty_display"><span class="inline-flex items-center gap-1">Estimated Buyer Stamp Duty (Dollars){{ template "partials/help_tooltip" (dict "Key" "buyer_stamp_duty" "Label" "Estimated Buyer Stamp Duty") }}</span></label>
         <input class="input input-bordered" id="buyer_stamp_duty_display" type="text" value="{{ moneyInput .Data.Housing.BuyerStampDutyCents }}" readonly>
-      </label>
-      <label class="oz-field">
-        <span>Monthly Maintenance (Dollars)</span>
-        <input class="input input-bordered" name="monthly_maintenance" type="number" min="0" step="0.01" inputmode="decimal" placeholder="e.g. 350.00" value="{{ moneyInput .Data.Housing.MonthlyMaintenanceCents }}">
-      </label>
+      </div>
+      <div class="oz-field">
+        <label class="oz-field-label" for="monthly_maintenance"><span class="inline-flex items-center gap-1">Monthly Maintenance (Dollars){{ template "partials/help_tooltip" (dict "Key" "monthly_maintenance" "Label" "Monthly Maintenance") }}</span></label>
+        <input class="input input-bordered" id="monthly_maintenance" name="monthly_maintenance" type="number" min="0" step="0.01" inputmode="decimal" placeholder="e.g. 350.00" value="{{ moneyInput .Data.Housing.MonthlyMaintenanceCents }}">
+      </div>
       <input type="hidden" name="renovation_budget" value="0">
       <input type="hidden" name="furniture_budget" value="0">
-      <label class="oz-field">
-        <span>Legal Fees (Dollars)</span>
-        <input class="input input-bordered" name="legal_fees" type="number" min="0" step="0.01" inputmode="decimal" placeholder="e.g. 3000.00" value="{{ moneyInput .Data.Housing.LegalFeesCents }}">
-      </label>
-      <label class="oz-field">
-        <span>Expected Key Collection Date</span>
-        <input class="input input-bordered" name="expected_key_collection_date" type="date" value="{{ .Data.Housing.ExpectedKeyCollectionDate }}">
-      </label>
+      <div class="oz-field">
+        <label class="oz-field-label" for="legal_fees"><span class="inline-flex items-center gap-1">Legal Fees (Dollars){{ template "partials/help_tooltip" (dict "Key" "legal_fees" "Label" "Legal Fees") }}</span></label>
+        <input class="input input-bordered" id="legal_fees" name="legal_fees" type="number" min="0" step="0.01" inputmode="decimal" placeholder="e.g. 3000.00" value="{{ moneyInput .Data.Housing.LegalFeesCents }}">
+      </div>
+      <div class="oz-field">
+        <label class="oz-field-label" for="expected_key_collection_date"><span class="inline-flex items-center gap-1">Expected Key Collection Date{{ template "partials/help_tooltip" (dict "Key" "expected_key_collection_date" "Label" "Expected Key Collection Date") }}</span></label>
+        <input class="input input-bordered" id="expected_key_collection_date" name="expected_key_collection_date" type="date" value="{{ .Data.Housing.ExpectedKeyCollectionDate }}">
+      </div>
       <div class="md:col-span-2 flex flex-wrap gap-2">
         <button class="btn btn-primary" type="submit">Save</button>
         <a class="btn" href="/housing?family_id={{ .Data.FamilyID }}">Cancel</a>
       </div>
       <section class="md:col-span-2 card border border-base-300" id="dia_income_section">
         <div class="card-body p-4">
-          <h3 class="font-semibold">DIA Income Inputs (Per Person)</h3>
-          <p class="text-xs opacity-70">Enter each member's estimated monthly income at the assessment window before key collection. This will update their projected income profile.</p>
+          <h3 class="font-semibold inline-flex items-center gap-1">DIA Income Inputs (Per Person){{ template "partials/help_tooltip" (dict "Key" "dia_income_section" "Label" "DIA Income Inputs") }}</h3>
+          <p class="text-xs opacity-70">{{ housingTooltipSupportingTip "dia_income_section" }}</p>
           {{ if .Data.People }}
-          <div class="overflow-x-auto">
+          <div class="overflow-x-auto oz-tooltip-overflow">
             <table class="table table-sm">
-              <thead><tr><th>Name</th><th>Current Status</th><th>Estimated Monthly Income (Dollars)</th></tr></thead>
+              <thead><tr><th>Name</th><th>Current Status</th><th><span class="inline-flex items-center gap-1">Estimated Monthly Income (Dollars){{ template "partials/help_tooltip" (dict "Key" "dia_income_estimated_income" "Label" "Estimated Monthly Income") }}</span></th></tr></thead>
               <tbody>
                 {{ range .Data.People }}
                 <tr>
@@ -131,7 +131,7 @@
     const assessmentMode = document.getElementById("assessment_mode");
     const diaIncomeSection = document.getElementById("dia_income_section");
     const loanTypeField = document.getElementById("loan_type_field");
-      const loanType = document.getElementById("loan_type");
+    const loanType = document.getElementById("loan_type");
     const grantAmountField = document.getElementById("grant_amount_field");
     const loanAmountField = document.getElementById("loan_amount_field");
     const interestRateField = document.getElementById("interest_rate_field");
