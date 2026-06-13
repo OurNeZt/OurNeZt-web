@@ -1,9 +1,16 @@
 {{ define "partials/help_tooltip" }}
-  {{- $tip := housingTooltip .Key -}}
-  {{- if $tip -}}
-    <span class="oz-help-tooltip">
+    {{- $tip := housingTooltip .Key -}}
+    {{- if $tip -}}
+    {{- $seeMoreLabel := housingTooltipSeeMoreLabel .Key -}}
+    {{- $seeMoreURL := housingTooltipSeeMoreURL .Key -}}
+    <span class="oz-help-tooltip{{ if eq .Placement "below" }} oz-help-tooltip-force-below{{ end }}">
       <button type="button" class="oz-help-trigger" aria-label="{{ tooltipAriaLabel .Label }}">?</button>
-      <span class="oz-help-bubble" role="tooltip">{{ $tip }}</span>
+      <span class="oz-help-bubble" role="tooltip">
+        <span class="oz-help-bubble-text">{{ $tip }}</span>
+        {{- if and $seeMoreLabel $seeMoreURL -}}
+          <a class="oz-help-bubble-link" href="{{ $seeMoreURL }}" target="_blank" rel="noreferrer noopener">{{ $seeMoreLabel }}</a>
+        {{- end -}}
+      </span>
     </span>
   {{- end -}}
 {{ end }}

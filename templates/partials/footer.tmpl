@@ -78,23 +78,63 @@
       const helpTooltips = Array.from(document.querySelectorAll(".oz-help-tooltip"));
       const updateHelpTooltipPlacement = (tooltip) => {
         if (!tooltip) return;
+        const trigger = tooltip.querySelector(".oz-help-trigger");
         const bubble = tooltip.querySelector(".oz-help-bubble");
-        if (!bubble) return;
+        if (!trigger || !bubble) return;
 
         tooltip.classList.remove("oz-help-tooltip-below");
 
         const nav = document.querySelector(".oz-navbar");
         const minTop = nav ? nav.getBoundingClientRect().bottom + 8 : 8;
-        const bubbleRect = bubble.getBoundingClientRect();
+        const viewportWidth = window.innerWidth || document.documentElement.clientWidth || 0;
+        const gap = 8;
 
-        if (bubbleRect.top < minTop) {
+        bubble.style.setProperty("--oz-help-left", "-9999px");
+        bubble.style.setProperty("--oz-help-top", "-9999px");
+
+        const triggerRect = trigger.getBoundingClientRect();
+        const bubbleRect = bubble.getBoundingClientRect();
+        const maxLeft = Math.max(gap, viewportWidth - bubbleRect.width - gap);
+        const centeredLeft = triggerRect.left + (triggerRect.width / 2) - (bubbleRect.width / 2);
+        const left = Math.min(Math.max(gap, centeredLeft), maxLeft);
+
+        let top = triggerRect.top - bubbleRect.height - 8;
+        const forceBelow = tooltip.classList.contains("oz-help-tooltip-force-below");
+
+        if (forceBelow || top < minTop) {
           tooltip.classList.add("oz-help-tooltip-below");
+          top = triggerRect.bottom + 8;
         }
+
+        const arrowLeft = Math.min(
+          Math.max(14, triggerRect.left + (triggerRect.width / 2) - left),
+          bubbleRect.width - 14,
+        );
+
+        bubble.style.setProperty("--oz-help-left", `${Math.round(left)}px`);
+        bubble.style.setProperty("--oz-help-top", `${Math.round(top)}px`);
+        bubble.style.setProperty("--oz-help-arrow-left", `${Math.round(arrowLeft)}px`);
       };
 
       helpTooltips.forEach((tooltip) => {
         tooltip.addEventListener("mouseenter", () => updateHelpTooltipPlacement(tooltip));
         tooltip.addEventListener("focusin", () => updateHelpTooltipPlacement(tooltip));
+        tooltip.addEventListener("pointerdown", (event) => {
+          event.stopPropagation();
+        });
+        tooltip.addEventListener("click", (event) => {
+          const link = event.target.closest(".oz-help-bubble-link");
+          if (link) {
+            event.preventDefault();
+            event.stopPropagation();
+            const href = link.getAttribute("href");
+            if (href) {
+              window.open(href, "_blank", "noopener,noreferrer");
+            }
+            return;
+          }
+          event.stopPropagation();
+        });
       });
 
       const promptBackdrop = document.getElementById("ozTourPromptBackdrop");
