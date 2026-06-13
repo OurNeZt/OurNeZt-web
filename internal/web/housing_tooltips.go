@@ -8,11 +8,14 @@ import (
 )
 
 type housingTooltipEntry struct {
-	Label       string `json:"label"`
-	Meaning     string `json:"meaning"`
-	Calculation string `json:"calculation"`
-	Assumptions string `json:"assumptions"`
-	Source      string `json:"source"`
+	Label         string `json:"label"`
+	Meaning       string `json:"meaning"`
+	Calculation   string `json:"calculation"`
+	Assumptions   string `json:"assumptions"`
+	Source        string `json:"source"`
+	SupportingTip string `json:"supporting_tip"`
+	SeeMoreLabel  string `json:"see_more_label"`
+	SeeMoreURL    string `json:"see_more_url"`
 }
 
 //go:embed content/housing_tooltips.json
@@ -29,7 +32,7 @@ func mustLoadHousingTooltipCatalog() map[string]housingTooltipEntry {
 }
 
 func housingTooltip(key string) string {
-	entry, ok := housingTooltipCatalog[normalizeLookup(key)]
+	entry, ok := housingTooltipEntryByKey(key)
 	if !ok {
 		return ""
 	}
@@ -48,6 +51,35 @@ func housingTooltip(key string) string {
 		parts = append(parts, text)
 	}
 	return strings.Join(parts, " ")
+}
+
+func housingTooltipSupportingTip(key string) string {
+	entry, ok := housingTooltipEntryByKey(key)
+	if !ok {
+		return ""
+	}
+	return strings.TrimSpace(entry.SupportingTip)
+}
+
+func housingTooltipSeeMoreLabel(key string) string {
+	entry, ok := housingTooltipEntryByKey(key)
+	if !ok {
+		return ""
+	}
+	return strings.TrimSpace(entry.SeeMoreLabel)
+}
+
+func housingTooltipSeeMoreURL(key string) string {
+	entry, ok := housingTooltipEntryByKey(key)
+	if !ok {
+		return ""
+	}
+	return strings.TrimSpace(entry.SeeMoreURL)
+}
+
+func housingTooltipEntryByKey(key string) (housingTooltipEntry, bool) {
+	entry, ok := housingTooltipCatalog[normalizeLookup(key)]
+	return entry, ok
 }
 
 func sentenceText(value string) string {

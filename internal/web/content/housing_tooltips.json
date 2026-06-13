@@ -18,7 +18,9 @@
     "meaning": "The housing grant amount you expect to receive.",
     "calculation": "Subtracted from purchase price to get net purchase price before downpayment and loan calculations.",
     "assumptions": "Deferred mode ignores grants in this form's planning assumptions.",
-    "source": "User-provided estimate."
+    "source": "User-provided estimate.",
+    "see_more_label": "See official HDB grant guide",
+    "see_more_url": "https://www.hdb.gov.sg/-/media/buying-a-flat/flat-grant-and-loan-eligibility/couples-and-families/enhanced-cpf-housing-grant/EHG-amount-Families.pdf?sc_lang=en&hash=147B5C1B4AA5C09281FCDF3D8A04752D"
   },
   "loan_amount": {
     "label": "Loan Amount",
@@ -32,7 +34,9 @@
     "meaning": "The annual loan interest rate used for repayment estimation.",
     "calculation": "Monthly mortgage is calculated from loan amount, interest rate, and tenure.",
     "assumptions": "HDB loans are fixed here at 2.60%.",
-    "source": "User-provided except for HDB and Deferred defaults."
+    "source": "User-provided except for HDB and Deferred defaults.",
+    "see_more_label": "See HDB interest rate details",
+    "see_more_url": "https://www.hdb.gov.sg/managing-my-home/finances/loan-matters/interest-rate"
   },
   "loan_tenure": {
     "label": "Loan Tenure",
@@ -46,7 +50,9 @@
     "meaning": "An estimated BSD amount for the purchase price entered above.",
     "calculation": "Calculated using the current progressive residential BSD tiers coded in the app.",
     "assumptions": "This is an estimate for planning and does not include every possible tax variation.",
-    "source": "System-derived."
+    "source": "System-derived.",
+    "see_more_label": "See IRAS BSD guide",
+    "see_more_url": "https://www.iras.gov.sg/taxes/stamp-duty/for-property/buying-or-acquiring-property/buyer's-stamp-duty-(bsd)"
   },
   "monthly_maintenance": {
     "label": "Monthly Maintenance",
@@ -74,7 +80,8 @@
     "meaning": "Projected monthly incomes for each person at the Deferred Income Assessment window.",
     "calculation": "These values feed the projected take-home used in affordability estimates for this housing option only.",
     "assumptions": "Student, NSF, unemployed, and future employee statuses are treated as full-time employee when a future income is supplied.",
-    "source": "User-provided estimates."
+    "source": "User-provided estimates.",
+    "supporting_tip": "Enter each member's estimated monthly income at the assessment window before key collection. This will update their projected income profile for this housing option."
   },
   "dia_income_estimated_income": {
     "label": "Estimated Monthly Income",

@@ -134,6 +134,9 @@ func parseTemplates(root string) (*template.Template, error) {
 		"eqFold":           eqFold,
 		"ratingLabel":      housingRatingLabel,
 		"housingTooltip":   housingTooltip,
+		"housingTooltipSupportingTip": housingTooltipSupportingTip,
+		"housingTooltipSeeMoreLabel":  housingTooltipSeeMoreLabel,
+		"housingTooltipSeeMoreURL":    housingTooltipSeeMoreURL,
 		"tooltipAriaLabel": tooltipAriaLabel,
 		"dict":             dict,
 	})
