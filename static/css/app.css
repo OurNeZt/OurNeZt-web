@@ -142,12 +142,20 @@ body {
 .oz-field {
   display: grid;
   gap: 0.35rem;
+  position: relative;
+  overflow: visible;
 }
 
-.oz-field span {
+.oz-field > span,
+.oz-field > label,
+.oz-field-label {
   font-size: 0.92rem;
   font-weight: 600;
   color: #43363d;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  width: fit-content;
 }
 
 .oz-field .input {
@@ -187,6 +195,196 @@ body {
   line-height: 1.1rem;
 }
 
+.oz-help-tooltip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  z-index: 1600;
+  isolation: isolate;
+}
+
+.oz-help-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 0.95rem;
+  height: 0.95rem;
+  min-height: 0.95rem;
+  border-radius: 9999px;
+  border: 1px solid #e4d8d1;
+  background: transparent;
+  color: #8b7781;
+  font-size: 0.62rem;
+  font-weight: 600;
+  line-height: 1;
+  cursor: help;
+  transition: color 120ms ease, border-color 120ms ease, background 120ms ease;
+  position: relative;
+  z-index: 2;
+}
+
+.oz-help-trigger:hover,
+.oz-help-trigger:focus-visible {
+  border-color: #cdbdb4;
+  background: #fffaf8;
+  color: #6b5961;
+  outline: none;
+}
+
+.oz-help-bubble {
+  position: fixed;
+  left: 0;
+  top: 0;
+  transform: translate3d(var(--oz-help-left, -9999px), var(--oz-help-top, -9999px), 0);
+  width: min(19rem, calc(100vw - 1.5rem));
+  padding: 0.55rem 0.7rem;
+  border-radius: 0.7rem;
+  background: rgba(41, 36, 40, 0.96);
+  color: #fffdfb !important;
+  box-shadow: 0 10px 24px -16px #000000c0;
+  font-size: 0.77rem;
+  line-height: 1.25rem;
+  font-weight: 500 !important;
+  text-align: left;
+  white-space: normal;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: auto;
+  transition: opacity 120ms ease, visibility 120ms ease;
+  z-index: 1601;
+}
+
+.oz-help-tooltip .oz-help-bubble,
+.oz-field .oz-help-tooltip .oz-help-bubble {
+  color: #fffdfb !important;
+  -webkit-text-fill-color: #fffdfb !important;
+  font-weight: 500 !important;
+}
+
+.oz-help-bubble,
+.oz-help-bubble * {
+  color: #fffdfb !important;
+  -webkit-text-fill-color: #fffdfb !important;
+  opacity: 1 !important;
+  mix-blend-mode: normal !important;
+}
+
+.oz-help-bubble-text {
+  all: unset;
+  display: block;
+  color: #fffdfb !important;
+  -webkit-text-fill-color: #fffdfb !important;
+  font-size: inherit !important;
+  line-height: inherit !important;
+  font-weight: 500 !important;
+  opacity: 1 !important;
+  text-shadow: none;
+  font-family: inherit;
+}
+
+.oz-help-bubble-link {
+  all: unset;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: flex-start;
+  min-height: 1.7rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fffdfb;
+  font-size: 0.7rem;
+  font-weight: 600;
+  line-height: 1;
+  text-decoration: none;
+  transition: background 120ms ease, border-color 120ms ease;
+  cursor: pointer;
+  font-family: inherit;
+  -webkit-text-fill-color: #fffdfb !important;
+}
+
+.oz-help-tooltip .oz-help-bubble .oz-help-bubble-text,
+.oz-field .oz-help-tooltip .oz-help-bubble .oz-help-bubble-text,
+.oz-help-tooltip .oz-help-bubble .oz-help-bubble-link,
+.oz-field .oz-help-tooltip .oz-help-bubble .oz-help-bubble-link {
+  color: #fffdfb !important;
+  -webkit-text-fill-color: #fffdfb !important;
+}
+
+.oz-help-bubble-link:hover,
+.oz-help-bubble-link:focus-visible {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.38);
+  color: #fffdfb;
+  outline: none;
+}
+
+.oz-help-bubble::after {
+  content: "";
+  position: absolute;
+  left: var(--oz-help-arrow-left, 50%);
+  top: 100%;
+  transform: translateX(-50%);
+  border-width: 0.35rem 0.35rem 0;
+  border-style: solid;
+  border-color: rgba(41, 36, 40, 0.96) transparent transparent;
+}
+
+.oz-help-bubble::before {
+  content: "";
+  position: absolute;
+  left: calc(var(--oz-help-arrow-left, 50%) - 0.75rem);
+  width: 1.5rem;
+  top: 100%;
+  height: 0.7rem;
+  background: transparent;
+}
+
+.oz-help-tooltip.oz-help-tooltip-below .oz-help-bubble {
+  transform: translate3d(var(--oz-help-left, -9999px), var(--oz-help-top, -9999px), 0);
+}
+
+.oz-help-tooltip.oz-help-tooltip-force-below .oz-help-bubble {
+  transform: translate3d(var(--oz-help-left, -9999px), var(--oz-help-top, -9999px), 0);
+}
+
+.oz-help-tooltip.oz-help-tooltip-below .oz-help-bubble::before {
+  top: auto;
+  bottom: 100%;
+}
+
+.oz-help-tooltip.oz-help-tooltip-force-below .oz-help-bubble::before {
+  top: auto;
+  bottom: 100%;
+}
+
+.oz-help-tooltip.oz-help-tooltip-below .oz-help-bubble::after {
+  top: auto;
+  bottom: 100%;
+  border-width: 0 0.35rem 0.35rem;
+  border-color: transparent transparent rgba(41, 36, 40, 0.96);
+}
+
+.oz-help-tooltip.oz-help-tooltip-force-below .oz-help-bubble::after {
+  top: auto;
+  bottom: 100%;
+  border-width: 0 0.35rem 0.35rem;
+  border-color: transparent transparent rgba(41, 36, 40, 0.96);
+}
+
+.oz-help-tooltip:hover .oz-help-bubble,
+.oz-help-tooltip:focus-within .oz-help-bubble {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
 .oz-chart-box {
   position: relative;
   height: 18rem;
@@ -207,6 +405,11 @@ body {
 .oz-form-grid .select {
   width: 100%;
   max-width: 100%;
+}
+
+.oz-tooltip-overflow {
+  overflow-x: auto;
+  overflow-y: visible;
 }
 
 .oz-footer {

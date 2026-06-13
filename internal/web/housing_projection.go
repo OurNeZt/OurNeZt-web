@@ -12,24 +12,7 @@ func (a *App) projectedHousingTakeHomeCents(c *gin.Context, people []*ourneztv1.
 		return fallback
 	}
 
-	overrideByPersonID := make(map[string]int64)
-	if option != nil {
-		for _, override := range option.GetDiaIncomeOverrides() {
-			if override == nil {
-				continue
-			}
-			personID := strings.TrimSpace(override.GetPersonId())
-			if personID == "" {
-				continue
-			}
-			projected := override.GetProjectedIncomeCents()
-			if projected < 0 {
-				projected = 0
-			}
-			overrideByPersonID[personID] = projected
-			overrideByPersonID[strings.ToLower(personID)] = projected
-		}
-	}
+	overrideByPersonID := housingProjectedIncomeOverrideIndex(option)
 
 	var total int64
 	for _, person := range people {
@@ -37,26 +20,7 @@ func (a *App) projectedHousingTakeHomeCents(c *gin.Context, people []*ourneztv1.
 			continue
 		}
 
-		wage := person.GetGrossMonthlyIncomeCents()
-		personID := strings.TrimSpace(person.GetId())
-		if value, ok := overrideByPersonID[personID]; ok {
-			wage = value
-		} else if value, ok := overrideByPersonID[strings.ToLower(personID)]; ok {
-			wage = value
-		} else if person.GetExpectedFutureIncomeCents() > 0 {
-			wage = person.GetExpectedFutureIncomeCents()
-		}
-
-		hasFuture := false
-		if person.GetExpectedFutureIncomeCents() > 0 {
-			hasFuture = true
-		}
-		if value, ok := overrideByPersonID[personID]; ok && value > 0 {
-			hasFuture = true
-		}
-		if value, ok := overrideByPersonID[strings.ToLower(personID)]; ok && value > 0 {
-			hasFuture = true
-		}
+		wage, hasFuture := resolvedProjectedHousingWage(person, overrideByPersonID)
 		if wage <= 0 {
 			continue
 		}
@@ -83,6 +47,80 @@ func (a *App) projectedHousingTakeHomeCents(c *gin.Context, people []*ourneztv1.
 		return fallback
 	}
 	return total
+}
+
+func (a *App) projectedHousingGrossIncomeCents(people []*ourneztv1.PersonProfile, option *ourneztv1.HousingOption, fallback int64) int64 {
+	if len(people) == 0 {
+		return fallback
+	}
+
+	overrideByPersonID := housingProjectedIncomeOverrideIndex(option)
+	var total int64
+	for _, person := range people {
+		if person == nil {
+			continue
+		}
+
+		wage, _ := resolvedProjectedHousingWage(person, overrideByPersonID)
+		if wage <= 0 {
+			continue
+		}
+		total += wage
+	}
+
+	if total <= 0 {
+		return fallback
+	}
+	return total
+}
+
+func housingProjectedIncomeOverrideIndex(option *ourneztv1.HousingOption) map[string]int64 {
+	overrideByPersonID := make(map[string]int64)
+	if option == nil {
+		return overrideByPersonID
+	}
+
+	for _, override := range option.GetDiaIncomeOverrides() {
+		if override == nil {
+			continue
+		}
+		personID := strings.TrimSpace(override.GetPersonId())
+		if personID == "" {
+			continue
+		}
+		projected := override.GetProjectedIncomeCents()
+		if projected < 0 {
+			projected = 0
+		}
+		overrideByPersonID[personID] = projected
+		overrideByPersonID[strings.ToLower(personID)] = projected
+	}
+	return overrideByPersonID
+}
+
+func resolvedProjectedHousingWage(person *ourneztv1.PersonProfile, overrideByPersonID map[string]int64) (int64, bool) {
+	if person == nil {
+		return 0, false
+	}
+
+	wage := person.GetGrossMonthlyIncomeCents()
+	personID := strings.TrimSpace(person.GetId())
+	if value, ok := overrideByPersonID[personID]; ok {
+		wage = value
+	} else if value, ok := overrideByPersonID[strings.ToLower(personID)]; ok {
+		wage = value
+	} else if person.GetExpectedFutureIncomeCents() > 0 {
+		wage = person.GetExpectedFutureIncomeCents()
+	}
+
+	hasFuture := person.GetExpectedFutureIncomeCents() > 0
+	if value, ok := overrideByPersonID[personID]; ok && value > 0 {
+		hasFuture = true
+	}
+	if value, ok := overrideByPersonID[strings.ToLower(personID)]; ok && value > 0 {
+		hasFuture = true
+	}
+	return wage, hasFuture
 }
 
 func projectedEmploymentStatus(current string, hasFutureIncome bool) string {
