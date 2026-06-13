@@ -102,6 +102,18 @@ body {
   background: linear-gradient(140deg, #fff8f5, #fff3f1);
 }
 
+.oz-alert-success {
+  border: 1px solid #d7e7d1;
+  color: var(--oz-ink);
+  background: linear-gradient(140deg, #f7fcf5, #edf8e9);
+}
+
+.oz-alert-warning {
+  border: 1px solid #efd7a8;
+  color: var(--oz-ink);
+  background: linear-gradient(140deg, #fff9ec, #fff0c9);
+}
+
 .oz-login-shell {
   display: grid;
   gap: 1rem;
@@ -185,6 +197,22 @@ body {
   line-height: 1.4rem;
   white-space: normal;
   word-break: break-word;
+}
+
+.oz-stat-card {
+  min-width: 0;
+}
+
+.oz-stat-card .stat-title,
+.oz-stat-card .stat-desc {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.oz-stat-card .stat-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
 }
 
 .tooltip[data-tip]::before {
