@@ -24,10 +24,10 @@
   },
   "loan_amount": {
     "label": "Loan Amount",
-    "meaning": "The amount you plan to borrow for this option.",
-    "calculation": "Used directly for mortgage repayment when provided. If it is left at zero in derived views, the system estimates it from net price minus downpayment.",
-    "assumptions": "Loan amount should not exceed net purchase price.",
-    "source": "User-provided or system-derived depending on the view."
+    "meaning": "The effective loan amount used for this housing scenario.",
+    "calculation": "For Standard assessment, this follows the loan amount entered by the user. For DIA, the app assumes a 75% loan based on net purchase price.",
+    "assumptions": "Loan amount should not exceed net purchase price. Cash purchases show zero loan.",
+    "source": "User-provided for Standard, system-derived for DIA."
   },
   "interest_rate": {
     "label": "Interest Rate",
