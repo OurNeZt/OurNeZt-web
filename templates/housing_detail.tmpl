@@ -14,24 +14,24 @@
 </section>
 <section class="card bg-base-100 shadow mt-6">
   <div class="card-body">
-    <h2 class="card-title inline-flex items-center gap-1">Initial Downpayment{{ template "partials/help_tooltip" (dict "Key" "initial_downpayment" "Label" "Initial Downpayment") }}</h2>
+    <h2 class="card-title inline-flex items-center gap-1">Total Initial Payment{{ template "partials/help_tooltip" (dict "Key" "initial_downpayment" "Label" "Total Initial Payment") }}</h2>
     <p class="text-xs opacity-70">{{ .Data.DownpaymentPlanningNote }}</p>
     <div class="grid md:grid-cols-3 gap-3 mt-2">
-      <div class="stat oz-stat-card bg-base-200 rounded-box"><div class="stat-title inline-flex items-center gap-1">Initial Downpayment Due Now{{ template "partials/help_tooltip" (dict "Key" "initial_downpayment_due_now" "Label" "Initial Downpayment Due Now") }}</div><div class="stat-value oz-stat-value">{{ cents .Data.InitialDownpaymentCents }}</div></div>
-      <div class="stat oz-stat-card bg-base-200 rounded-box"><div class="stat-title inline-flex items-center gap-1">Cash Needed Now{{ template "partials/help_tooltip" (dict "Key" "initial_downpayment_cash_portion" "Label" "Cash Needed Now") }}</div><div class="stat-value oz-stat-value">{{ cents .Data.InitialDownpaymentCashCents }}</div></div>
+      <div class="stat oz-stat-card bg-base-200 rounded-box"><div class="stat-title inline-flex items-center gap-1">Total Initial Payment Due Now{{ template "partials/help_tooltip" (dict "Key" "initial_downpayment_due_now" "Label" "Total Initial Payment Due Now") }}</div><div class="stat-value oz-stat-value">{{ cents .Data.TotalInitialPaymentCents }}</div><div class="stat-desc">Includes buyer stamp duty due at the initial checkpoint.</div></div>
+      <div class="stat oz-stat-card bg-base-200 rounded-box"><div class="stat-title inline-flex items-center gap-1">Cash Needed Now{{ template "partials/help_tooltip" (dict "Key" "initial_downpayment_cash_portion" "Label" "Cash Needed Now") }}</div><div class="stat-value oz-stat-value">{{ cents .Data.TotalInitialPaymentCashCents }}</div></div>
       <div class="stat oz-stat-card bg-base-200 rounded-box"><div class="stat-title">Available CPF OA + Cash</div><div class="stat-value oz-stat-value">{{ cents .Data.AvailableDownpaymentFundsCents }}</div></div>
     </div>
     <div class="grid md:grid-cols-2 gap-3 mt-3">
       <div class="stat oz-stat-card bg-base-200 rounded-box"><div class="stat-title inline-flex items-center gap-1">Remaining Downpayment Later{{ template "partials/help_tooltip" (dict "Key" "remaining_downpayment_later" "Label" "Remaining Downpayment Later") }}</div><div class="stat-value oz-stat-value">{{ cents .Data.RemainingDownpaymentLaterCents }}</div><div class="stat-desc">The rest of the required downpayment that is expected later, before or at completion.</div></div>
       <div class="stat oz-stat-card bg-base-200 rounded-box"><div class="stat-title">Total Required Downpayment</div><div class="stat-value oz-stat-value">{{ cents .Data.Affordability.RequiredDownpaymentCents }}</div><div class="stat-desc">Shown separately from the due-now amount so you can distinguish the early checkpoint from the full downpayment.</div></div>
     </div>
-    {{ if .Data.InitialDownpaymentCovered }}
+    {{ if .Data.TotalInitialPaymentCovered }}
     <div class="alert oz-alert-success mt-3 text-sm">
-      Current CPF OA and cash savings can cover the estimated initial downpayment due now for this option.
+      Current CPF OA and cash savings can cover the estimated total initial payment due now for this option.
     </div>
     {{ else }}
     <div class="alert oz-alert-warning mt-3 text-sm">
-      Current CPF OA and cash savings are short by {{ cents .Data.InitialDownpaymentShortfallCents }} for the estimated initial downpayment due now.
+      Current CPF OA and cash savings are short by {{ cents .Data.TotalInitialPaymentShortfallCents }} for the estimated total initial payment due now.
     </div>
     {{ end }}
   </div>

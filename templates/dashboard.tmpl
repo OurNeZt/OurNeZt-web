@@ -48,7 +48,7 @@
 <section class="card bg-base-100 shadow mt-4">
   <div class="card-body">
     <h2 class="card-title text-base">Payment vs Income Timeline</h2>
-    <p class="text-xs opacity-70">Follow each housing option from today through initial downpayment, final downpayment, and the later monthly payment stage.</p>
+    <p class="text-xs opacity-70">Follow each housing option from today through total initial payment, final downpayment, and the later monthly payment stage.</p>
     {{ if .Data.TimelineSeries }}
     <label class="oz-field max-w-sm">
       <span>Housing Option</span>
@@ -62,7 +62,7 @@
     <div class="oz-chart-legend-mobile" aria-hidden="true">
       <span class="oz-chart-legend-item"><span class="oz-chart-legend-swatch oz-chart-legend-swatch-line"></span>Take-Home</span>
       <span class="oz-chart-legend-item"><span class="oz-chart-legend-swatch oz-chart-legend-swatch-brown"></span>Monthly Need</span>
-      <span class="oz-chart-legend-item"><span class="oz-chart-legend-swatch oz-chart-legend-swatch-blue"></span>Initial DP</span>
+      <span class="oz-chart-legend-item"><span class="oz-chart-legend-swatch oz-chart-legend-swatch-blue"></span>Initial Payment</span>
       <span class="oz-chart-legend-item"><span class="oz-chart-legend-swatch oz-chart-legend-swatch-coral"></span>Final DP</span>
     </div>
     {{ else }}
@@ -214,13 +214,13 @@
             name: {{ printf "%q" $s.HousingName }},
             labels: [
               "Today ({{ $s.YearNow }})",
-              "Initial DP ({{ $s.YearInitialDownpayment }})",
+              "Initial Payment ({{ $s.YearInitialDownpayment }})",
               "Final DP ({{ $s.YearFinalDownpayment }})",
               "Monthly Payment ({{ $s.YearFinalDownpayment }})"
             ],
             compactLabels: [
               ["Today", "{{ $s.YearNow }}"],
-              ["Init DP", "{{ $s.YearInitialDownpayment }}"],
+              ["Init Pay", "{{ $s.YearInitialDownpayment }}"],
               ["Final DP", "{{ $s.YearFinalDownpayment }}"],
               ["Monthly", "{{ $s.YearFinalDownpayment }}"]
             ],
@@ -238,7 +238,7 @@
             ],
             initialDownpayment: [
               null,
-              {{ $s.InitialDownpaymentCents }} / 100,
+              {{ $s.InitialPaymentCents }} / 100,
               null,
               null
             ],
@@ -300,7 +300,7 @@
               borderRadius: 0
             },
             {
-              label: "Initial DP",
+              label: "Initial Payment",
               data: initialSeries.initialDownpayment,
               backgroundColor: "rgba(56,90,130,0.72)",
               borderColor: "#385a82",
