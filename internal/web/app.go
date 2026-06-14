@@ -139,6 +139,7 @@ func parseTemplates(root string) (*template.Template, error) {
 		"housingTooltipSeeMoreURL":    housingTooltipSeeMoreURL,
 		"tooltipAriaLabel":            tooltipAriaLabel,
 		"dict":                        dict,
+		"monthsToYears":               monthsToYears,
 	})
 	return tpl.ParseFiles(paths...)
 }
