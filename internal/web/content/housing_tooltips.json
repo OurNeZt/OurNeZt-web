@@ -128,8 +128,8 @@
   "upfront_cost": {
     "label": "Upfront Cost",
     "meaning": "The total cash-and-CPF amount needed upfront for this option.",
-    "calculation": "Downpayment + legal fees + buyer stamp duty + any renovation and furniture budgets tracked for the option.",
-    "assumptions": "Current housing form keeps renovation and furniture budgets at zero.",
+    "calculation": "Downpayment + legal fees + buyer stamp duty.",
+    "assumptions": "This planning figure excludes renovation and furniture budgets.",
     "source": "System-derived."
   },
   "required_downpayment": {

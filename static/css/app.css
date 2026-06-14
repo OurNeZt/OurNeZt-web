@@ -406,11 +406,19 @@ body {
   border-color: transparent transparent rgba(41, 36, 40, 0.96);
 }
 
+.oz-help-tooltip.oz-help-tooltip-pinned .oz-help-bubble,
 .oz-help-tooltip:hover .oz-help-bubble,
 .oz-help-tooltip:focus-within .oz-help-bubble {
   opacity: 1;
   visibility: visible;
   pointer-events: auto;
+}
+
+.oz-help-tooltips-suspend-hover .oz-help-tooltip:hover .oz-help-bubble,
+.oz-help-tooltips-suspend-hover .oz-help-tooltip:focus-within .oz-help-bubble {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
 }
 
 .oz-chart-box {
