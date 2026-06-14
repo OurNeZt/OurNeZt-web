@@ -23,6 +23,7 @@ type housingFormData struct {
 	AssessmentMode         string
 	People                 []*ourneztv1.PersonProfile
 	DIAIncomeDefaultInputs map[string]string
+	GrantAmountEstimates   map[string]int64
 }
 
 type housingDetailData struct {
@@ -101,6 +102,7 @@ func (a *App) housing(c *gin.Context) {
 func (a *App) newHousing(c *gin.Context) {
 	familyID := strings.TrimSpace(c.Query("family_id"))
 	people := a.listFamilyPeople(c, familyID)
+	grantAmountEstimates := a.housingGrantAmountEstimates(c, familyID)
 
 	a.render(c, "housing_form", "New Housing", housingFormData{
 		FamilyID:               familyID,
@@ -108,6 +110,7 @@ func (a *App) newHousing(c *gin.Context) {
 		AssessmentMode:         "standard",
 		People:                 people,
 		DIAIncomeDefaultInputs: buildDIAIncomeDefaultInputs(people, nil),
+		GrantAmountEstimates:   grantAmountEstimates,
 	})
 }
 
@@ -215,6 +218,12 @@ func (a *App) editHousing(c *gin.Context) {
 		return
 	}
 	people := a.listFamilyPeople(c, familyID)
+	grantAmountEstimates := a.housingGrantAmountEstimates(c, familyID)
+	if inferHousingAssessmentMode(resp) != "deferred" {
+		if estimate, ok := grantAmountEstimates[normalizeLookup(resp.GetHousingType())]; ok {
+			resp.GrantAmountCents = estimate
+		}
+	}
 	a.render(c, "housing_form", "Edit Housing", housingFormData{
 		FamilyID:               familyID,
 		Housing:                resp,
@@ -222,6 +231,7 @@ func (a *App) editHousing(c *gin.Context) {
 		AssessmentMode:         inferHousingAssessmentMode(resp),
 		People:                 people,
 		DIAIncomeDefaultInputs: buildDIAIncomeDefaultInputs(people, resp),
+		GrantAmountEstimates:   grantAmountEstimates,
 	})
 }
 
@@ -769,6 +779,34 @@ func buildDIAIncomeOverridesFromForm(c *gin.Context, assessmentMode string) []*o
 		})
 	}
 	return overrides
+}
+
+func (a *App) housingGrantAmountEstimates(c *gin.Context, familyID string) map[string]int64 {
+	result := map[string]int64{
+		"bto":             0,
+		"resale_hdb":      0,
+		"executive_condo": 0,
+		"private_condo":   0,
+		"landed":          0,
+		"other":           0,
+	}
+	user := userFromContext(c)
+	if user == nil || strings.TrimSpace(familyID) == "" {
+		return result
+	}
+
+	for housingType := range result {
+		resp, err := a.clients.Housing.EstimateHousingGrant(a.grpcContext(c), &ourneztv1.EstimateHousingGrantRequest{
+			ViewerUserId: user.ID,
+			FamilyId:     familyID,
+			HousingType:  housingType,
+		})
+		if err != nil || resp == nil {
+			continue
+		}
+		result[housingType] = maxInt64(resp.GetGrantAmountCents(), 0)
+	}
+	return result
 }
 
 func totalCash(people []*ourneztv1.PersonProfile) int64 {

@@ -19,7 +19,7 @@
       </label>
       <label class="oz-field">
         <span>Housing Type</span>
-        <select class="select select-bordered w-full" name="housing_type" required>
+        <select class="select select-bordered w-full" id="housing_type" name="housing_type" required>
           <option value="" {{ if eq .Data.Housing.HousingType "" }}selected{{ end }}>Select housing type</option>
           <option value="bto" {{ if eqFold .Data.Housing.HousingType "bto" }}selected{{ end }}>BTO</option>
           <option value="resale_hdb" {{ if eqFold .Data.Housing.HousingType "resale_hdb" }}selected{{ end }}>Resale HDB</option>
@@ -52,7 +52,7 @@
       </div>
       <div class="oz-field" id="grant_amount_field">
         <label class="oz-field-label" for="grant_amount"><span class="inline-flex items-center gap-1">Grant Amount (Dollars){{ template "partials/help_tooltip" (dict "Key" "grant_amount" "Label" "Grant Amount") }}</span></label>
-        <input class="input input-bordered" id="grant_amount" name="grant_amount" type="number" min="0" step="0.01" inputmode="decimal" placeholder="e.g. 80000.00" value="{{ moneyInput .Data.Housing.GrantAmountCents }}">
+        <input class="input input-bordered oz-readonly-input" id="grant_amount" name="grant_amount" type="number" min="0" step="0.01" inputmode="decimal" placeholder="e.g. 80000.00" value="{{ moneyInput .Data.Housing.GrantAmountCents }}" readonly>
       </div>
       <label class="oz-field" id="loan_type_field">
         <span>Loan Type</span>
@@ -132,6 +132,7 @@
     const diaIncomeSection = document.getElementById("dia_income_section");
     const loanTypeField = document.getElementById("loan_type_field");
     const loanType = document.getElementById("loan_type");
+    const housingType = document.getElementById("housing_type");
     const grantAmountField = document.getElementById("grant_amount_field");
     const loanAmountField = document.getElementById("loan_amount_field");
     const interestRateField = document.getElementById("interest_rate_field");
@@ -142,7 +143,16 @@
     const loanAmount = document.getElementById("loan_amount");
     const interestRate = document.getElementById("interest_rate_percent");
     const loanTenure = document.getElementById("loan_tenure_months");
-    if (!assessmentMode || !diaIncomeSection || !loanTypeField || !loanType || !grantAmountField || !loanAmountField || !interestRateField || !loanTenureField || !purchasePriceInput || !grantAmountInput || !bsdDisplay || !loanAmount || !interestRate || !loanTenure) return;
+    if (!assessmentMode || !diaIncomeSection || !loanTypeField || !loanType || !housingType || !grantAmountField || !loanAmountField || !interestRateField || !loanTenureField || !purchasePriceInput || !grantAmountInput || !bsdDisplay || !loanAmount || !interestRate || !loanTenure) return;
+
+    const grantAmountEstimates = {
+      "bto": {{ index .Data.GrantAmountEstimates "bto" }},
+      "resale_hdb": {{ index .Data.GrantAmountEstimates "resale_hdb" }},
+      "executive_condo": {{ index .Data.GrantAmountEstimates "executive_condo" }},
+      "private_condo": {{ index .Data.GrantAmountEstimates "private_condo" }},
+      "landed": {{ index .Data.GrantAmountEstimates "landed" }},
+      "other": {{ index .Data.GrantAmountEstimates "other" }}
+    };
 
     const parseMoney = (raw) => {
       const n = Number((raw || "").toString().replace(/[$,]/g, "").trim());
@@ -210,6 +220,13 @@
       }
       if (!showGrant) {
         grantAmountInput.value = "";
+      } else {
+        const selectedHousingType = (housingType.value || "").trim().toLowerCase();
+        if (selectedHousingType === "") {
+          grantAmountInput.value = "";
+        } else {
+          grantAmountInput.value = formatMoney(grantAmountEstimates[selectedHousingType] || 0);
+        }
       }
       if (isCash) {
         interestRate.value = "";
@@ -221,6 +238,7 @@
 
     loanType.addEventListener("change", refreshHousingRules);
     assessmentMode.addEventListener("change", refreshHousingRules);
+    housingType.addEventListener("change", refreshHousingRules);
     purchasePriceInput.addEventListener("input", refreshHousingRules);
     refreshHousingRules();
   })();
