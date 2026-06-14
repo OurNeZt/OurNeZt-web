@@ -21,7 +21,7 @@
         <thead>
           <tr>
             <th>Option Name</th>
-            <th><span class="inline-flex items-center gap-1">Initial DP{{ template "partials/help_tooltip" (dict "Key" "initial_downpayment_due_now" "Label" "Initial Downpayment Due Now") }}</span></th>
+            <th><span class="inline-flex items-center gap-1">Initial Payment{{ template "partials/help_tooltip" (dict "Key" "initial_downpayment_due_now" "Label" "Total Initial Payment Due Now") }}</span></th>
             <th>Upfront</th>
             <th>Mortgage</th>
             <th><span class="inline-flex items-center gap-1">Monthly Cost{{ template "partials/help_tooltip" (dict "Key" "monthly_housing_cost" "Label" "Monthly Housing Cost") }}</span></th>
@@ -38,7 +38,7 @@
           {{ range .Data.Rows }}
           <tr>
             <td class="font-medium">{{ .Name }}</td>
-            <td>{{ cents .InitialDownpaymentCents }}</td>
+            <td>{{ cents .TotalInitialPaymentCents }}</td>
             <td>{{ cents .Affordability.UpfrontCostCents }}</td>
             <td>{{ cents .Affordability.MonthlyMortgageCents }}</td>
             <td>{{ cents .Affordability.MonthlyHousingCostCents }}</td>

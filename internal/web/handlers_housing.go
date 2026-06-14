@@ -27,20 +27,20 @@ type housingFormData struct {
 }
 
 type housingDetailData struct {
-	FamilyID                         string
-	Housing                          *ourneztv1.HousingOption
-	Affordability                    *ourneztv1.HousingAffordability
-	EffectiveLoanAmountCents         int64
-	Inputs                           housingEstimateInputs
-	AssessmentModeLabel              string
-	DownpaymentPlanningNote          string
-	InitialDownpaymentCents          int64
-	InitialDownpaymentCPFOACents     int64
-	InitialDownpaymentCashCents      int64
-	RemainingDownpaymentLaterCents   int64
-	AvailableDownpaymentFundsCents   int64
-	InitialDownpaymentCovered        bool
-	InitialDownpaymentShortfallCents int64
+	FamilyID                          string
+	Housing                           *ourneztv1.HousingOption
+	Affordability                     *ourneztv1.HousingAffordability
+	EffectiveLoanAmountCents          int64
+	Inputs                            housingEstimateInputs
+	AssessmentModeLabel               string
+	DownpaymentPlanningNote           string
+	TotalInitialPaymentCents          int64
+	TotalInitialPaymentCPFOACents     int64
+	TotalInitialPaymentCashCents      int64
+	RemainingDownpaymentLaterCents    int64
+	AvailableDownpaymentFundsCents    int64
+	TotalInitialPaymentCovered        bool
+	TotalInitialPaymentShortfallCents int64
 }
 
 type housingCompareData struct {
@@ -50,9 +50,9 @@ type housingCompareData struct {
 }
 
 type housingCompareRow struct {
-	Name                    string
-	Affordability           *ourneztv1.HousingAffordability
-	InitialDownpaymentCents int64
+	Name                     string
+	Affordability            *ourneztv1.HousingAffordability
+	TotalInitialPaymentCents int64
 }
 
 type housingEstimateInputs struct {
@@ -178,31 +178,31 @@ func (a *App) housingDetail(c *gin.Context) {
 
 	requiredDownpaymentCents := aff.GetRequiredDownpaymentCents()
 	effectiveLoanAmountCents := effectiveHousingLoanAmountCents(option, aff)
-	initialDownpaymentCents := initialDownpaymentCents(option, aff)
-	initialDownpaymentCPFOACents := minInt64(maxInt64(inputs.CPFOAUsedCents, 0), initialDownpaymentCents)
-	initialDownpaymentCashCents := maxInt64(initialDownpaymentCents-initialDownpaymentCPFOACents, 0)
-	remainingDownpaymentLaterCents := maxInt64(requiredDownpaymentCents-initialDownpaymentCents, 0)
+	totalInitialPaymentDueNowCents := totalInitialPaymentCents(option, aff)
+	totalInitialPaymentCPFOACents := minInt64(maxInt64(inputs.CPFOAUsedCents, 0), totalInitialPaymentDueNowCents)
+	totalInitialPaymentCashCents := maxInt64(totalInitialPaymentDueNowCents-totalInitialPaymentCPFOACents, 0)
+	remainingDownpaymentLaterCents := maxInt64(requiredDownpaymentCents-initialDownpaymentCents(option, aff), 0)
 	if aff.GetFinalDownpaymentCents() > 0 {
 		remainingDownpaymentLaterCents = maxInt64(aff.GetFinalDownpaymentCents(), 0)
 	}
 	availableDownpaymentFundsCents := maxInt64(inputs.CPFOAUsedCents, 0) + maxInt64(inputs.CashSavingsUsedCents, 0)
-	initialDownpaymentShortfallCents := maxInt64(initialDownpaymentCents-availableDownpaymentFundsCents, 0)
+	totalInitialPaymentShortfallCents := maxInt64(totalInitialPaymentDueNowCents-availableDownpaymentFundsCents, 0)
 
 	a.render(c, "housing_detail", "Housing Detail", housingDetailData{
-		FamilyID:                         familyID,
-		Housing:                          option,
-		Affordability:                    aff,
-		EffectiveLoanAmountCents:         effectiveLoanAmountCents,
-		Inputs:                           inputs,
-		AssessmentModeLabel:              housingAssessmentModeLabel(option),
-		DownpaymentPlanningNote:          housingDownpaymentPlanningNote(option),
-		InitialDownpaymentCents:          initialDownpaymentCents,
-		InitialDownpaymentCPFOACents:     initialDownpaymentCPFOACents,
-		InitialDownpaymentCashCents:      initialDownpaymentCashCents,
-		RemainingDownpaymentLaterCents:   remainingDownpaymentLaterCents,
-		AvailableDownpaymentFundsCents:   availableDownpaymentFundsCents,
-		InitialDownpaymentCovered:        initialDownpaymentShortfallCents == 0,
-		InitialDownpaymentShortfallCents: initialDownpaymentShortfallCents,
+		FamilyID:                          familyID,
+		Housing:                           option,
+		Affordability:                     aff,
+		EffectiveLoanAmountCents:          effectiveLoanAmountCents,
+		Inputs:                            inputs,
+		AssessmentModeLabel:               housingAssessmentModeLabel(option),
+		DownpaymentPlanningNote:           housingDownpaymentPlanningNote(option),
+		TotalInitialPaymentCents:          totalInitialPaymentDueNowCents,
+		TotalInitialPaymentCPFOACents:     totalInitialPaymentCPFOACents,
+		TotalInitialPaymentCashCents:      totalInitialPaymentCashCents,
+		RemainingDownpaymentLaterCents:    remainingDownpaymentLaterCents,
+		AvailableDownpaymentFundsCents:    availableDownpaymentFundsCents,
+		TotalInitialPaymentCovered:        totalInitialPaymentShortfallCents == 0,
+		TotalInitialPaymentShortfallCents: totalInitialPaymentShortfallCents,
 	})
 }
 
@@ -316,9 +316,9 @@ func (a *App) compareHousing(c *gin.Context) {
 		})
 		if rowErr == nil {
 			rows = append(rows, housingCompareRow{
-				Name:                    option.GetName(),
-				Affordability:           row,
-				InitialDownpaymentCents: initialDownpaymentCents(option, row),
+				Name:                     option.GetName(),
+				Affordability:            row,
+				TotalInitialPaymentCents: totalInitialPaymentCents(option, row),
 			})
 		}
 	}
@@ -651,12 +651,12 @@ func housingAssessmentModeLabel(option *ourneztv1.HousingOption) string {
 
 func housingDownpaymentPlanningNote(option *ourneztv1.HousingOption) string {
 	if normalizeLookup(option.GetLoanType()) == "cash" {
-		return "Cash purchase planning treats the full home price as due upfront because there is no staged loan downpayment."
+		return "Cash purchase planning treats the full home price and buyer stamp duty as due upfront because there is no staged loan downpayment."
 	}
 	if inferHousingAssessmentMode(option) == "deferred" {
-		return "This initial downpayment estimate uses a 2.5% due-now planning checkpoint for DIA, while the remaining downpayment is shown separately for later payment before or at completion."
+		return "This total initial payment estimate combines a 2.5% due-now DIA checkpoint with buyer stamp duty, while the remaining downpayment is shown separately for later payment before or at completion."
 	}
-	return "This initial downpayment estimate uses a 5% due-now planning checkpoint for Standard assessment, while the remaining downpayment is shown separately for later payment."
+	return "This total initial payment estimate combines a 5% due-now Standard checkpoint with buyer stamp duty, while the remaining downpayment is shown separately for later payment."
 }
 
 func initialDownpaymentCents(option *ourneztv1.HousingOption, aff *ourneztv1.HousingAffordability) int64 {
@@ -677,17 +677,33 @@ func initialDownpaymentCents(option *ourneztv1.HousingOption, aff *ourneztv1.Hou
 		return requiredDownpaymentCents
 	}
 
-	netPriceCents := maxInt64(aff.GetNetPurchasePriceCents(), 0)
 	initialBps := int64(500)
 	if inferHousingAssessmentMode(option) == "deferred" {
 		initialBps = 250
 	}
 
-	initialByAssumptionCents := centsByBps(netPriceCents, initialBps)
+	initialByAssumptionCents := centsByBps(maxInt64(option.GetPurchasePriceCents(), 0), initialBps)
 	if initialByAssumptionCents <= 0 {
 		return requiredDownpaymentCents
 	}
 	return minInt64(requiredDownpaymentCents, initialByAssumptionCents)
+}
+
+func totalInitialPaymentCents(option *ourneztv1.HousingOption, aff *ourneztv1.HousingAffordability) int64 {
+	return maxInt64(initialDownpaymentCents(option, aff), 0) + effectiveBuyerStampDutyCents(option)
+}
+
+func effectiveBuyerStampDutyCents(option *ourneztv1.HousingOption) int64 {
+	if option == nil {
+		return 0
+	}
+	if option.GetBuyerStampDutyCents() > 0 {
+		return maxInt64(option.GetBuyerStampDutyCents(), 0)
+	}
+	if option.GetPurchasePriceCents() <= 0 {
+		return 0
+	}
+	return calculateResidentialBSDCents(option.GetPurchasePriceCents())
 }
 
 func effectiveHousingLoanAmountCents(option *ourneztv1.HousingOption, aff *ourneztv1.HousingAffordability) int64 {
