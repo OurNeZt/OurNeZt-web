@@ -29,13 +29,15 @@ type dashboardData struct {
 }
 
 type dashboardTimelineSeries struct {
-	HousingID              string
-	HousingName            string
-	YearNow                int
-	YearAssessment         int
-	YearPostKeyCollection  int
-	EstimatedTakeHomeCents int64
-	PaymentNeedCents       int64
+	HousingID               string
+	HousingName             string
+	YearNow                 int
+	YearInitialDownpayment  int
+	YearFinalDownpayment    int
+	EstimatedTakeHomeCents  int64
+	MonthlyPaymentNeedCents int64
+	InitialDownpaymentCents int64
+	FinalDownpaymentCents   int64
 }
 
 type dashboardHousingChartRow struct {
@@ -135,18 +137,28 @@ func (a *App) dashboard(c *gin.Context) {
 			MonthlySurplusAfterCents: aff.GetMonthlySurplusAfterHousingCents(),
 		})
 		assessmentYear, postYear := timelineTransitionYears(option.GetExpectedKeyCollectionDate(), currentYear)
+		initialDownpaymentYear := currentYear
+		if inferHousingAssessmentMode(option) == "deferred" {
+			initialDownpaymentYear = assessmentYear
+		}
+		finalDownpaymentYear := postYear
+		if finalDownpaymentYear < initialDownpaymentYear {
+			finalDownpaymentYear = initialDownpaymentYear
+		}
 		housingID := strings.TrimSpace(option.GetId())
 		if housingID == "" {
 			housingID = "housing_option_" + strconv.Itoa(i+1)
 		}
 		timelineSeries = append(timelineSeries, dashboardTimelineSeries{
-			HousingID:              housingID,
-			HousingName:            option.GetName(),
-			YearNow:                currentYear,
-			YearAssessment:         assessmentYear,
-			YearPostKeyCollection:  postYear,
-			EstimatedTakeHomeCents: optionTakeHome,
-			PaymentNeedCents:       aff.GetMonthlyHousingCostCents(),
+			HousingID:               housingID,
+			HousingName:             option.GetName(),
+			YearNow:                 currentYear,
+			YearInitialDownpayment:  initialDownpaymentYear,
+			YearFinalDownpayment:    finalDownpaymentYear,
+			EstimatedTakeHomeCents:  optionTakeHome,
+			MonthlyPaymentNeedCents: aff.GetMonthlyHousingCostCents(),
+			InitialDownpaymentCents: aff.GetInitialDownpaymentCents(),
+			FinalDownpaymentCents:   aff.GetFinalDownpaymentCents(),
 		})
 	}
 

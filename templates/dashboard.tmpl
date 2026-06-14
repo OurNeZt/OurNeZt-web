@@ -48,7 +48,7 @@
 <section class="card bg-base-100 shadow mt-4">
   <div class="card-body">
     <h2 class="card-title text-base">Payment vs Income Timeline</h2>
-    <p class="text-xs opacity-70">Compare monthly payment need against one estimated take-home line that rises at assessment, by housing option.</p>
+    <p class="text-xs opacity-70">Follow each housing option from today through initial downpayment, final downpayment, and the later monthly payment stage.</p>
     {{ if .Data.TimelineSeries }}
     <label class="oz-field max-w-sm">
       <span>Housing Option</span>
@@ -58,7 +58,13 @@
         {{ end }}
       </select>
     </label>
-    <div class="oz-chart-box"><canvas id="timelineChart" aria-label="Payment and income timeline chart"></canvas></div>
+    <div class="oz-chart-box oz-chart-box-timeline"><canvas id="timelineChart" aria-label="Payment and income timeline chart"></canvas></div>
+    <div class="oz-chart-legend-mobile" aria-hidden="true">
+      <span class="oz-chart-legend-item"><span class="oz-chart-legend-swatch oz-chart-legend-swatch-line"></span>Take-Home</span>
+      <span class="oz-chart-legend-item"><span class="oz-chart-legend-swatch oz-chart-legend-swatch-brown"></span>Monthly Need</span>
+      <span class="oz-chart-legend-item"><span class="oz-chart-legend-swatch oz-chart-legend-swatch-blue"></span>Initial DP</span>
+      <span class="oz-chart-legend-item"><span class="oz-chart-legend-swatch oz-chart-legend-swatch-coral"></span>Final DP</span>
+    </div>
     {{ else }}
     <div class="alert oz-alert-soft text-sm">Add at least one housing option to show payment timeline.</div>
     {{ end }}
@@ -195,8 +201,9 @@
       });
     }
 
-    const timelineCtx = document.getElementById("timelineChart");
-    if (timelineCtx) {
+      const timelineCtx = document.getElementById("timelineChart");
+      if (timelineCtx) {
+      const isCompactTimeline = () => window.matchMedia("(max-width: 640px)").matches;
       const timelineHousingSelect = document.getElementById("timelineHousingSelect");
       const currentTakeHome = {{ .Data.Income.TakeHomeIncomeCents }} / 100;
       const timelineSeries = [
@@ -205,9 +212,42 @@
           {
             id: {{ printf "%q" $s.HousingID }},
             name: {{ printf "%q" $s.HousingName }},
-            years: [{{ $s.YearNow }}, {{ $s.YearAssessment }}, {{ $s.YearPostKeyCollection }}],
-            estimatedTakeHome: [currentTakeHome, {{ $s.EstimatedTakeHomeCents }} / 100, {{ $s.EstimatedTakeHomeCents }} / 100],
-            monthlyPaymentNeed: [0, {{ $s.PaymentNeedCents }} / 100, {{ $s.PaymentNeedCents }} / 100]
+            labels: [
+              "Today ({{ $s.YearNow }})",
+              "Initial DP ({{ $s.YearInitialDownpayment }})",
+              "Final DP ({{ $s.YearFinalDownpayment }})",
+              "Monthly Payment ({{ $s.YearFinalDownpayment }})"
+            ],
+            compactLabels: [
+              ["Today", "{{ $s.YearNow }}"],
+              ["Init DP", "{{ $s.YearInitialDownpayment }}"],
+              ["Final DP", "{{ $s.YearFinalDownpayment }}"],
+              ["Monthly", "{{ $s.YearFinalDownpayment }}"]
+            ],
+            estimatedTakeHome: [
+              currentTakeHome,
+              {{ $s.EstimatedTakeHomeCents }} / 100,
+              {{ $s.EstimatedTakeHomeCents }} / 100,
+              {{ $s.EstimatedTakeHomeCents }} / 100
+            ],
+            monthlyPaymentNeed: [
+              null,
+              null,
+              null,
+              {{ $s.MonthlyPaymentNeedCents }} / 100
+            ],
+            initialDownpayment: [
+              null,
+              {{ $s.InitialDownpaymentCents }} / 100,
+              null,
+              null
+            ],
+            finalDownpayment: [
+              null,
+              null,
+              {{ $s.FinalDownpaymentCents }} / 100,
+              null
+            ]
           }
         {{- end -}}
       ];
@@ -224,59 +264,180 @@
       };
 
       const initialSeries = resolveSelectedSeries();
+      const initialCompactTimeline = isCompactTimeline();
       const timelineChart = new Chart(timelineCtx, {
-        type: "line",
+        type: "bar",
         data: {
-          labels: initialSeries.years,
+          labels: initialCompactTimeline ? initialSeries.compactLabels : initialSeries.labels,
           datasets: [
             {
-              label: "Estimated Take-Home",
+              label: "Take-Home",
               data: initialSeries.estimatedTakeHome,
               borderColor: "#7ea13d",
               backgroundColor: "rgba(126,161,61,0.12)",
+              yAxisID: "monthlyAxis",
+              type: "line",
               tension: 0.22,
-              pointRadius: 3
+              spanGaps: true,
+              pointRadius: 3,
+              pointHoverRadius: 4,
+              pointBackgroundColor: "#dcecb2",
+              pointBorderColor: "#6c9429",
+              pointBorderWidth: 2,
+              borderWidth: 2
             },
             {
-              label: "Monthly Housing Payment Need",
+              label: "Monthly Need",
               data: initialSeries.monthlyPaymentNeed,
+              backgroundColor: "rgba(138,101,69,0.72)",
+              borderColor: "#8a6545",
+              yAxisID: "monthlyAxis",
+              type: "bar",
+              borderWidth: 1,
+              grouped: false,
+              categoryPercentage: 0.54,
+              barPercentage: 0.5,
+              borderRadius: 0
+            },
+            {
+              label: "Initial DP",
+              data: initialSeries.initialDownpayment,
+              backgroundColor: "rgba(56,90,130,0.72)",
+              borderColor: "#385a82",
+              borderWidth: 1,
+              yAxisID: "upfrontAxis",
+              stack: "downpayment",
+              grouped: false,
+              categoryPercentage: 0.54,
+              barPercentage: 0.82,
+              borderRadius: 0
+            },
+            {
+              label: "Final DP",
+              data: initialSeries.finalDownpayment,
+              backgroundColor: "rgba(239,127,122,0.72)",
               borderColor: "#ef7f7a",
-              backgroundColor: "rgba(239,127,122,0.1)",
-              borderDash: [6, 4],
-              tension: 0.15,
-              pointRadius: 3
+              borderWidth: 1,
+              yAxisID: "upfrontAxis",
+              stack: "downpayment",
+              grouped: false,
+              categoryPercentage: 0.54,
+              barPercentage: 0.82,
+              borderRadius: 0
             }
           ]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          plugins: { legend: { position: "bottom" } },
+          interaction: {
+            mode: "index",
+            intersect: false
+          },
+          plugins: {
+            legend: {
+              display: !initialCompactTimeline,
+              position: "bottom",
+              labels: {
+                usePointStyle: false,
+                boxWidth: initialCompactTimeline ? 18 : 42,
+                padding: initialCompactTimeline ? 12 : 16,
+                font: {
+                  size: initialCompactTimeline ? 11 : 12
+                }
+              }
+            }
+          },
           scales: {
             x: {
+              offset: true,
+              ticks: {
+                autoSkip: false,
+                maxRotation: initialCompactTimeline ? 20 : 0,
+                minRotation: initialCompactTimeline ? 20 : 0,
+                font: {
+                  size: initialCompactTimeline ? 10 : 12
+                }
+              },
               title: {
-                display: true,
-                text: "Year"
+                display: !initialCompactTimeline,
+                text: "Housing payment stage"
               }
             },
-            y: {
+            monthlyAxis: {
+              type: "linear",
+              position: "left",
               ticks: {
-                callback: toMoneyTick
+                callback: toMoneyTick,
+                font: {
+                  size: initialCompactTimeline ? 10 : 12
+                }
+              },
+              title: {
+                display: !initialCompactTimeline,
+                text: "Monthly income and payment"
+              }
+            },
+            upfrontAxis: {
+              type: "linear",
+              position: "right",
+              grid: {
+                drawOnChartArea: false
+              },
+              ticks: {
+                callback: toMoneyTick,
+                font: {
+                  size: initialCompactTimeline ? 10 : 12
+                }
+              },
+              title: {
+                display: !initialCompactTimeline,
+                text: "One-time payments"
               }
             }
           }
         }
       });
 
+      let lastCompactTimeline = initialCompactTimeline;
+      const applyTimelinePresentation = () => {
+        const compact = isCompactTimeline();
+        const selected = resolveSelectedSeries();
+        timelineChart.data.labels = compact ? selected.compactLabels : selected.labels;
+        timelineChart.options.plugins.legend.display = !compact;
+        timelineChart.options.plugins.legend.labels.boxWidth = compact ? 18 : 42;
+        timelineChart.options.plugins.legend.labels.padding = compact ? 12 : 16;
+        timelineChart.options.plugins.legend.labels.font.size = compact ? 11 : 12;
+        timelineChart.options.scales.x.ticks.maxRotation = compact ? 20 : 0;
+        timelineChart.options.scales.x.ticks.minRotation = compact ? 20 : 0;
+        timelineChart.options.scales.x.ticks.font.size = compact ? 10 : 12;
+        timelineChart.options.scales.x.title.display = !compact;
+        timelineChart.options.scales.monthlyAxis.ticks.font.size = compact ? 10 : 12;
+        timelineChart.options.scales.monthlyAxis.title.display = !compact;
+        timelineChart.options.scales.monthlyAxis.title.text = "Monthly income and payment";
+        timelineChart.options.scales.upfrontAxis.ticks.font.size = compact ? 10 : 12;
+        timelineChart.options.scales.upfrontAxis.title.display = !compact;
+        timelineChart.options.scales.upfrontAxis.title.text = "One-time payments";
+        timelineChart.update();
+        lastCompactTimeline = compact;
+      };
+
       if (timelineHousingSelect) {
         timelineHousingSelect.addEventListener("change", () => {
           const selected = resolveSelectedSeries();
-          timelineChart.data.labels = selected.years;
+          timelineChart.data.labels = isCompactTimeline() ? selected.compactLabels : selected.labels;
           timelineChart.data.datasets[0].data = selected.estimatedTakeHome;
           timelineChart.data.datasets[1].data = selected.monthlyPaymentNeed;
+          timelineChart.data.datasets[2].data = selected.initialDownpayment;
+          timelineChart.data.datasets[3].data = selected.finalDownpayment;
           timelineChart.update();
         });
       }
+      window.addEventListener("resize", () => {
+        const compact = isCompactTimeline();
+        if (compact === lastCompactTimeline) return;
+        applyTimelinePresentation();
+      });
     }
   })();
 </script>
