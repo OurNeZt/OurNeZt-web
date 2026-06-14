@@ -4,7 +4,7 @@
     {{- $seeMoreLabel := housingTooltipSeeMoreLabel .Key -}}
     {{- $seeMoreURL := housingTooltipSeeMoreURL .Key -}}
     <span class="oz-help-tooltip{{ if eq .Placement "below" }} oz-help-tooltip-force-below{{ end }}">
-      <button type="button" class="oz-help-trigger" aria-label="{{ tooltipAriaLabel .Label }}">?</button>
+      <button type="button" class="oz-help-trigger" aria-label="{{ tooltipAriaLabel .Label }}" aria-expanded="false">?</button>
       <span class="oz-help-bubble" role="tooltip">
         <span class="oz-help-bubble-text">{{ $tip }}</span>
         {{- if and $seeMoreLabel $seeMoreURL -}}

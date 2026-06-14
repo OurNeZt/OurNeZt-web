@@ -21,8 +21,9 @@
         <thead>
           <tr>
             <th>Option Name</th>
-            <th><span class="inline-flex items-center gap-1">Upfront{{ template "partials/help_tooltip" (dict "Key" "upfront_cost" "Label" "Upfront Cost") }}</span></th>
-            <th><span class="inline-flex items-center gap-1">Mortgage{{ template "partials/help_tooltip" (dict "Key" "monthly_mortgage" "Label" "Monthly Mortgage") }}</span></th>
+            <th><span class="inline-flex items-center gap-1">Initial DP{{ template "partials/help_tooltip" (dict "Key" "initial_downpayment_due_now" "Label" "Initial Downpayment Due Now") }}</span></th>
+            <th>Upfront</th>
+            <th>Mortgage</th>
             <th><span class="inline-flex items-center gap-1">Monthly Cost{{ template "partials/help_tooltip" (dict "Key" "monthly_housing_cost" "Label" "Monthly Housing Cost") }}</span></th>
             <th><span class="inline-flex items-center gap-1">Surplus{{ template "partials/help_tooltip" (dict "Key" "monthly_surplus_after_housing" "Label" "Monthly Surplus After Housing") }}</span></th>
             <th>
@@ -37,6 +38,7 @@
           {{ range .Data.Rows }}
           <tr>
             <td class="font-medium">{{ .Name }}</td>
+            <td>{{ cents .InitialDownpaymentCents }}</td>
             <td>{{ cents .Affordability.UpfrontCostCents }}</td>
             <td>{{ cents .Affordability.MonthlyMortgageCents }}</td>
             <td>{{ cents .Affordability.MonthlyHousingCostCents }}</td>
@@ -44,7 +46,7 @@
             <td>{{ ratingLabel .Affordability.Rating }}</td>
           </tr>
           {{ else }}
-          <tr><td colspan="6" class="opacity-70">No comparison rows yet</td></tr>
+          <tr><td colspan="7" class="opacity-70">No comparison rows yet</td></tr>
           {{ end }}
         </tbody>
       </table>

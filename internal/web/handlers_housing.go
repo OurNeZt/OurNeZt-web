@@ -26,10 +26,20 @@ type housingFormData struct {
 }
 
 type housingDetailData struct {
-	FamilyID      string
-	Housing       *ourneztv1.HousingOption
-	Affordability *ourneztv1.HousingAffordability
-	Inputs        housingEstimateInputs
+	FamilyID                         string
+	Housing                          *ourneztv1.HousingOption
+	Affordability                    *ourneztv1.HousingAffordability
+	EffectiveLoanAmountCents         int64
+	Inputs                           housingEstimateInputs
+	AssessmentModeLabel              string
+	DownpaymentPlanningNote          string
+	InitialDownpaymentCents          int64
+	InitialDownpaymentCPFOACents     int64
+	InitialDownpaymentCashCents      int64
+	RemainingDownpaymentLaterCents   int64
+	AvailableDownpaymentFundsCents   int64
+	InitialDownpaymentCovered        bool
+	InitialDownpaymentShortfallCents int64
 }
 
 type housingCompareData struct {
@@ -39,8 +49,9 @@ type housingCompareData struct {
 }
 
 type housingCompareRow struct {
-	Name          string
-	Affordability *ourneztv1.HousingAffordability
+	Name                    string
+	Affordability           *ourneztv1.HousingAffordability
+	InitialDownpaymentCents int64
 }
 
 type housingEstimateInputs struct {
@@ -162,7 +173,31 @@ func (a *App) housingDetail(c *gin.Context) {
 		}
 	}
 
-	a.render(c, "housing_detail", "Housing Detail", housingDetailData{FamilyID: familyID, Housing: option, Affordability: aff, Inputs: inputs})
+	requiredDownpaymentCents := aff.GetRequiredDownpaymentCents()
+	effectiveLoanAmountCents := effectiveHousingLoanAmountCents(option, aff)
+	initialDownpaymentCents := initialDownpaymentCents(option, aff)
+	initialDownpaymentCPFOACents := minInt64(maxInt64(inputs.CPFOAUsedCents, 0), initialDownpaymentCents)
+	initialDownpaymentCashCents := maxInt64(initialDownpaymentCents-initialDownpaymentCPFOACents, 0)
+	remainingDownpaymentLaterCents := maxInt64(requiredDownpaymentCents-initialDownpaymentCents, 0)
+	availableDownpaymentFundsCents := maxInt64(inputs.CPFOAUsedCents, 0) + maxInt64(inputs.CashSavingsUsedCents, 0)
+	initialDownpaymentShortfallCents := maxInt64(initialDownpaymentCents-availableDownpaymentFundsCents, 0)
+
+	a.render(c, "housing_detail", "Housing Detail", housingDetailData{
+		FamilyID:                         familyID,
+		Housing:                          option,
+		Affordability:                    aff,
+		EffectiveLoanAmountCents:         effectiveLoanAmountCents,
+		Inputs:                           inputs,
+		AssessmentModeLabel:              housingAssessmentModeLabel(option),
+		DownpaymentPlanningNote:          housingDownpaymentPlanningNote(option),
+		InitialDownpaymentCents:          initialDownpaymentCents,
+		InitialDownpaymentCPFOACents:     initialDownpaymentCPFOACents,
+		InitialDownpaymentCashCents:      initialDownpaymentCashCents,
+		RemainingDownpaymentLaterCents:   remainingDownpaymentLaterCents,
+		AvailableDownpaymentFundsCents:   availableDownpaymentFundsCents,
+		InitialDownpaymentCovered:        initialDownpaymentShortfallCents == 0,
+		InitialDownpaymentShortfallCents: initialDownpaymentShortfallCents,
+	})
 }
 
 func (a *App) editHousing(c *gin.Context) {
@@ -268,8 +303,9 @@ func (a *App) compareHousing(c *gin.Context) {
 		})
 		if rowErr == nil {
 			rows = append(rows, housingCompareRow{
-				Name:          option.GetName(),
-				Affordability: row,
+				Name:                    option.GetName(),
+				Affordability:           row,
+				InitialDownpaymentCents: initialDownpaymentCents(option, row),
 			})
 		}
 	}
@@ -573,6 +609,81 @@ func maxInt64(a, b int64) int64 {
 		return a
 	}
 	return b
+}
+
+func housingAssessmentModeLabel(option *ourneztv1.HousingOption) string {
+	if inferHousingAssessmentMode(option) == "deferred" {
+		return "Deferred Income Assessment (DIA)"
+	}
+	return "Standard Income Assessment"
+}
+
+func housingDownpaymentPlanningNote(option *ourneztv1.HousingOption) string {
+	if normalizeLookup(option.GetLoanType()) == "cash" {
+		return "Cash purchase planning treats the full home price as due upfront because there is no staged loan downpayment."
+	}
+	if inferHousingAssessmentMode(option) == "deferred" {
+		return "This initial downpayment estimate uses a 2.5% due-now planning checkpoint for DIA, while the remaining downpayment is shown separately for later payment before or at completion."
+	}
+	return "This initial downpayment estimate uses a 5% due-now planning checkpoint for Standard assessment, while the remaining downpayment is shown separately for later payment."
+}
+
+func initialDownpaymentCents(option *ourneztv1.HousingOption, aff *ourneztv1.HousingAffordability) int64 {
+	if aff == nil {
+		return 0
+	}
+
+	requiredDownpaymentCents := maxInt64(aff.GetRequiredDownpaymentCents(), 0)
+	if requiredDownpaymentCents == 0 {
+		return 0
+	}
+
+	if normalizeLookup(option.GetLoanType()) == "cash" {
+		return requiredDownpaymentCents
+	}
+
+	netPriceCents := maxInt64(aff.GetNetPurchasePriceCents(), 0)
+	initialBps := int64(500)
+	if inferHousingAssessmentMode(option) == "deferred" {
+		initialBps = 250
+	}
+
+	initialByAssumptionCents := centsByBps(netPriceCents, initialBps)
+	if initialByAssumptionCents <= 0 {
+		return requiredDownpaymentCents
+	}
+	return minInt64(requiredDownpaymentCents, initialByAssumptionCents)
+}
+
+func effectiveHousingLoanAmountCents(option *ourneztv1.HousingOption, aff *ourneztv1.HousingAffordability) int64 {
+	if option == nil {
+		if aff == nil {
+			return 0
+		}
+		return maxInt64(aff.GetEstimatedLoanAmountCents(), 0)
+	}
+
+	if normalizeLookup(option.GetLoanType()) == "cash" {
+		return 0
+	}
+
+	if inferHousingAssessmentMode(option) == "deferred" {
+		if aff != nil && aff.GetEstimatedLoanAmountCents() > 0 {
+			return aff.GetEstimatedLoanAmountCents()
+		}
+
+		netPriceCents := maxInt64(option.GetPurchasePriceCents()-option.GetGrantAmountCents(), 0)
+		return centsByBps(netPriceCents, 7500)
+	}
+
+	return maxInt64(option.GetLoanAmountCents(), 0)
+}
+
+func centsByBps(amountCents, bps int64) int64 {
+	if amountCents <= 0 || bps <= 0 {
+		return 0
+	}
+	return amountCents * bps / 10000
 }
 
 func buildDIAIncomeDefaultInputs(people []*ourneztv1.PersonProfile, option *ourneztv1.HousingOption) map[string]string {

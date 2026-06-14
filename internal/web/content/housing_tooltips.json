@@ -24,10 +24,10 @@
   },
   "loan_amount": {
     "label": "Loan Amount",
-    "meaning": "The amount you plan to borrow for this option.",
-    "calculation": "Used directly for mortgage repayment when provided. If it is left at zero in derived views, the system estimates it from net price minus downpayment.",
-    "assumptions": "Loan amount should not exceed net purchase price.",
-    "source": "User-provided or system-derived depending on the view."
+    "meaning": "The effective loan amount used for this housing scenario.",
+    "calculation": "For Standard assessment, this follows the loan amount entered by the user. For DIA, the app assumes a 75% loan based on net purchase price.",
+    "assumptions": "Loan amount should not exceed net purchase price. Cash purchases show zero loan.",
+    "source": "User-provided for Standard, system-derived for DIA."
   },
   "interest_rate": {
     "label": "Interest Rate",
@@ -128,8 +128,8 @@
   "upfront_cost": {
     "label": "Upfront Cost",
     "meaning": "The total cash-and-CPF amount needed upfront for this option.",
-    "calculation": "Downpayment + legal fees + buyer stamp duty + any renovation and furniture budgets tracked for the option.",
-    "assumptions": "Current housing form keeps renovation and furniture budgets at zero.",
+    "calculation": "Downpayment + legal fees + buyer stamp duty.",
+    "assumptions": "This planning figure excludes renovation and furniture budgets.",
     "source": "System-derived."
   },
   "required_downpayment": {
@@ -137,6 +137,48 @@
     "meaning": "The upfront downpayment portion required before the loan starts.",
     "calculation": "Calculated from net purchase price and the option's downpayment percentage.",
     "assumptions": "Deferred mode assumes a 25% downpayment.",
+    "source": "System-derived."
+  },
+  "initial_downpayment": {
+    "label": "Initial Downpayment",
+    "meaning": "The earlier downpayment amount due at the start of the purchase journey, not the full downpayment across all stages.",
+    "calculation": "For Standard assessment, this view uses a 5% due-now checkpoint. For DIA, it uses a 2.5% due-now checkpoint. Cash purchases treat the full amount as due upfront.",
+    "assumptions": "This is a planning view to separate the first payment checkpoint from later downpayment stages while keeping DIA on its 75% loan, 25% total downpayment assumption.",
+    "source": "System-derived from the saved housing option and household balances."
+  },
+  "initial_downpayment_due_now": {
+    "label": "Initial Downpayment Due Now",
+    "meaning": "The estimated downpayment amount that needs to be ready at the earlier purchase checkpoint.",
+    "calculation": "For Standard assessment, this uses 5% of net purchase price. For DIA, this uses 2.5% of net purchase price. The result is capped so it never exceeds the full required downpayment.",
+    "assumptions": "Standard uses the loan amount entered by the user. DIA keeps the app's 75% loan and 25% total downpayment planning assumption.",
+    "source": "System-derived."
+  },
+  "initial_downpayment_cpf_oa": {
+    "label": "CPF OA for Initial Payment",
+    "meaning": "The CPF OA portion that can be applied to the initial downpayment checkpoint.",
+    "calculation": "This is the smaller of available CPF OA and the initial downpayment due now.",
+    "assumptions": "This looks only at the initial payment checkpoint, not the full downpayment.",
+    "source": "System-derived."
+  },
+  "initial_downpayment_cash_portion": {
+    "label": "Cash Needed Now",
+    "meaning": "The part of the initial downpayment that still needs cash after CPF OA is applied.",
+    "calculation": "Initial downpayment due now minus CPF OA used for the initial payment, floored at zero.",
+    "assumptions": "This covers only the earlier due-now checkpoint.",
+    "source": "System-derived."
+  },
+  "available_downpayment_funds": {
+    "label": "Available CPF OA and Cash",
+    "meaning": "The current household funds available to meet the initial downpayment checkpoint.",
+    "calculation": "Current CPF OA used for planning + current cash savings used for planning.",
+    "assumptions": "This uses the household balances saved in member profiles at the time of calculation.",
+    "source": "System-derived from household profiles."
+  },
+  "remaining_downpayment_later": {
+    "label": "Remaining Downpayment Later",
+    "meaning": "The portion of the total required downpayment that is not part of the earlier due-now checkpoint.",
+    "calculation": "Total required downpayment minus initial downpayment due now.",
+    "assumptions": "This represents the later stage downpayment need before or at completion.",
     "source": "System-derived."
   },
   "estimated_loan_amount": {

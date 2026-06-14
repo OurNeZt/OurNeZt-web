@@ -4,11 +4,36 @@
   <div class="card-body">
     <h1 class="card-title">{{ .Data.Housing.Name }}</h1>
     <p>{{ .Data.Housing.HousingType }} at {{ .Data.Housing.Location }}</p>
+    <p class="text-sm opacity-70">Assessment mode: {{ .Data.AssessmentModeLabel }}</p>
     <div class="grid md:grid-cols-3 gap-3 mt-2">
-      <div class="stat bg-base-200 rounded-box"><div class="stat-title inline-flex items-center gap-1">Purchase Price{{ template "partials/help_tooltip" (dict "Key" "purchase_price" "Label" "Purchase Price") }}</div><div class="stat-value oz-stat-value">{{ cents .Data.Housing.PurchasePriceCents }}</div></div>
-      <div class="stat bg-base-200 rounded-box"><div class="stat-title inline-flex items-center gap-1">Loan Amount{{ template "partials/help_tooltip" (dict "Key" "loan_amount" "Label" "Loan Amount") }}</div><div class="stat-value oz-stat-value">{{ cents .Data.Housing.LoanAmountCents }}</div></div>
-      <div class="stat bg-base-200 rounded-box"><div class="stat-title inline-flex items-center gap-1">Monthly Maintenance{{ template "partials/help_tooltip" (dict "Key" "monthly_maintenance" "Label" "Monthly Maintenance") }}</div><div class="stat-value oz-stat-value">{{ cents .Data.Housing.MonthlyMaintenanceCents }}</div></div>
+      <div class="stat bg-base-200 rounded-box"><div class="stat-title">Purchase Price</div><div class="stat-value oz-stat-value">{{ cents .Data.Housing.PurchasePriceCents }}</div></div>
+      <div class="stat bg-base-200 rounded-box"><div class="stat-title inline-flex items-center gap-1">Loan Amount{{ template "partials/help_tooltip" (dict "Key" "loan_amount" "Label" "Loan Amount") }}</div><div class="stat-value oz-stat-value">{{ cents .Data.EffectiveLoanAmountCents }}</div></div>
+      <div class="stat bg-base-200 rounded-box"><div class="stat-title">Monthly Maintenance</div><div class="stat-value oz-stat-value">{{ cents .Data.Housing.MonthlyMaintenanceCents }}</div></div>
     </div>
+  </div>
+</section>
+<section class="card bg-base-100 shadow mt-6">
+  <div class="card-body">
+    <h2 class="card-title inline-flex items-center gap-1">Initial Downpayment{{ template "partials/help_tooltip" (dict "Key" "initial_downpayment" "Label" "Initial Downpayment") }}</h2>
+    <p class="text-xs opacity-70">{{ .Data.DownpaymentPlanningNote }}</p>
+    <div class="grid md:grid-cols-3 gap-3 mt-2">
+      <div class="stat oz-stat-card bg-base-200 rounded-box"><div class="stat-title inline-flex items-center gap-1">Initial Downpayment Due Now{{ template "partials/help_tooltip" (dict "Key" "initial_downpayment_due_now" "Label" "Initial Downpayment Due Now") }}</div><div class="stat-value oz-stat-value">{{ cents .Data.InitialDownpaymentCents }}</div></div>
+      <div class="stat oz-stat-card bg-base-200 rounded-box"><div class="stat-title inline-flex items-center gap-1">Cash Needed Now{{ template "partials/help_tooltip" (dict "Key" "initial_downpayment_cash_portion" "Label" "Cash Needed Now") }}</div><div class="stat-value oz-stat-value">{{ cents .Data.InitialDownpaymentCashCents }}</div></div>
+      <div class="stat oz-stat-card bg-base-200 rounded-box"><div class="stat-title">Available CPF OA + Cash</div><div class="stat-value oz-stat-value">{{ cents .Data.AvailableDownpaymentFundsCents }}</div></div>
+    </div>
+    <div class="grid md:grid-cols-2 gap-3 mt-3">
+      <div class="stat oz-stat-card bg-base-200 rounded-box"><div class="stat-title inline-flex items-center gap-1">Remaining Downpayment Later{{ template "partials/help_tooltip" (dict "Key" "remaining_downpayment_later" "Label" "Remaining Downpayment Later") }}</div><div class="stat-value oz-stat-value">{{ cents .Data.RemainingDownpaymentLaterCents }}</div><div class="stat-desc">The rest of the required downpayment that is expected later, before or at completion.</div></div>
+      <div class="stat oz-stat-card bg-base-200 rounded-box"><div class="stat-title">Total Required Downpayment</div><div class="stat-value oz-stat-value">{{ cents .Data.Affordability.RequiredDownpaymentCents }}</div><div class="stat-desc">Shown separately from the due-now amount so you can distinguish the early checkpoint from the full downpayment.</div></div>
+    </div>
+    {{ if .Data.InitialDownpaymentCovered }}
+    <div class="alert oz-alert-success mt-3 text-sm">
+      Current CPF OA and cash savings can cover the estimated initial downpayment due now for this option.
+    </div>
+    {{ else }}
+    <div class="alert oz-alert-warning mt-3 text-sm">
+      Current CPF OA and cash savings are short by {{ cents .Data.InitialDownpaymentShortfallCents }} for the estimated initial downpayment due now.
+    </div>
+    {{ end }}
   </div>
 </section>
 <section class="card bg-base-100 shadow mt-6">
@@ -16,11 +41,11 @@
     <h2 class="card-title">Inputs Used</h2>
     <p class="text-xs opacity-70">These household values are what the affordability estimate uses for this housing option.</p>
     <div class="grid md:grid-cols-3 gap-3">
-      <div class="stat bg-base-200 rounded-box"><div class="stat-title inline-flex items-center gap-1">Gross Income Used{{ template "partials/help_tooltip" (dict "Key" "gross_income_used" "Label" "Gross Income Used") }}</div><div class="stat-value oz-stat-value">{{ cents .Data.Inputs.GrossIncomeUsedCents }}</div></div>
-      <div class="stat bg-base-200 rounded-box"><div class="stat-title inline-flex items-center gap-1">Take-Home Used{{ template "partials/help_tooltip" (dict "Key" "take_home_used" "Label" "Take-Home Used") }}</div><div class="stat-value oz-stat-value">{{ cents .Data.Inputs.TakeHomeUsedCents }}</div></div>
-      <div class="stat bg-base-200 rounded-box"><div class="stat-title inline-flex items-center gap-1">CPF OA Used{{ template "partials/help_tooltip" (dict "Key" "cpf_oa_used" "Label" "CPF OA Used") }}</div><div class="stat-value oz-stat-value">{{ cents .Data.Inputs.CPFOAUsedCents }}</div></div>
-      <div class="stat bg-base-200 rounded-box"><div class="stat-title inline-flex items-center gap-1">Cash Savings Used{{ template "partials/help_tooltip" (dict "Key" "cash_savings_used" "Label" "Cash Savings Used") }}</div><div class="stat-value oz-stat-value">{{ cents .Data.Inputs.CashSavingsUsedCents }}</div></div>
-      <div class="stat bg-base-200 rounded-box"><div class="stat-title inline-flex items-center gap-1">Monthly Expenses Used{{ template "partials/help_tooltip" (dict "Key" "monthly_expenses_used" "Label" "Monthly Expenses Used") }}</div><div class="stat-value oz-stat-value">{{ cents .Data.Inputs.MonthlyExpensesUsedCents }}</div></div>
+      <div class="stat bg-base-200 rounded-box"><div class="stat-title">Gross Income Used</div><div class="stat-value oz-stat-value">{{ cents .Data.Inputs.GrossIncomeUsedCents }}</div></div>
+      <div class="stat bg-base-200 rounded-box"><div class="stat-title">Take-Home Used</div><div class="stat-value oz-stat-value">{{ cents .Data.Inputs.TakeHomeUsedCents }}</div></div>
+      <div class="stat bg-base-200 rounded-box"><div class="stat-title">CPF OA Used</div><div class="stat-value oz-stat-value">{{ cents .Data.Inputs.CPFOAUsedCents }}</div></div>
+      <div class="stat bg-base-200 rounded-box"><div class="stat-title">Cash Savings Used</div><div class="stat-value oz-stat-value">{{ cents .Data.Inputs.CashSavingsUsedCents }}</div></div>
+      <div class="stat bg-base-200 rounded-box"><div class="stat-title">Monthly Expenses Used</div><div class="stat-value oz-stat-value">{{ cents .Data.Inputs.MonthlyExpensesUsedCents }}</div></div>
     </div>
   </div>
 </section>
@@ -30,8 +55,8 @@
     <div class="grid md:grid-cols-3 gap-3">
       <div class="stat bg-base-200 rounded-box"><div class="stat-title inline-flex items-center gap-1">Upfront Cost{{ template "partials/help_tooltip" (dict "Key" "upfront_cost" "Label" "Upfront Cost") }}</div><div class="stat-value oz-stat-value">{{ cents .Data.Affordability.UpfrontCostCents }}</div></div>
       <div class="stat bg-base-200 rounded-box"><div class="stat-title inline-flex items-center gap-1">Required Downpayment{{ template "partials/help_tooltip" (dict "Key" "required_downpayment" "Label" "Required Downpayment") }}</div><div class="stat-value oz-stat-value">{{ cents .Data.Affordability.RequiredDownpaymentCents }}</div></div>
-      <div class="stat bg-base-200 rounded-box"><div class="stat-title inline-flex items-center gap-1">Estimated Loan Amount{{ template "partials/help_tooltip" (dict "Key" "estimated_loan_amount" "Label" "Estimated Loan Amount") }}</div><div class="stat-value oz-stat-value">{{ cents .Data.Affordability.EstimatedLoanAmountCents }}</div></div>
-      <div class="stat bg-base-200 rounded-box"><div class="stat-title inline-flex items-center gap-1">CPF Used{{ template "partials/help_tooltip" (dict "Key" "cpf_used" "Label" "CPF Used") }}</div><div class="stat-value oz-stat-value">{{ cents .Data.Affordability.CpfUsedCents }}</div></div>
+      <div class="stat bg-base-200 rounded-box"><div class="stat-title">Estimated Loan Amount</div><div class="stat-value oz-stat-value">{{ cents .Data.Affordability.EstimatedLoanAmountCents }}</div></div>
+      <div class="stat bg-base-200 rounded-box"><div class="stat-title">CPF Used</div><div class="stat-value oz-stat-value">{{ cents .Data.Affordability.CpfUsedCents }}</div></div>
       <div class="stat bg-base-200 rounded-box"><div class="stat-title inline-flex items-center gap-1">Cash Top-Up Required{{ template "partials/help_tooltip" (dict "Key" "cash_top_up_required" "Label" "Cash Top-Up Required") }}</div><div class="stat-value oz-stat-value">{{ cents .Data.Affordability.CashTopUpRequiredCents }}</div></div>
       <div class="stat bg-base-200 rounded-box"><div class="stat-title inline-flex items-center gap-1">Monthly Mortgage{{ template "partials/help_tooltip" (dict "Key" "monthly_mortgage" "Label" "Monthly Mortgage") }}</div><div class="stat-value oz-stat-value">{{ cents .Data.Affordability.MonthlyMortgageCents }}</div></div>
       <div class="stat bg-base-200 rounded-box"><div class="stat-title inline-flex items-center gap-1">Monthly Housing Cost{{ template "partials/help_tooltip" (dict "Key" "monthly_housing_cost" "Label" "Monthly Housing Cost") }}</div><div class="stat-value oz-stat-value">{{ cents .Data.Affordability.MonthlyHousingCostCents }}</div></div>

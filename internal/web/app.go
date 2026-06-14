@@ -128,17 +128,17 @@ func parseTemplates(root string) (*template.Template, error) {
 	}
 	sort.Strings(paths)
 	tpl := template.New("ournezt-web").Funcs(template.FuncMap{
-		"cents":            centsString,
-		"moneyInput":       centsInputString,
-		"bpsInput":         bpsInputString,
-		"eqFold":           eqFold,
-		"ratingLabel":      housingRatingLabel,
-		"housingTooltip":   housingTooltip,
+		"cents":                       centsString,
+		"moneyInput":                  centsInputString,
+		"bpsInput":                    bpsInputString,
+		"eqFold":                      eqFold,
+		"ratingLabel":                 housingRatingLabel,
+		"housingTooltip":              housingTooltip,
 		"housingTooltipSupportingTip": housingTooltipSupportingTip,
 		"housingTooltipSeeMoreLabel":  housingTooltipSeeMoreLabel,
 		"housingTooltipSeeMoreURL":    housingTooltipSeeMoreURL,
-		"tooltipAriaLabel": tooltipAriaLabel,
-		"dict":             dict,
+		"tooltipAriaLabel":            tooltipAriaLabel,
+		"dict":                        dict,
 	})
 	return tpl.ParseFiles(paths...)
 }

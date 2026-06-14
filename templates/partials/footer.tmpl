@@ -76,6 +76,35 @@
       if (yearEl) yearEl.textContent = "(c) " + String(new Date().getFullYear());
 
       const helpTooltips = Array.from(document.querySelectorAll(".oz-help-tooltip"));
+      const helpTooltipRoot = document.documentElement;
+      let helpTooltipHoverSuspended = false;
+      const setHelpTooltipExpanded = (tooltip, expanded) => {
+        if (!tooltip) return;
+        const trigger = tooltip.querySelector(".oz-help-trigger");
+        if (trigger) {
+          trigger.setAttribute("aria-expanded", expanded ? "true" : "false");
+        }
+      };
+      const closePinnedHelpTooltips = ({ blur = false } = {}) => {
+        helpTooltips.forEach((tooltip) => {
+          tooltip.classList.remove("oz-help-tooltip-pinned");
+          setHelpTooltipExpanded(tooltip, false);
+        });
+        if (!blur) return;
+        const active = document.activeElement;
+        if (active && active.classList && active.classList.contains("oz-help-trigger")) {
+          active.blur();
+        }
+      };
+      const setHelpTooltipHoverSuspended = (suspended) => {
+        if (helpTooltipHoverSuspended === suspended) return;
+        helpTooltipHoverSuspended = suspended;
+        helpTooltipRoot.classList.toggle("oz-help-tooltips-suspend-hover", suspended);
+      };
+      const dismissHelpTooltipsForScroll = () => {
+        closePinnedHelpTooltips({ blur: true });
+        setHelpTooltipHoverSuspended(true);
+      };
       const updateHelpTooltipPlacement = (tooltip) => {
         if (!tooltip) return;
         const trigger = tooltip.querySelector(".oz-help-trigger");
@@ -133,9 +162,38 @@
             }
             return;
           }
+          const trigger = event.target.closest(".oz-help-trigger");
+          if (trigger) {
+            event.preventDefault();
+            event.stopPropagation();
+            setHelpTooltipHoverSuspended(false);
+            const shouldPin = !tooltip.classList.contains("oz-help-tooltip-pinned");
+            closePinnedHelpTooltips({ blur: false });
+            if (shouldPin) {
+              tooltip.classList.add("oz-help-tooltip-pinned");
+              setHelpTooltipExpanded(tooltip, true);
+              updateHelpTooltipPlacement(tooltip);
+              trigger.focus({ preventScroll: true });
+            } else {
+              setHelpTooltipExpanded(tooltip, false);
+              trigger.blur();
+            }
+            return;
+          }
           event.stopPropagation();
         });
       });
+      document.addEventListener("click", () => closePinnedHelpTooltips({ blur: true }));
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") {
+          closePinnedHelpTooltips({ blur: true });
+        }
+      });
+      document.addEventListener("pointermove", () => setHelpTooltipHoverSuspended(false), { passive: true });
+      document.addEventListener("pointerdown", () => setHelpTooltipHoverSuspended(false), { passive: true });
+      document.addEventListener("touchstart", () => setHelpTooltipHoverSuspended(false), { passive: true });
+      window.addEventListener("scroll", dismissHelpTooltipsForScroll, { passive: true });
+      document.addEventListener("scroll", dismissHelpTooltipsForScroll, { passive: true, capture: true });
 
       const promptBackdrop = document.getElementById("ozTourPromptBackdrop");
       const promptStartBtn = document.getElementById("ozTourPromptStart");
