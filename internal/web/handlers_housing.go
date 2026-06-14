@@ -341,7 +341,7 @@ func housingFromForm(c *gin.Context) *ourneztv1.HousingOption {
 		LoanType:                  normalizeLookup(c.PostForm("loan_type")),
 		LoanAmountCents:           parseMoneyCents(c.PostForm("loan_amount")),
 		InterestRateBps:           parsePercentBps(c.PostForm("interest_rate_percent")),
-		LoanTenureMonths:          parseInt32(c.PostForm("loan_tenure_months")),
+		LoanTenureMonths:          yearsToMonths(parseInt32(c.PostForm("loan_tenure_years"))),
 		DownpaymentPercentBps:     0,
 		RenovationBudgetCents:     parseMoneyCents(c.PostForm("renovation_budget")),
 		FurnitureBudgetCents:      parseMoneyCents(c.PostForm("furniture_budget")),
@@ -350,6 +350,20 @@ func housingFromForm(c *gin.Context) *ourneztv1.HousingOption {
 		MonthlyMaintenanceCents:   parseMoneyCents(c.PostForm("monthly_maintenance")),
 		ExpectedKeyCollectionDate: strings.TrimSpace(c.PostForm("expected_key_collection_date")),
 	}
+}
+
+func yearsToMonths(years int32) int32 {
+	if years <= 0 {
+		return 0
+	}
+	return years * 12
+}
+
+func monthsToYears(months int32) int32 {
+	if months <= 0 {
+		return 0
+	}
+	return months / 12
 }
 
 func validateHousingOptionInput(option *ourneztv1.HousingOption, assessmentMode string) string {

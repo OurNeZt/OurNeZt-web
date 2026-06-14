@@ -43,7 +43,7 @@
     "meaning": "The total number of years used to spread the loan repayment.",
     "calculation": "A longer tenure usually lowers the monthly mortgage but stretches repayment over a longer period.",
     "assumptions": "Deferred mode assumes a 25-year tenure.",
-    "source": "User-provided or defaulted by scenario."
+    "source": "User-provided in years and converted internally for calculation."
   },
   "buyer_stamp_duty": {
     "label": "Buyer Stamp Duty",
