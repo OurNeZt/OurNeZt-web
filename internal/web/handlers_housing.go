@@ -476,6 +476,9 @@ func normalizeHousingOption(option *ourneztv1.HousingOption, assessmentMode stri
 	if option.GetLoanType() == "hdb" {
 		// HDB concessionary interest is treated as fixed at 2.60%.
 		option.InterestRateBps = 260
+		if normalizeLookup(option.GetHousingType()) == "bto" {
+			option.LoanTenureMonths = 300
+		}
 	}
 
 	if option.GetLoanType() == "cash" {

@@ -41,9 +41,9 @@
   "loan_tenure": {
     "label": "Loan Tenure",
     "meaning": "The total number of years used to spread the loan repayment.",
-    "calculation": "A longer tenure usually lowers the monthly mortgage but stretches repayment over a longer period.",
-    "assumptions": "Deferred mode assumes a 25-year tenure.",
-    "source": "User-provided in years and converted internally for calculation."
+    "calculation": "A longer tenure usually lowers the monthly mortgage but stretches repayment over a longer period. The form accepts years and converts them internally for repayment calculations.",
+    "assumptions": "BTO with HDB loan is auto-set to 25 years. Deferred mode also assumes a 25-year tenure.",
+    "source": "User-provided for other standard cases, but system-derived for BTO with HDB loan and for Deferred defaults."
   },
   "buyer_stamp_duty": {
     "label": "Buyer Stamp Duty",
