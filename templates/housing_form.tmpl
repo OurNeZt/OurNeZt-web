@@ -137,13 +137,14 @@
     const loanAmountField = document.getElementById("loan_amount_field");
     const interestRateField = document.getElementById("interest_rate_field");
     const loanTenureField = document.getElementById("loan_tenure_field");
+    const form = assessmentMode.closest("form");
     const purchasePriceInput = document.querySelector('input[name="purchase_price"]');
     const grantAmountInput = document.getElementById("grant_amount");
     const bsdDisplay = document.getElementById("buyer_stamp_duty_display");
     const loanAmount = document.getElementById("loan_amount");
     const interestRate = document.getElementById("interest_rate_percent");
     const loanTenure = document.getElementById("loan_tenure_years");
-    if (!assessmentMode || !diaIncomeSection || !loanTypeField || !loanType || !housingType || !grantAmountField || !loanAmountField || !interestRateField || !loanTenureField || !purchasePriceInput || !grantAmountInput || !bsdDisplay || !loanAmount || !interestRate || !loanTenure) return;
+    if (!assessmentMode || !diaIncomeSection || !loanTypeField || !loanType || !housingType || !grantAmountField || !loanAmountField || !interestRateField || !loanTenureField || !form || !purchasePriceInput || !grantAmountInput || !bsdDisplay || !loanAmount || !interestRate || !loanTenure) return;
 
     const grantAmountEstimates = {
       "bto": {{ index .Data.GrantAmountEstimates "bto" }},
@@ -257,6 +258,15 @@
     assessmentMode.addEventListener("change", refreshHousingRules);
     housingType.addEventListener("change", refreshHousingRules);
     purchasePriceInput.addEventListener("input", refreshHousingRules);
+    form.addEventListener("submit", () => {
+      const isCash = (loanType.value || "").trim().toLowerCase() === "cash";
+      const isHdb = (loanType.value || "").trim().toLowerCase() === "hdb";
+      const isDeferred = (assessmentMode.value || "").trim().toLowerCase() === "deferred";
+      const selectedHousingType = (housingType.value || "").trim().toLowerCase();
+      if (!isDeferred && !isCash && isHdb && selectedHousingType === "bto") {
+        loanTenure.value = "25";
+      }
+    });
     refreshHousingRules();
   })();
 </script>

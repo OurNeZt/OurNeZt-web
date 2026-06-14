@@ -398,6 +398,7 @@ func validateHousingOptionInput(option *ourneztv1.HousingOption, assessmentMode 
 			return "loan type is required"
 		}
 	}
+	isBtoHdb := normalizeLookup(option.GetHousingType()) == "bto" && normalizeLookup(option.GetLoanType()) == "hdb"
 	if option.GetLoanType() == "cash" {
 		// No extra checks required for cash purchase.
 	} else if assessmentMode == "deferred" {
@@ -409,7 +410,7 @@ func validateHousingOptionInput(option *ourneztv1.HousingOption, assessmentMode 
 		if netPurchase > 0 && option.GetLoanAmountCents() > netPurchase {
 			return "loan amount cannot exceed net purchase price"
 		}
-		if option.GetLoanTenureMonths() <= 0 {
+		if option.GetLoanTenureMonths() <= 0 && !isBtoHdb {
 			return "loan tenure is required"
 		}
 	}
