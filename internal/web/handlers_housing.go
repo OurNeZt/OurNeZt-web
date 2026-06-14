@@ -179,6 +179,9 @@ func (a *App) housingDetail(c *gin.Context) {
 	initialDownpaymentCPFOACents := minInt64(maxInt64(inputs.CPFOAUsedCents, 0), initialDownpaymentCents)
 	initialDownpaymentCashCents := maxInt64(initialDownpaymentCents-initialDownpaymentCPFOACents, 0)
 	remainingDownpaymentLaterCents := maxInt64(requiredDownpaymentCents-initialDownpaymentCents, 0)
+	if aff.GetFinalDownpaymentCents() > 0 {
+		remainingDownpaymentLaterCents = maxInt64(aff.GetFinalDownpaymentCents(), 0)
+	}
 	availableDownpaymentFundsCents := maxInt64(inputs.CPFOAUsedCents, 0) + maxInt64(inputs.CashSavingsUsedCents, 0)
 	initialDownpaymentShortfallCents := maxInt64(initialDownpaymentCents-availableDownpaymentFundsCents, 0)
 
@@ -631,6 +634,10 @@ func housingDownpaymentPlanningNote(option *ourneztv1.HousingOption) string {
 func initialDownpaymentCents(option *ourneztv1.HousingOption, aff *ourneztv1.HousingAffordability) int64 {
 	if aff == nil {
 		return 0
+	}
+
+	if aff.GetInitialDownpaymentCents() > 0 {
+		return maxInt64(aff.GetInitialDownpaymentCents(), 0)
 	}
 
 	requiredDownpaymentCents := maxInt64(aff.GetRequiredDownpaymentCents(), 0)
