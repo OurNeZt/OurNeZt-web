@@ -58,6 +58,10 @@
         {{ end }}
       </select>
     </label>
+    <div class="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs opacity-70">
+      <span>Monthly take-home and recurring payment</span>
+      <span>One-time downpayment checkpoints</span>
+    </div>
     <div class="oz-chart-box"><canvas id="timelineChart" aria-label="Payment and income timeline chart"></canvas></div>
     {{ else }}
     <div class="alert oz-alert-soft text-sm">Add at least one housing option to show payment timeline.</div>
@@ -257,7 +261,7 @@
           labels: initialSeries.labels,
           datasets: [
             {
-              label: "Estimated Take-Home",
+              label: "Estimated Take-Home (monthly)",
               data: initialSeries.estimatedTakeHome,
               borderColor: "#7ea13d",
               backgroundColor: "rgba(126,161,61,0.12)",
@@ -266,10 +270,14 @@
               tension: 0.22,
               spanGaps: true,
               pointRadius: 3,
+              pointHoverRadius: 4,
+              pointBackgroundColor: "#dcecb2",
+              pointBorderColor: "#6c9429",
+              pointBorderWidth: 2,
               borderWidth: 2
             },
             {
-              label: "Monthly Housing Payment Need",
+              label: "Monthly Payment Need",
               data: initialSeries.monthlyPaymentNeed,
               borderColor: "#ef7f7a",
               backgroundColor: "rgba(239,127,122,0.1)",
@@ -279,32 +287,57 @@
               spanGaps: true,
               tension: 0.15,
               pointRadius: 3,
+              pointHoverRadius: 4,
+              pointBackgroundColor: "#fff4f2",
+              pointBorderColor: "#ef7f7a",
+              pointBorderWidth: 2,
               borderWidth: 2
             },
             {
-              label: "Initial Downpayment",
+              label: "Initial Downpayment (one-time)",
               data: initialSeries.initialDownpayment,
               backgroundColor: "rgba(56,90,130,0.72)",
               borderColor: "#385a82",
               borderWidth: 1,
-              yAxisID: "upfrontAxis"
+              yAxisID: "upfrontAxis",
+              stack: "downpayment",
+              categoryPercentage: 0.54,
+              barPercentage: 0.82,
+              borderRadius: 0
             },
             {
-              label: "Final Downpayment",
+              label: "Final Downpayment (one-time)",
               data: initialSeries.finalDownpayment,
               backgroundColor: "rgba(239,127,122,0.72)",
               borderColor: "#ef7f7a",
               borderWidth: 1,
-              yAxisID: "upfrontAxis"
+              yAxisID: "upfrontAxis",
+              stack: "downpayment",
+              categoryPercentage: 0.54,
+              barPercentage: 0.82,
+              borderRadius: 0
             }
           ]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          plugins: { legend: { position: "bottom" } },
+          interaction: {
+            mode: "index",
+            intersect: false
+          },
+          plugins: {
+            legend: {
+              position: "bottom",
+              labels: {
+                usePointStyle: false,
+                boxWidth: 42
+              }
+            }
+          },
           scales: {
             x: {
+              offset: true,
               title: {
                 display: true,
                 text: "Housing payment stage"
@@ -318,7 +351,7 @@
               },
               title: {
                 display: true,
-                text: "Monthly income / payment"
+                text: "Monthly amounts"
               }
             },
             upfrontAxis: {
@@ -332,7 +365,7 @@
               },
               title: {
                 display: true,
-                text: "One-time downpayment"
+                text: "One-time amounts"
               }
             }
           }
