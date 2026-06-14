@@ -58,10 +58,6 @@
         {{ end }}
       </select>
     </label>
-    <div class="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs opacity-70">
-      <span>Monthly take-home and recurring payment</span>
-      <span>One-time downpayment checkpoints</span>
-    </div>
     <div class="oz-chart-box"><canvas id="timelineChart" aria-label="Payment and income timeline chart"></canvas></div>
     {{ else }}
     <div class="alert oz-alert-soft text-sm">Add at least one housing option to show payment timeline.</div>
@@ -279,19 +275,14 @@
             {
               label: "Monthly Payment Need",
               data: initialSeries.monthlyPaymentNeed,
+              backgroundColor: "rgba(239,127,122,0.72)",
               borderColor: "#ef7f7a",
-              backgroundColor: "rgba(239,127,122,0.1)",
               yAxisID: "monthlyAxis",
-              type: "line",
-              borderDash: [6, 4],
-              spanGaps: true,
-              tension: 0.15,
-              pointRadius: 3,
-              pointHoverRadius: 4,
-              pointBackgroundColor: "#fff4f2",
-              pointBorderColor: "#ef7f7a",
-              pointBorderWidth: 2,
-              borderWidth: 2
+              type: "bar",
+              borderWidth: 1,
+              categoryPercentage: 0.54,
+              barPercentage: 0.5,
+              borderRadius: 0
             },
             {
               label: "Initial Downpayment (one-time)",
