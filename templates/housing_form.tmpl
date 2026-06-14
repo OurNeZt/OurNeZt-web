@@ -52,7 +52,7 @@
       </div>
       <div class="oz-field" id="grant_amount_field">
         <label class="oz-field-label" for="grant_amount"><span class="inline-flex items-center gap-1">Grant Amount (Dollars){{ template "partials/help_tooltip" (dict "Key" "grant_amount" "Label" "Grant Amount") }}</span></label>
-        <input class="input input-bordered" id="grant_amount" name="grant_amount" type="number" min="0" step="0.01" inputmode="decimal" placeholder="e.g. 80000.00" value="{{ moneyInput .Data.Housing.GrantAmountCents }}" readonly>
+        <input class="input input-bordered oz-readonly-input" id="grant_amount" name="grant_amount" type="number" min="0" step="0.01" inputmode="decimal" placeholder="e.g. 80000.00" value="{{ moneyInput .Data.Housing.GrantAmountCents }}" readonly>
       </div>
       <label class="oz-field" id="loan_type_field">
         <span>Loan Type</span>

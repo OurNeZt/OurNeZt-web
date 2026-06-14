@@ -15,10 +15,10 @@
   },
   "grant_amount": {
     "label": "Grant Amount",
-    "meaning": "The housing grant amount you expect to receive.",
-    "calculation": "Subtracted from purchase price to get net purchase price before downpayment and loan calculations.",
+    "meaning": "The housing grant amount estimated by the app for this option.",
+    "calculation": "Calculated from the household's total gross monthly income using the default grant chart logic, then subtracted from purchase price before downpayment and loan calculations.",
     "assumptions": "Deferred mode ignores grants in this form's planning assumptions.",
-    "source": "User-provided estimate.",
+    "source": "System-derived and not user-editable.",
     "see_more_label": "See official HDB grant guide",
     "see_more_url": "https://www.hdb.gov.sg/-/media/buying-a-flat/flat-grant-and-loan-eligibility/couples-and-families/enhanced-cpf-housing-grant/EHG-amount-Families.pdf?sc_lang=en&hash=147B5C1B4AA5C09281FCDF3D8A04752D"
   },

@@ -184,6 +184,18 @@ body {
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--oz-coral) 22%, transparent);
 }
 
+.oz-field .input.oz-readonly-input[readonly] {
+  border-color: #ddd2cb;
+  background: #f3efec;
+  color: #7a6f76;
+  cursor: not-allowed;
+}
+
+.oz-field .input.oz-readonly-input[readonly]:focus {
+  border-color: #ddd2cb;
+  box-shadow: none;
+}
+
 .oz-table-compact th,
 .oz-table-compact td {
   font-size: 0.83rem;
