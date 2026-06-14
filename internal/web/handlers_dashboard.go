@@ -36,7 +36,7 @@ type dashboardTimelineSeries struct {
 	YearFinalDownpayment    int
 	EstimatedTakeHomeCents  int64
 	MonthlyPaymentNeedCents int64
-	InitialDownpaymentCents int64
+	InitialPaymentCents     int64
 	FinalDownpaymentCents   int64
 }
 
@@ -157,7 +157,7 @@ func (a *App) dashboard(c *gin.Context) {
 			YearFinalDownpayment:    finalDownpaymentYear,
 			EstimatedTakeHomeCents:  optionTakeHome,
 			MonthlyPaymentNeedCents: aff.GetMonthlyHousingCostCents(),
-			InitialDownpaymentCents: aff.GetInitialDownpaymentCents(),
+			InitialPaymentCents:     totalInitialPaymentCents(option, aff),
 			FinalDownpaymentCents:   aff.GetFinalDownpaymentCents(),
 		})
 	}
