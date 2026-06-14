@@ -375,7 +375,7 @@
               },
               title: {
                 display: !initialCompactTimeline,
-                text: "Monthly amounts"
+                text: "Monthly income and payment"
               }
             },
             upfrontAxis: {
@@ -392,7 +392,7 @@
               },
               title: {
                 display: !initialCompactTimeline,
-                text: "One-time amounts"
+                text: "One-time payments"
               }
             }
           }
@@ -414,8 +414,10 @@
         timelineChart.options.scales.x.title.display = !compact;
         timelineChart.options.scales.monthlyAxis.ticks.font.size = compact ? 10 : 12;
         timelineChart.options.scales.monthlyAxis.title.display = !compact;
+        timelineChart.options.scales.monthlyAxis.title.text = "Monthly income and payment";
         timelineChart.options.scales.upfrontAxis.ticks.font.size = compact ? 10 : 12;
         timelineChart.options.scales.upfrontAxis.title.display = !compact;
+        timelineChart.options.scales.upfrontAxis.title.text = "One-time payments";
         timelineChart.update();
         lastCompactTimeline = compact;
       };
