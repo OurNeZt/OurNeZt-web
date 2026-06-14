@@ -48,7 +48,7 @@
 <section class="card bg-base-100 shadow mt-4">
   <div class="card-body">
     <h2 class="card-title text-base">Payment vs Income Timeline</h2>
-    <p class="text-xs opacity-70">Compare monthly payment need against one estimated take-home line that rises at assessment, by housing option.</p>
+    <p class="text-xs opacity-70">Follow each housing option from today through initial downpayment, final downpayment, and the later monthly payment stage.</p>
     {{ if .Data.TimelineSeries }}
     <label class="oz-field max-w-sm">
       <span>Housing Option</span>
@@ -205,9 +205,36 @@
           {
             id: {{ printf "%q" $s.HousingID }},
             name: {{ printf "%q" $s.HousingName }},
-            years: [{{ $s.YearNow }}, {{ $s.YearAssessment }}, {{ $s.YearPostKeyCollection }}],
-            estimatedTakeHome: [currentTakeHome, {{ $s.EstimatedTakeHomeCents }} / 100, {{ $s.EstimatedTakeHomeCents }} / 100],
-            monthlyPaymentNeed: [0, {{ $s.PaymentNeedCents }} / 100, {{ $s.PaymentNeedCents }} / 100]
+            labels: [
+              "Today ({{ $s.YearNow }})",
+              "Initial DP ({{ $s.YearInitialDownpayment }})",
+              "Final DP ({{ $s.YearFinalDownpayment }})",
+              "Monthly Payment ({{ $s.YearFinalDownpayment }})"
+            ],
+            estimatedTakeHome: [
+              currentTakeHome,
+              {{ $s.EstimatedTakeHomeCents }} / 100,
+              {{ $s.EstimatedTakeHomeCents }} / 100,
+              {{ $s.EstimatedTakeHomeCents }} / 100
+            ],
+            monthlyPaymentNeed: [
+              null,
+              null,
+              null,
+              {{ $s.MonthlyPaymentNeedCents }} / 100
+            ],
+            initialDownpayment: [
+              null,
+              {{ $s.InitialDownpaymentCents }} / 100,
+              null,
+              null
+            ],
+            finalDownpayment: [
+              null,
+              null,
+              {{ $s.FinalDownpaymentCents }} / 100,
+              null
+            ]
           }
         {{- end -}}
       ];
@@ -225,26 +252,50 @@
 
       const initialSeries = resolveSelectedSeries();
       const timelineChart = new Chart(timelineCtx, {
-        type: "line",
+        type: "bar",
         data: {
-          labels: initialSeries.years,
+          labels: initialSeries.labels,
           datasets: [
             {
               label: "Estimated Take-Home",
               data: initialSeries.estimatedTakeHome,
               borderColor: "#7ea13d",
               backgroundColor: "rgba(126,161,61,0.12)",
+              yAxisID: "monthlyAxis",
+              type: "line",
               tension: 0.22,
-              pointRadius: 3
+              spanGaps: true,
+              pointRadius: 3,
+              borderWidth: 2
             },
             {
               label: "Monthly Housing Payment Need",
               data: initialSeries.monthlyPaymentNeed,
               borderColor: "#ef7f7a",
               backgroundColor: "rgba(239,127,122,0.1)",
+              yAxisID: "monthlyAxis",
+              type: "line",
               borderDash: [6, 4],
+              spanGaps: true,
               tension: 0.15,
-              pointRadius: 3
+              pointRadius: 3,
+              borderWidth: 2
+            },
+            {
+              label: "Initial Downpayment",
+              data: initialSeries.initialDownpayment,
+              backgroundColor: "rgba(56,90,130,0.72)",
+              borderColor: "#385a82",
+              borderWidth: 1,
+              yAxisID: "upfrontAxis"
+            },
+            {
+              label: "Final Downpayment",
+              data: initialSeries.finalDownpayment,
+              backgroundColor: "rgba(239,127,122,0.72)",
+              borderColor: "#ef7f7a",
+              borderWidth: 1,
+              yAxisID: "upfrontAxis"
             }
           ]
         },
@@ -256,12 +307,32 @@
             x: {
               title: {
                 display: true,
-                text: "Year"
+                text: "Housing payment stage"
               }
             },
-            y: {
+            monthlyAxis: {
+              type: "linear",
+              position: "left",
               ticks: {
                 callback: toMoneyTick
+              },
+              title: {
+                display: true,
+                text: "Monthly income / payment"
+              }
+            },
+            upfrontAxis: {
+              type: "linear",
+              position: "right",
+              grid: {
+                drawOnChartArea: false
+              },
+              ticks: {
+                callback: toMoneyTick
+              },
+              title: {
+                display: true,
+                text: "One-time downpayment"
               }
             }
           }
@@ -271,9 +342,11 @@
       if (timelineHousingSelect) {
         timelineHousingSelect.addEventListener("change", () => {
           const selected = resolveSelectedSeries();
-          timelineChart.data.labels = selected.years;
+          timelineChart.data.labels = selected.labels;
           timelineChart.data.datasets[0].data = selected.estimatedTakeHome;
           timelineChart.data.datasets[1].data = selected.monthlyPaymentNeed;
+          timelineChart.data.datasets[2].data = selected.initialDownpayment;
+          timelineChart.data.datasets[3].data = selected.finalDownpayment;
           timelineChart.update();
         });
       }
