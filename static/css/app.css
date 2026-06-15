@@ -102,6 +102,18 @@ body {
   background: linear-gradient(140deg, #fff8f5, #fff3f1);
 }
 
+.oz-alert-success {
+  border: 1px solid #d7e7d1;
+  color: var(--oz-ink);
+  background: linear-gradient(140deg, #f7fcf5, #edf8e9);
+}
+
+.oz-alert-warning {
+  border: 1px solid #efd7a8;
+  color: var(--oz-ink);
+  background: linear-gradient(140deg, #fff9ec, #fff0c9);
+}
+
 .oz-login-shell {
   display: grid;
   gap: 1rem;
@@ -172,6 +184,18 @@ body {
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--oz-coral) 22%, transparent);
 }
 
+.oz-field .input.oz-readonly-input[readonly] {
+  border-color: #ddd2cb;
+  background: #f3efec;
+  color: #7a6f76;
+  cursor: not-allowed;
+}
+
+.oz-field .input.oz-readonly-input[readonly]:focus {
+  border-color: #ddd2cb;
+  box-shadow: none;
+}
+
 .oz-table-compact th,
 .oz-table-compact td {
   font-size: 0.83rem;
@@ -185,6 +209,22 @@ body {
   line-height: 1.4rem;
   white-space: normal;
   word-break: break-word;
+}
+
+.oz-stat-card {
+  min-width: 0;
+}
+
+.oz-stat-card .stat-title,
+.oz-stat-card .stat-desc {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.oz-stat-card .stat-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
 }
 
 .tooltip[data-tip]::before {
@@ -378,6 +418,7 @@ body {
   border-color: transparent transparent rgba(41, 36, 40, 0.96);
 }
 
+.oz-help-tooltip.oz-help-tooltip-pinned .oz-help-bubble,
 .oz-help-tooltip:hover .oz-help-bubble,
 .oz-help-tooltip:focus-within .oz-help-bubble {
   opacity: 1;
@@ -385,11 +426,73 @@ body {
   pointer-events: auto;
 }
 
+.oz-help-tooltips-suspend-hover .oz-help-tooltip:hover .oz-help-bubble,
+.oz-help-tooltips-suspend-hover .oz-help-tooltip:focus-within .oz-help-bubble {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
 .oz-chart-box {
   position: relative;
   height: 18rem;
   width: 100%;
   overflow: hidden;
+}
+
+.oz-chart-box-timeline {
+  height: 20rem;
+}
+
+.oz-chart-legend-mobile {
+  display: none;
+  margin-top: 0.75rem;
+  gap: 0.55rem 0.9rem;
+  flex-wrap: wrap;
+  align-items: center;
+  font-size: 0.75rem;
+  color: #5f5358;
+}
+
+.oz-chart-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.oz-chart-legend-swatch {
+  display: inline-block;
+  width: 1.1rem;
+  height: 0.65rem;
+  border-radius: 0.12rem;
+}
+
+.oz-chart-legend-swatch-line {
+  height: 0;
+  width: 1.25rem;
+  border-top: 2px solid var(--oz-leaf);
+}
+
+.oz-chart-legend-swatch-brown {
+  background: rgba(138, 101, 69, 0.72);
+}
+
+.oz-chart-legend-swatch-blue {
+  background: rgba(56, 90, 130, 0.72);
+}
+
+.oz-chart-legend-swatch-coral {
+  background: rgba(239, 127, 122, 0.72);
+}
+
+@media (max-width: 640px) {
+  .oz-chart-box-timeline {
+    height: 24rem;
+  }
+
+  .oz-chart-legend-mobile {
+    display: flex;
+  }
 }
 
 .oz-chart-box canvas {

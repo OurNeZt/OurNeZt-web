@@ -19,7 +19,7 @@
       </label>
       <label class="oz-field">
         <span>Housing Type</span>
-        <select class="select select-bordered w-full" name="housing_type" required>
+        <select class="select select-bordered w-full" id="housing_type" name="housing_type" required>
           <option value="" {{ if eq .Data.Housing.HousingType "" }}selected{{ end }}>Select housing type</option>
           <option value="bto" {{ if eqFold .Data.Housing.HousingType "bto" }}selected{{ end }}>BTO</option>
           <option value="resale_hdb" {{ if eqFold .Data.Housing.HousingType "resale_hdb" }}selected{{ end }}>Resale HDB</option>
@@ -48,11 +48,11 @@
       </label>
       <div class="oz-field">
         <label class="oz-field-label" for="purchase_price"><span class="inline-flex items-center gap-1">Purchase Price (Dollars){{ template "partials/help_tooltip" (dict "Key" "purchase_price" "Label" "Purchase Price") }}</span></label>
-        <input class="input input-bordered" id="purchase_price" name="purchase_price" type="number" min="0" step="0.01" inputmode="decimal" placeholder="e.g. 500000.00" value="{{ moneyInput .Data.Housing.PurchasePriceCents }}" required>
+        <input class="input input-bordered" id="purchase_price" name="purchase_price" type="number" min="0" step="0.01" inputmode="decimal" placeholder="e.g. 500000.00" value="{{ if gt .Data.Housing.PurchasePriceCents 0 }}{{ moneyInput .Data.Housing.PurchasePriceCents }}{{ end }}" required>
       </div>
       <div class="oz-field" id="grant_amount_field">
         <label class="oz-field-label" for="grant_amount"><span class="inline-flex items-center gap-1">Grant Amount (Dollars){{ template "partials/help_tooltip" (dict "Key" "grant_amount" "Label" "Grant Amount") }}</span></label>
-        <input class="input input-bordered" id="grant_amount" name="grant_amount" type="number" min="0" step="0.01" inputmode="decimal" placeholder="e.g. 80000.00" value="{{ moneyInput .Data.Housing.GrantAmountCents }}">
+        <input class="input input-bordered oz-readonly-input" id="grant_amount" name="grant_amount" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Auto-calculated from household income" value="{{ if gt .Data.Housing.GrantAmountCents 0 }}{{ moneyInput .Data.Housing.GrantAmountCents }}{{ end }}" readonly>
       </div>
       <label class="oz-field" id="loan_type_field">
         <span>Loan Type</span>
@@ -65,29 +65,29 @@
       </label>
       <div class="oz-field" id="loan_amount_field">
         <label class="oz-field-label" for="loan_amount"><span class="inline-flex items-center gap-1">Loan Amount (Dollars){{ template "partials/help_tooltip" (dict "Key" "loan_amount" "Label" "Loan Amount") }}</span></label>
-        <input class="input input-bordered" id="loan_amount" name="loan_amount" type="number" min="0" step="0.01" inputmode="decimal" placeholder="e.g. 400000.00" value="{{ moneyInput .Data.Housing.LoanAmountCents }}">
+        <input class="input input-bordered" id="loan_amount" name="loan_amount" type="number" min="0" step="0.01" inputmode="decimal" placeholder="e.g. 400000.00" value="{{ if gt .Data.Housing.LoanAmountCents 0 }}{{ moneyInput .Data.Housing.LoanAmountCents }}{{ end }}">
       </div>
       <div class="oz-field" id="interest_rate_field">
         <label class="oz-field-label" for="interest_rate_percent"><span class="inline-flex items-center gap-1">Interest Rate (%){{ template "partials/help_tooltip" (dict "Key" "interest_rate" "Label" "Interest Rate") }}</span></label>
-        <input class="input input-bordered" id="interest_rate_percent" name="interest_rate_percent" type="number" min="0" step="0.01" inputmode="decimal" placeholder="e.g. 2.60" value="{{ bpsInput .Data.Housing.InterestRateBps }}">
+        <input class="input input-bordered" id="interest_rate_percent" name="interest_rate_percent" type="number" min="0" step="0.01" inputmode="decimal" placeholder="e.g. 2.60" value="{{ if and (not (eqFold .Data.Housing.LoanType "hdb")) (gt .Data.Housing.InterestRateBps 0) }}{{ bpsInput .Data.Housing.InterestRateBps }}{{ end }}">
       </div>
       <div class="oz-field" id="loan_tenure_field">
-        <label class="oz-field-label" for="loan_tenure_months"><span class="inline-flex items-center gap-1">Loan Tenure (Months){{ template "partials/help_tooltip" (dict "Key" "loan_tenure" "Label" "Loan Tenure") }}</span></label>
-        <input class="input input-bordered" id="loan_tenure_months" name="loan_tenure_months" type="number" min="0" placeholder="e.g. 300" value="{{ .Data.Housing.LoanTenureMonths }}">
+        <label class="oz-field-label" for="loan_tenure_years"><span class="inline-flex items-center gap-1">Loan Tenure (Years){{ template "partials/help_tooltip" (dict "Key" "loan_tenure" "Label" "Loan Tenure") }}</span></label>
+        <input class="input input-bordered{{ if and (eqFold .Data.Housing.HousingType "bto") (eqFold .Data.Housing.LoanType "hdb") }} oz-readonly-input{{ end }}" id="loan_tenure_years" name="loan_tenure_years" type="number" min="0" max="35" step="1" inputmode="numeric" placeholder="e.g. 25" value="{{ if and (gt .Data.Housing.LoanTenureMonths 0) (not (and (eqFold .Data.Housing.HousingType "bto") (eqFold .Data.Housing.LoanType "hdb"))) }}{{ monthsToYears .Data.Housing.LoanTenureMonths }}{{ end }}">
       </div>
       <div class="oz-field">
         <label class="oz-field-label" for="buyer_stamp_duty_display"><span class="inline-flex items-center gap-1">Estimated Buyer Stamp Duty (Dollars){{ template "partials/help_tooltip" (dict "Key" "buyer_stamp_duty" "Label" "Estimated Buyer Stamp Duty") }}</span></label>
-        <input class="input input-bordered" id="buyer_stamp_duty_display" type="text" value="{{ moneyInput .Data.Housing.BuyerStampDutyCents }}" readonly>
+        <input class="input input-bordered oz-readonly-input" id="buyer_stamp_duty_display" type="text" value="{{ moneyInput .Data.Housing.BuyerStampDutyCents }}" readonly>
       </div>
       <div class="oz-field">
         <label class="oz-field-label" for="monthly_maintenance"><span class="inline-flex items-center gap-1">Monthly Maintenance (Dollars){{ template "partials/help_tooltip" (dict "Key" "monthly_maintenance" "Label" "Monthly Maintenance") }}</span></label>
-        <input class="input input-bordered" id="monthly_maintenance" name="monthly_maintenance" type="number" min="0" step="0.01" inputmode="decimal" placeholder="e.g. 350.00" value="{{ moneyInput .Data.Housing.MonthlyMaintenanceCents }}">
+        <input class="input input-bordered" id="monthly_maintenance" name="monthly_maintenance" type="number" min="0" step="0.01" inputmode="decimal" placeholder="e.g. 350.00" value="{{ if gt .Data.Housing.MonthlyMaintenanceCents 0 }}{{ moneyInput .Data.Housing.MonthlyMaintenanceCents }}{{ end }}">
       </div>
       <input type="hidden" name="renovation_budget" value="0">
       <input type="hidden" name="furniture_budget" value="0">
       <div class="oz-field">
         <label class="oz-field-label" for="legal_fees"><span class="inline-flex items-center gap-1">Legal Fees (Dollars){{ template "partials/help_tooltip" (dict "Key" "legal_fees" "Label" "Legal Fees") }}</span></label>
-        <input class="input input-bordered" id="legal_fees" name="legal_fees" type="number" min="0" step="0.01" inputmode="decimal" placeholder="e.g. 3000.00" value="{{ moneyInput .Data.Housing.LegalFeesCents }}">
+        <input class="input input-bordered" id="legal_fees" name="legal_fees" type="number" min="0" step="0.01" inputmode="decimal" placeholder="e.g. 3000.00" value="{{ if gt .Data.Housing.LegalFeesCents 0 }}{{ moneyInput .Data.Housing.LegalFeesCents }}{{ end }}">
       </div>
       <div class="oz-field">
         <label class="oz-field-label" for="expected_key_collection_date"><span class="inline-flex items-center gap-1">Expected Key Collection Date{{ template "partials/help_tooltip" (dict "Key" "expected_key_collection_date" "Label" "Expected Key Collection Date") }}</span></label>
@@ -132,17 +132,28 @@
     const diaIncomeSection = document.getElementById("dia_income_section");
     const loanTypeField = document.getElementById("loan_type_field");
     const loanType = document.getElementById("loan_type");
+    const housingType = document.getElementById("housing_type");
     const grantAmountField = document.getElementById("grant_amount_field");
     const loanAmountField = document.getElementById("loan_amount_field");
     const interestRateField = document.getElementById("interest_rate_field");
     const loanTenureField = document.getElementById("loan_tenure_field");
+    const form = assessmentMode.closest("form");
     const purchasePriceInput = document.querySelector('input[name="purchase_price"]');
     const grantAmountInput = document.getElementById("grant_amount");
     const bsdDisplay = document.getElementById("buyer_stamp_duty_display");
     const loanAmount = document.getElementById("loan_amount");
     const interestRate = document.getElementById("interest_rate_percent");
-    const loanTenure = document.getElementById("loan_tenure_months");
-    if (!assessmentMode || !diaIncomeSection || !loanTypeField || !loanType || !grantAmountField || !loanAmountField || !interestRateField || !loanTenureField || !purchasePriceInput || !grantAmountInput || !bsdDisplay || !loanAmount || !interestRate || !loanTenure) return;
+    const loanTenure = document.getElementById("loan_tenure_years");
+    if (!assessmentMode || !diaIncomeSection || !loanTypeField || !loanType || !housingType || !grantAmountField || !loanAmountField || !interestRateField || !loanTenureField || !form || !purchasePriceInput || !grantAmountInput || !bsdDisplay || !loanAmount || !interestRate || !loanTenure) return;
+
+    const grantAmountEstimates = {
+      "bto": {{ index .Data.GrantAmountEstimates "bto" }},
+      "resale_hdb": {{ index .Data.GrantAmountEstimates "resale_hdb" }},
+      "executive_condo": {{ index .Data.GrantAmountEstimates "executive_condo" }},
+      "private_condo": {{ index .Data.GrantAmountEstimates "private_condo" }},
+      "landed": {{ index .Data.GrantAmountEstimates "landed" }},
+      "other": {{ index .Data.GrantAmountEstimates "other" }}
+    };
 
     const parseMoney = (raw) => {
       const n = Number((raw || "").toString().replace(/[$,]/g, "").trim());
@@ -178,6 +189,8 @@
       const isCash = (loanType.value || "").trim().toLowerCase() === "cash";
       const isHdb = (loanType.value || "").trim().toLowerCase() === "hdb";
       const isDeferred = (assessmentMode.value || "").trim().toLowerCase() === "deferred";
+      const selectedHousingType = (housingType.value || "").trim().toLowerCase();
+      const isBtoHdb = selectedHousingType === "bto" && isHdb;
       const showLoanType = !isDeferred;
       const showLoanAmount = showLoanType && !isCash;
       const showGrant = !isDeferred;
@@ -190,14 +203,29 @@
       loanTenureField.style.display = showLoanType && !isCash ? "" : "none";
       loanType.required = showLoanType;
       loanAmount.required = showLoanAmount;
-      interestRate.required = showLoanType && !isCash;
-      loanTenure.required = showLoanType && !isCash;
+      interestRate.required = showLoanType && !isCash && !isHdb;
+      loanTenure.required = showLoanType && !isCash && !isBtoHdb;
 
       if (isHdb && !isCash) {
-        interestRate.value = "2.60";
+        interestRate.value = "";
+        interestRate.placeholder = "Auto-set to 2.60 for HDB";
         interestRate.readOnly = true;
+        interestRate.classList.add("oz-readonly-input");
       } else {
+        interestRate.placeholder = "e.g. 2.60";
         interestRate.readOnly = false;
+        interestRate.classList.remove("oz-readonly-input");
+      }
+
+      if (isBtoHdb) {
+        loanTenure.value = "";
+        loanTenure.placeholder = "Auto-set to 25 years for BTO + HDB";
+        loanTenure.readOnly = true;
+        loanTenure.classList.add("oz-readonly-input");
+      } else {
+        loanTenure.placeholder = "e.g. 25";
+        loanTenure.readOnly = false;
+        loanTenure.classList.remove("oz-readonly-input");
       }
 
       if (!showLoanAmount) {
@@ -210,6 +238,13 @@
       }
       if (!showGrant) {
         grantAmountInput.value = "";
+      } else {
+        const selectedHousingType = (housingType.value || "").trim().toLowerCase();
+        if (selectedHousingType === "") {
+          grantAmountInput.value = "";
+        } else {
+          grantAmountInput.value = formatMoney(grantAmountEstimates[selectedHousingType] || 0);
+        }
       }
       if (isCash) {
         interestRate.value = "";
@@ -221,7 +256,17 @@
 
     loanType.addEventListener("change", refreshHousingRules);
     assessmentMode.addEventListener("change", refreshHousingRules);
+    housingType.addEventListener("change", refreshHousingRules);
     purchasePriceInput.addEventListener("input", refreshHousingRules);
+    form.addEventListener("submit", () => {
+      const isCash = (loanType.value || "").trim().toLowerCase() === "cash";
+      const isHdb = (loanType.value || "").trim().toLowerCase() === "hdb";
+      const isDeferred = (assessmentMode.value || "").trim().toLowerCase() === "deferred";
+      const selectedHousingType = (housingType.value || "").trim().toLowerCase();
+      if (!isDeferred && !isCash && isHdb && selectedHousingType === "bto") {
+        loanTenure.value = "25";
+      }
+    });
     refreshHousingRules();
   })();
 </script>
