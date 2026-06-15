@@ -9,16 +9,31 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [v1.1.3] - 2026-06-15
 
 ### Added
-- (fill)
+- Added contextual help tooltips across key housing form fields, calculated values, and housing detail views
+- Added centralized housing tooltip content for easier copy updates and maintenance
+- Added official reference links in selected tooltips for buyer stamp duty, housing grants, and HDB interest rate
+- Added initial payment visibility in housing detail, comparison, and timeline views
 
 ### Changed
-- (fill)
+- Updated housing loan tenure input from months to years in the Add/Edit Housing form
+- Updated selected system-derived housing fields to use placeholder or read-only styling instead of appearing user-entered
+- Updated `BTO + HDB loan` tenure handling to auto-assume 25 years
+- Renamed the first housing payment checkpoint from `Initial Downpayment` to `Total Initial Payment`
+- Updated the Payment vs Income Timeline chart labels, legends, and stage presentation for clearer payment journey tracking
+- Refined tooltip styling and behavior to be more minimal, consistent, and mobile-friendly
 
 ### Fixed
-- (fill)
+- Fixed housing tooltip positioning, clipping, visibility, and interaction issues across desktop and mobile layouts
+- Fixed tooltip link behavior so “See more” references are clickable and do not close incorrectly
+- Fixed grant amount handling to better reflect system-derived calculation behavior in the housing form
+- Fixed initial payment display logic so the due-now checkpoint aligns with the intended affordability flow
+- Fixed total initial payment display to include buyer stamp duty while keeping later downpayment stages separate
+- Fixed form submission issues for system-derived `BTO + HDB loan` tenure values
+- Fixed placeholder/value behavior so empty or default housing fields no longer appear as manually entered values
 
 ### Removed
-- (fill)
+- Removed misleading prefilled-looking default values from selected housing inputs
+- Removed inconsistent tooltip presentation across different housing sections
 
 ## [v1.1.2] - 2026-06-01
 
