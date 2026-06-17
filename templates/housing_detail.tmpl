@@ -53,7 +53,7 @@
   <div class="card-body">
     <h2 class="card-title">Affordability Snapshot</h2>
     <div class="grid md:grid-cols-3 gap-3">
-      <div class="stat bg-base-200 rounded-box"><div class="stat-title inline-flex items-center gap-1">Upfront Cost{{ template "partials/help_tooltip" (dict "Key" "upfront_cost" "Label" "Upfront Cost") }}</div><div class="stat-value oz-stat-value">{{ cents .Data.Affordability.UpfrontCostCents }}</div></div>
+      <div class="stat bg-base-200 rounded-box"><div class="stat-title inline-flex items-center gap-1">Downpayment + Fees{{ template "partials/help_tooltip" (dict "Key" "upfront_cost" "Label" "Downpayment + Fees") }}</div><div class="stat-value oz-stat-value">{{ cents .Data.Affordability.UpfrontCostCents }}</div></div>
       <div class="stat bg-base-200 rounded-box"><div class="stat-title inline-flex items-center gap-1">Required Downpayment{{ template "partials/help_tooltip" (dict "Key" "required_downpayment" "Label" "Required Downpayment") }}</div><div class="stat-value oz-stat-value">{{ cents .Data.Affordability.RequiredDownpaymentCents }}</div></div>
       <div class="stat bg-base-200 rounded-box"><div class="stat-title">Estimated Loan Amount</div><div class="stat-value oz-stat-value">{{ cents .Data.Affordability.EstimatedLoanAmountCents }}</div></div>
       <div class="stat bg-base-200 rounded-box"><div class="stat-title">CPF Used</div><div class="stat-value oz-stat-value">{{ cents .Data.Affordability.CpfUsedCents }}</div></div>
