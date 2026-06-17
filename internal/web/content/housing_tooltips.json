@@ -126,8 +126,8 @@
     "source": "System-derived from household profiles."
   },
   "upfront_cost": {
-    "label": "Upfront Cost",
-    "meaning": "The total cash-and-CPF amount needed upfront for this option.",
+    "label": "Downpayment + Fees",
+    "meaning": "The total downpayment, legal fees, and buyer stamp duty estimated for this option.",
     "calculation": "Downpayment + legal fees + buyer stamp duty.",
     "assumptions": "This planning figure excludes renovation and furniture budgets.",
     "source": "System-derived."
