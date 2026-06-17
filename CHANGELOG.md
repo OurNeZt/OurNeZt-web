@@ -6,6 +6,22 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ---
 
+## [v1.1.4] - 2026-06-17
+
+### Added
+- Mobile-friendly card layout for Housing Comparison on narrow screens.
+
+### Changed
+- Updated Housing Comparison table styling for better readability on horizontal/tablet screens.
+- Renamed the ambiguous “Upfront” housing comparison label to “Downpayment + Fees.”
+
+### Fixed
+- Fixed Housing Comparison columns wrapping vertically and becoming unreadable on mobile viewports.
+- Fixed unclear upfront cost wording by clarifying that the value includes downpayment, legal fees, and buyer stamp duty.
+
+### Removed
+- No changes in this release.
+
 ## [v1.1.3] - 2026-06-15
 
 ### Added
