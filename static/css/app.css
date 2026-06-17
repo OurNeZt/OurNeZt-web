@@ -234,6 +234,31 @@ body {
   min-width: 8rem;
 }
 
+@media (min-width: 768px) and (max-width: 1120px) {
+  .oz-housing-compare-table {
+    min-width: 100%;
+  }
+
+  .oz-housing-compare-table th,
+  .oz-housing-compare-table td {
+    padding: 0.45rem 0.35rem;
+    font-size: 0.68rem;
+    line-height: 0.95rem;
+  }
+
+  .oz-housing-compare-table th:first-child,
+  .oz-housing-compare-table td:first-child {
+    min-width: 5.75rem;
+  }
+
+  .oz-housing-compare-table .oz-help-trigger {
+    width: 0.75rem;
+    height: 0.75rem;
+    min-height: 0.75rem;
+    font-size: 0.5rem;
+  }
+}
+
 .oz-stat-value {
   font-size: 1.1rem;
   line-height: 1.4rem;

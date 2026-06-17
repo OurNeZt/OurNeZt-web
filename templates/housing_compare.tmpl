@@ -54,14 +54,14 @@
       {{ end }}
     </div>
     <div class="hidden md:block overflow-x-auto oz-comparison-scroll mt-3">
-      <table class="table oz-table-compact oz-housing-compare-table min-w-[48rem] whitespace-nowrap">
+      <table class="table table-sm oz-table-compact oz-housing-compare-table whitespace-nowrap">
         <thead>
           <tr>
-            <th>Option Name</th>
-            <th><span class="inline-flex items-center gap-1">Initial Payment{{ template "partials/help_tooltip" (dict "Key" "initial_downpayment_due_now" "Label" "Total Initial Payment Due Now") }}</span></th>
+            <th><span class="hidden xl:inline">Option Name</span><span class="xl:hidden">Option</span></th>
+            <th><span class="inline-flex items-center gap-1"><span class="hidden xl:inline">Initial Payment</span><span class="xl:hidden">Initial</span>{{ template "partials/help_tooltip" (dict "Key" "initial_downpayment_due_now" "Label" "Total Initial Payment Due Now") }}</span></th>
             <th>Upfront</th>
-            <th>Mortgage</th>
-            <th><span class="inline-flex items-center gap-1">Monthly Cost{{ template "partials/help_tooltip" (dict "Key" "monthly_housing_cost" "Label" "Monthly Housing Cost") }}</span></th>
+            <th><span class="hidden xl:inline">Mortgage</span><span class="xl:hidden">Mtg.</span></th>
+            <th><span class="inline-flex items-center gap-1"><span class="hidden xl:inline">Monthly Cost</span><span class="xl:hidden">Monthly</span>{{ template "partials/help_tooltip" (dict "Key" "monthly_housing_cost" "Label" "Monthly Housing Cost") }}</span></th>
             <th><span class="inline-flex items-center gap-1">Surplus{{ template "partials/help_tooltip" (dict "Key" "monthly_surplus_after_housing" "Label" "Monthly Surplus After Housing") }}</span></th>
             <th>
               <span class="inline-flex items-center gap-1">
