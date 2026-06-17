@@ -16,8 +16,45 @@
     {{ else }}
     <p>Select a family first from <a class="link" href="/dashboard">dashboard</a>.</p>
     {{ end }}
-    <div class="overflow-x-auto mt-3">
-      <table class="table oz-table-compact">
+    <div class="grid gap-3 mt-3 md:hidden">
+      {{ range .Data.Rows }}
+      <section class="card border border-base-300 bg-base-100">
+        <div class="card-body p-4">
+          <h2 class="card-title text-lg">{{ .Name }}</h2>
+          <div class="grid gap-3 mt-1">
+            <div class="stat oz-stat-card bg-base-200 rounded-box">
+              <div class="stat-title inline-flex items-center gap-1">Initial Payment{{ template "partials/help_tooltip" (dict "Key" "initial_downpayment_due_now" "Label" "Total Initial Payment Due Now") }}</div>
+              <div class="stat-value oz-stat-value">{{ cents .TotalInitialPaymentCents }}</div>
+            </div>
+            <div class="stat oz-stat-card bg-base-200 rounded-box">
+              <div class="stat-title">Upfront</div>
+              <div class="stat-value oz-stat-value">{{ cents .Affordability.UpfrontCostCents }}</div>
+            </div>
+            <div class="stat oz-stat-card bg-base-200 rounded-box">
+              <div class="stat-title">Mortgage</div>
+              <div class="stat-value oz-stat-value">{{ cents .Affordability.MonthlyMortgageCents }}</div>
+            </div>
+            <div class="stat oz-stat-card bg-base-200 rounded-box">
+              <div class="stat-title inline-flex items-center gap-1">Monthly Cost{{ template "partials/help_tooltip" (dict "Key" "monthly_housing_cost" "Label" "Monthly Housing Cost") }}</div>
+              <div class="stat-value oz-stat-value">{{ cents .Affordability.MonthlyHousingCostCents }}</div>
+            </div>
+            <div class="stat oz-stat-card bg-base-200 rounded-box">
+              <div class="stat-title inline-flex items-center gap-1">Surplus{{ template "partials/help_tooltip" (dict "Key" "monthly_surplus_after_housing" "Label" "Monthly Surplus After Housing") }}</div>
+              <div class="stat-value oz-stat-value">{{ cents .Affordability.MonthlySurplusAfterHousingCents }}</div>
+            </div>
+          </div>
+          <p class="mt-3 flex items-center gap-2 text-sm">
+            <strong>Rating:</strong> {{ ratingLabel .Affordability.Rating }}
+            {{ template "partials/help_tooltip" (dict "Key" "rating" "Label" "Affordability Rating") }}
+          </p>
+        </div>
+      </section>
+      {{ else }}
+      <div class="alert oz-alert-soft text-sm">No comparison rows yet</div>
+      {{ end }}
+    </div>
+    <div class="hidden md:block overflow-x-auto oz-comparison-scroll mt-3">
+      <table class="table oz-table-compact oz-housing-compare-table min-w-[48rem] whitespace-nowrap">
         <thead>
           <tr>
             <th>Option Name</th>

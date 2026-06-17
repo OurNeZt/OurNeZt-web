@@ -204,6 +204,36 @@ body {
   word-break: break-word;
 }
 
+.oz-comparison-scroll {
+  max-width: 100%;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.oz-housing-compare-table {
+  table-layout: auto;
+  min-width: max(48rem, 100%);
+}
+
+.oz-housing-compare-table th,
+.oz-housing-compare-table td {
+  white-space: nowrap;
+  word-break: normal;
+}
+
+.oz-housing-compare-table th {
+  vertical-align: top;
+}
+
+.oz-housing-compare-table th > .inline-flex {
+  flex-wrap: nowrap;
+}
+
+.oz-housing-compare-table th:first-child,
+.oz-housing-compare-table td:first-child {
+  min-width: 8rem;
+}
+
 .oz-stat-value {
   font-size: 1.1rem;
   line-height: 1.4rem;
