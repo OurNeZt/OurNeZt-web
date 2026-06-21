@@ -54,6 +54,7 @@ func NewRouter(cfg config.Config, clients *core.Clients) (*gin.Engine, error) {
 	r.Static("/static", "./static")
 
 	r.GET("/", app.home)
+	r.GET("/faq", app.faq)
 	r.GET("/login", app.showLogin)
 	r.GET("/bootstrap-admin-help", app.bootstrapAdminHelp)
 	r.POST("/login", app.login)
