@@ -9,7 +9,6 @@ import (
 )
 
 type adminUsersData struct {
-	JustCreated             *ourneztv1.User
 	Users                   []*ourneztv1.User
 	TotalUsers              int
 	ActiveUsers             int
@@ -28,7 +27,7 @@ type adminDashboardData struct {
 }
 
 func (a *App) adminHome(c *gin.Context) {
-	data, err := a.fetchAdminUsersData(c, nil)
+	data, err := a.fetchAdminUsersData(c)
 	if err != nil {
 		c.Redirect(http.StatusFound, "/admin/users?error="+urlQuerySafe(grpcMessage(err)))
 		return
@@ -44,7 +43,7 @@ func (a *App) adminHome(c *gin.Context) {
 }
 
 func (a *App) adminUsers(c *gin.Context) {
-	data, err := a.fetchAdminUsersData(c, nil)
+	data, err := a.fetchAdminUsersData(c)
 	if err != nil {
 		c.Redirect(http.StatusFound, "/admin?error="+urlQuerySafe(grpcMessage(err)))
 		return
@@ -58,7 +57,7 @@ func (a *App) adminCreateUser(c *gin.Context) {
 		role = "user"
 	}
 
-	resp, err := a.clients.Auth.CreateUser(a.grpcContext(c), &ourneztv1.CreateUserRequest{
+	_, err := a.clients.Auth.CreateUser(a.grpcContext(c), &ourneztv1.CreateUserRequest{
 		Email:       strings.TrimSpace(c.PostForm("email")),
 		DisplayName: strings.TrimSpace(c.PostForm("display_name")),
 		Password:    c.PostForm("password"),
@@ -69,13 +68,7 @@ func (a *App) adminCreateUser(c *gin.Context) {
 		return
 	}
 
-	data, listErr := a.fetchAdminUsersData(c, resp)
-	if listErr != nil {
-		c.Redirect(http.StatusFound, "/admin/users?flash=User+created&error="+urlQuerySafe(grpcMessage(listErr)))
-		return
-	}
-
-	a.render(c, "admin_users", "Admin Users", data)
+	c.Redirect(http.StatusSeeOther, "/admin/users?flash=User+created")
 }
 
 func (a *App) adminDisableUser(c *gin.Context) {
@@ -87,14 +80,13 @@ func (a *App) adminDisableUser(c *gin.Context) {
 	c.Redirect(http.StatusFound, "/admin/users?flash=User+disabled")
 }
 
-func (a *App) fetchAdminUsersData(c *gin.Context, justCreated *ourneztv1.User) (adminUsersData, error) {
+func (a *App) fetchAdminUsersData(c *gin.Context) (adminUsersData, error) {
 	resp, err := a.clients.Auth.ListUsers(a.grpcContext(c), &ourneztv1.ListUsersRequest{})
 	if err != nil {
 		return adminUsersData{}, err
 	}
 
 	data := adminUsersData{
-		JustCreated:   justCreated,
 		Users:         resp.GetUsers(),
 		CurrentUserID: "",
 	}
