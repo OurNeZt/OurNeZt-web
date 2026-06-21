@@ -22,15 +22,18 @@
         <div class="hidden md:flex items-center gap-2">
           {{ if .User.MustChangePassword }}
             <a class="btn btn-warning btn-sm" href="/change-password">Change Password</a>
+            <a class="btn btn-ghost btn-sm" href="/faq">FAQ</a>
           {{ else }}
             {{ if eq .User.Role "admin" }}
               <a class="btn btn-ghost btn-sm" href="/admin">Admin Dashboard</a>
               <a class="btn btn-ghost btn-sm" href="/admin/users">All Users</a>
+              <a class="btn btn-ghost btn-sm" href="/faq">FAQ</a>
             {{ else }}
               <a class="btn btn-ghost btn-sm" href="/dashboard">Dashboard</a>
               <a class="btn btn-ghost btn-sm" href="/families">Families</a>
               <a class="btn btn-ghost btn-sm" href="/people">Profiles</a>
               <a class="btn btn-ghost btn-sm" href="/housing">Housing</a>
+              <a class="btn btn-ghost btn-sm" href="/faq">FAQ</a>
               <a class="btn btn-ghost btn-sm btn-circle oz-profile-btn" href="/profile" aria-label="Profile" title="Profile">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                   <circle cx="12" cy="8" r="4"></circle>
@@ -52,15 +55,18 @@
           <ul class="menu menu-sm oz-mobile-menu-panel">
             {{ if .User.MustChangePassword }}
               <li><a href="/change-password">Change Password</a></li>
+              <li><a href="/faq">FAQ</a></li>
             {{ else }}
               {{ if eq .User.Role "admin" }}
                 <li><a href="/admin">Admin Dashboard</a></li>
                 <li><a href="/admin/users">All Users</a></li>
+                <li><a href="/faq">FAQ</a></li>
               {{ else }}
                 <li><a href="/dashboard">Dashboard</a></li>
                 <li><a href="/families">Families</a></li>
                 <li><a href="/people">Profiles</a></li>
                 <li><a href="/housing">Housing</a></li>
+                <li><a href="/faq">FAQ</a></li>
                 <li><a href="/profile">My Profile</a></li>
               {{ end }}
             {{ end }}

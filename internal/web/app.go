@@ -61,6 +61,7 @@ func NewRouter(cfg config.Config, clients *core.Clients) (*gin.Engine, error) {
 
 	authed := r.Group("/")
 	authed.Use(app.requireAuth())
+	authed.GET("/faq", app.faq)
 	authed.GET("/change-password", app.showChangePassword)
 	authed.POST("/change-password", app.changePassword)
 
