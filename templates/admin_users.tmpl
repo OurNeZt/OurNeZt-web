@@ -52,11 +52,6 @@
         <input class="input input-bordered w-full" name="user_id" placeholder="User ID" required>
         <button class="btn btn-warning" type="submit">Disable user</button>
       </form>
-      {{ with .Data.JustCreated }}
-      <div class="alert alert-success mt-3">
-        Created: {{ .DisplayName }} ({{ .Email }})<br>ID: {{ .Id }}
-      </div>
-      {{ end }}
     </div>
   </section>
 </div>
