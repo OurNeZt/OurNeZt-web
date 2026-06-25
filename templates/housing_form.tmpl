@@ -1,5 +1,35 @@
 {{ define "housing_form" }}
 {{ template "partials/header" . }}
+<style>
+  .oz-animated-field {
+    max-height: 12rem;
+    opacity: 1;
+    overflow: hidden;
+    transform: translateY(0);
+    transition:
+      max-height 220ms ease,
+      opacity 160ms ease,
+      transform 160ms ease,
+      margin 220ms ease;
+  }
+
+  .oz-animated-field.oz-field-hidden {
+    max-height: 0;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-0.25rem);
+  }
+
+  .oz-animated-field.oz-field-gone {
+    display: none !important;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .oz-animated-field {
+      transition: none;
+    }
+  }
+</style>
 <section class="card bg-base-100 shadow max-w-5xl mx-auto w-full">
   <div class="card-body">
     <h1 class="card-title">{{ if .Data.IsEdit }}Edit Housing{{ else }}Add Housing{{ end }}</h1>
@@ -7,7 +37,7 @@
     <p class="text-xs opacity-70"><span class="text-error font-semibold">*</span> Required fields. Grant amount and buyer stamp duty are calculated automatically.</p>
     <form method="post" action="{{ if .Data.IsEdit }}/housing/{{ .Data.Housing.Id }}{{ else }}/housing{{ end }}" class="grid grid-cols-1 md:grid-cols-2 gap-3 oz-form-grid">
       <input type="hidden" name="family_id" value="{{ .Data.FamilyID }}">
-      <div class="oz-field">
+      <div class="oz-field" id="assessment_mode_field">
         <label class="oz-field-label" for="assessment_mode"><span class="inline-flex items-center gap-1">Assessment Mode<span class="text-error" aria-label="required" title="Required">*</span>{{ template "partials/help_tooltip" (dict "Key" "assessment_mode" "Label" "Assessment Mode") }}</span></label>
         <select class="select select-bordered w-full" name="assessment_mode" id="assessment_mode" required>
           <option value="standard" {{ if eqFold .Data.AssessmentMode "standard" }}selected{{ end }}>Standard</option>
@@ -59,10 +89,11 @@
         <span>Loan Type <span class="text-error oz-required-standard" aria-label="required" title="Required">*</span></span>
         <select class="select select-bordered w-full" name="loan_type" id="loan_type" required>
           <option value="" {{ if eq .Data.Housing.LoanType "" }}selected{{ end }}>Select loan type</option>
-          <option value="hdb" {{ if eqFold .Data.Housing.LoanType "hdb" }}selected{{ end }}>HDB Loan</option>
+          <option value="hdb" id="loan_type_hdb_option" {{ if eqFold .Data.Housing.LoanType "hdb" }}selected{{ end }}>HDB Loan</option>
           <option value="bank" {{ if eqFold .Data.Housing.LoanType "bank" }}selected{{ end }}>Bank Loan</option>
           <option value="cash" {{ if eqFold .Data.Housing.LoanType "cash" }}selected{{ end }}>Cash (No Loan)</option>
         </select>
+        <span class="text-xs opacity-70 hidden" id="non_hdb_loan_note">HDB loans are not available for non-HDB property options.</span>
       </label>
       <div class="oz-field" id="loan_amount_field">
         <label class="oz-field-label" for="loan_amount"><span class="inline-flex items-center gap-1">Loan Amount (Dollars)<span class="text-error oz-required-loan" aria-label="required" title="Required">*</span>{{ template "partials/help_tooltip" (dict "Key" "loan_amount" "Label" "Loan Amount") }}</span></label>
@@ -130,9 +161,12 @@
 <script>
   (() => {
     const assessmentMode = document.getElementById("assessment_mode");
+    const assessmentModeField = document.getElementById("assessment_mode_field");
     const diaIncomeSection = document.getElementById("dia_income_section");
     const loanTypeField = document.getElementById("loan_type_field");
     const loanType = document.getElementById("loan_type");
+    const hdbLoanOption = document.getElementById("loan_type_hdb_option");
+    const nonHDBLoanNote = document.getElementById("non_hdb_loan_note");
     const housingType = document.getElementById("housing_type");
     const grantAmountField = document.getElementById("grant_amount_field");
     const loanAmountField = document.getElementById("loan_amount_field");
@@ -151,7 +185,7 @@
     const tenureRequiredIndicators = document.querySelectorAll(".oz-required-tenure");
     const autoInterestIndicators = document.querySelectorAll(".oz-auto-interest");
     const autoTenureIndicators = document.querySelectorAll(".oz-auto-tenure");
-    if (!assessmentMode || !diaIncomeSection || !loanTypeField || !loanType || !housingType || !grantAmountField || !loanAmountField || !interestRateField || !loanTenureField || !form || !purchasePriceInput || !grantAmountInput || !bsdDisplay || !loanAmount || !interestRate || !loanTenure || !expectedKeyCollectionDate) return;
+    if (!assessmentMode || !assessmentModeField || !diaIncomeSection || !loanTypeField || !loanType || !hdbLoanOption || !nonHDBLoanNote || !housingType || !grantAmountField || !loanAmountField || !interestRateField || !loanTenureField || !form || !purchasePriceInput || !grantAmountInput || !bsdDisplay || !loanAmount || !interestRate || !loanTenure || !expectedKeyCollectionDate) return;
 
     const grantAmountEstimates = {
       "bto": {{ index .Data.GrantAmountEstimates "bto" }},
@@ -174,9 +208,116 @@
       elements.forEach((element) => element.classList.toggle("hidden", !visible));
     };
 
+    const animatedSections = [
+      assessmentModeField,
+      diaIncomeSection,
+      loanTypeField,
+      grantAmountField,
+      loanAmountField,
+      interestRateField,
+      loanTenureField,
+    ];
+    animatedSections.forEach((section) => section.classList.add("oz-animated-field"));
+
+    let housingRulesInitialized = false;
+    const layoutAnimationDuration = 220;
+    let hiddenSectionRemovalTimer;
+    const captureFormLayout = () => {
+      const positions = new Map();
+      Array.from(form.children).forEach((section) => {
+        if (section.classList.contains("oz-field-gone")) return;
+        positions.set(section, section.getBoundingClientRect());
+      });
+      return positions;
+    };
+
+    const animateFormLayout = (previousPositions) => {
+      if (!housingRulesInitialized || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      requestAnimationFrame(() => {
+        Array.from(form.children).forEach((section) => {
+          const previous = previousPositions.get(section);
+          if (!previous || section.classList.contains("oz-field-gone")) return;
+          const current = section.getBoundingClientRect();
+          const deltaX = previous.left - current.left;
+          const deltaY = previous.top - current.top;
+          if (Math.abs(deltaX) < 1 && Math.abs(deltaY) < 1) return;
+          section.animate([
+            { transform: `translate(${deltaX}px, ${deltaY}px)` },
+            { transform: "translate(0, 0)" }
+          ], {
+            duration: layoutAnimationDuration,
+            easing: "ease",
+          });
+        });
+      });
+    };
+
+    const setSectionFocusable = (section, focusable) => {
+      section.querySelectorAll("input, select, textarea, button").forEach((control) => {
+        if (focusable) {
+          if (control.dataset.ozHadTabindex === "true") {
+            control.setAttribute("tabindex", control.dataset.ozTabindex);
+          } else {
+            control.removeAttribute("tabindex");
+          }
+          delete control.dataset.ozHadTabindex;
+          delete control.dataset.ozTabindex;
+          return;
+        }
+        if (!control.dataset.ozHadTabindex) {
+          control.dataset.ozHadTabindex = control.hasAttribute("tabindex") ? "true" : "false";
+          control.dataset.ozTabindex = control.getAttribute("tabindex") || "";
+        }
+        control.setAttribute("tabindex", "-1");
+      });
+    };
+
+    const scheduleHiddenSectionRemoval = () => {
+      window.clearTimeout(hiddenSectionRemovalTimer);
+      hiddenSectionRemovalTimer = window.setTimeout(() => {
+        const previousPositions = captureFormLayout();
+        animatedSections.forEach((section) => {
+          if (section.classList.contains("oz-field-hidden")) {
+            section.classList.add("oz-field-gone");
+          }
+        });
+        animateFormLayout(previousPositions);
+      }, layoutAnimationDuration);
+    };
+
+    const setSectionVisible = (section, visible) => {
+      if (!section) return;
+      section.setAttribute("aria-hidden", visible ? "false" : "true");
+      setSectionFocusable(section, visible);
+      if (!housingRulesInitialized) {
+        section.classList.toggle("oz-field-gone", !visible);
+        section.classList.toggle("oz-field-hidden", !visible);
+        return;
+      }
+      if (visible) {
+        section.classList.remove("oz-field-gone");
+        requestAnimationFrame(() => {
+          section.classList.remove("oz-field-hidden");
+        });
+        return;
+      }
+      section.classList.add("oz-field-hidden");
+      scheduleHiddenSectionRemoval();
+    };
+
     const maxLoanTenureYears = (housingType) => {
       const normalizedHousingType = (housingType || "").trim().toLowerCase();
       return normalizedHousingType === "bto" || normalizedHousingType === "resale_hdb" ? 30 : 35;
+    };
+
+    const isNonHDBHousingType = (housingType) => {
+      const normalizedHousingType = (housingType || "").trim().toLowerCase();
+      return normalizedHousingType === "executive_condo" || normalizedHousingType === "private_condo" || normalizedHousingType === "landed" || normalizedHousingType === "other";
+    };
+
+    const supportsAssessmentMode = (housingType) => {
+      const normalizedHousingType = (housingType || "").trim().toLowerCase();
+      return normalizedHousingType === "" || normalizedHousingType === "bto";
     };
 
     const calcBsd = (purchasePriceCents) => {
@@ -202,36 +343,54 @@
     };
 
     const refreshHousingRules = () => {
+      const previousPositions = captureFormLayout();
       const isCash = (loanType.value || "").trim().toLowerCase() === "cash";
       const isHdb = (loanType.value || "").trim().toLowerCase() === "hdb";
       const isDeferred = (assessmentMode.value || "").trim().toLowerCase() === "deferred";
       const selectedHousingType = (housingType.value || "").trim().toLowerCase();
+      const isNonHDB = isNonHDBHousingType(selectedHousingType);
+      const canUseAssessmentMode = supportsAssessmentMode(selectedHousingType);
+      if (!canUseAssessmentMode && isDeferred) {
+        assessmentMode.value = "standard";
+      }
+      if (isNonHDB && isHdb) {
+        loanType.value = "";
+      }
+      const effectiveIsDeferred = canUseAssessmentMode && (assessmentMode.value || "").trim().toLowerCase() === "deferred";
+      const effectiveIsHdb = (loanType.value || "").trim().toLowerCase() === "hdb";
       const isBtoHdb = selectedHousingType === "bto" && isHdb;
       const maxTenureYears = maxLoanTenureYears(selectedHousingType);
-      const showLoanType = !isDeferred;
+      const showAssessmentMode = canUseAssessmentMode;
+      const showLoanType = !effectiveIsDeferred;
       const showLoanAmount = showLoanType && !isCash;
-      const requiresInterestRate = showLoanType && !isCash && !isHdb;
+      const requiresInterestRate = showLoanType && !isCash && !effectiveIsHdb;
       const requiresLoanTenure = showLoanType && !isCash && !isBtoHdb;
-      const showGrant = !isDeferred;
+      const showGrant = !effectiveIsDeferred && !isNonHDB;
 
-      diaIncomeSection.style.display = isDeferred ? "" : "none";
-      loanTypeField.style.display = showLoanType ? "" : "none";
-      grantAmountField.style.display = showGrant ? "" : "none";
-      loanAmountField.style.display = showLoanAmount ? "" : "none";
-      interestRateField.style.display = showLoanType && !isCash ? "" : "none";
-      loanTenureField.style.display = showLoanType && !isCash ? "" : "none";
+      setSectionVisible(assessmentModeField, showAssessmentMode);
+      assessmentMode.disabled = !showAssessmentMode;
+      assessmentMode.required = showAssessmentMode;
+      setSectionVisible(diaIncomeSection, effectiveIsDeferred);
+      setSectionVisible(loanTypeField, showLoanType);
+      setSectionVisible(grantAmountField, showGrant);
+      setSectionVisible(loanAmountField, showLoanAmount);
+      setSectionVisible(interestRateField, showLoanType && !isCash);
+      setSectionVisible(loanTenureField, showLoanType && !isCash);
       loanType.required = showLoanType;
       loanAmount.required = showLoanAmount;
       interestRate.required = requiresInterestRate;
       loanTenure.required = requiresLoanTenure;
       loanTenure.max = maxTenureYears.toString();
+      hdbLoanOption.disabled = isNonHDB;
+      hdbLoanOption.title = isNonHDB ? "HDB loans are not available for non-HDB property options." : "";
+      nonHDBLoanNote.classList.toggle("hidden", !isNonHDB);
       setVisible(loanAmountRequiredIndicators, showLoanAmount);
       setVisible(interestRequiredIndicators, requiresInterestRate);
       setVisible(tenureRequiredIndicators, requiresLoanTenure);
-      setVisible(autoInterestIndicators, showLoanType && !isCash && isHdb);
+      setVisible(autoInterestIndicators, showLoanType && !isCash && effectiveIsHdb);
       setVisible(autoTenureIndicators, isBtoHdb);
 
-      if (isHdb && !isCash) {
+      if (effectiveIsHdb && !isCash) {
         interestRate.value = "";
         interestRate.placeholder = "Auto-set to 2.60 for HDB";
         interestRate.readOnly = true;
@@ -281,6 +440,7 @@
       const interestRateValue = Number(interestRate.value || "0");
       const tenureValue = Number(loanTenure.value || "0");
       purchasePriceInput.setCustomValidity(purchasePriceInput.value && purchasePriceCents <= 0 ? "Purchase price must be more than 0." : "");
+      loanType.setCustomValidity(isNonHDB && loanType.value === "hdb" ? "HDB loan is not available for non-HDB property options." : "");
       loanAmount.setCustomValidity(showLoanAmount && loanAmount.value && loanAmountCents <= 0 ? "Loan amount must be more than 0." : "");
       interestRate.setCustomValidity(requiresInterestRate && interestRate.value && interestRateValue <= 0 ? "Interest rate must be more than 0." : "");
       if (!showLoanType || isCash || isBtoHdb || tenureValue <= maxTenureYears) {
@@ -289,6 +449,7 @@
         loanTenure.setCustomValidity(`Loan tenure cannot exceed ${maxTenureYears} years for the selected housing type.`);
       }
       bsdDisplay.value = formatMoney(calcBsd(purchasePriceCents));
+      animateFormLayout(previousPositions);
     };
 
     loanType.addEventListener("change", refreshHousingRules);
@@ -303,11 +464,19 @@
       const isHdb = (loanType.value || "").trim().toLowerCase() === "hdb";
       const isDeferred = (assessmentMode.value || "").trim().toLowerCase() === "deferred";
       const selectedHousingType = (housingType.value || "").trim().toLowerCase();
+      if (!supportsAssessmentMode(selectedHousingType)) {
+        assessmentMode.disabled = false;
+        assessmentMode.value = "standard";
+      }
+      if (isNonHDBHousingType(selectedHousingType)) {
+        grantAmountInput.value = "";
+      }
       if (!isDeferred && !isCash && isHdb && selectedHousingType === "bto") {
         loanTenure.value = "30";
       }
     });
     refreshHousingRules();
+    housingRulesInitialized = true;
   })();
 </script>
 {{ template "partials/footer" . }}

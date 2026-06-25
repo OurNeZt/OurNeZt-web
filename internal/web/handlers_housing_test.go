@@ -74,6 +74,65 @@ func TestValidateHousingOptionInputRequiresBankInterestRate(t *testing.T) {
 	}
 }
 
+func TestValidateHousingOptionInputRejectsDeferredForResaleHDB(t *testing.T) {
+	option := validHousingOptionForValidation()
+	option.HousingType = "resale_hdb"
+
+	errMessage := validateHousingOptionInput(option, "deferred")
+	if !strings.Contains(errMessage, "deferred income assessment is only available for BTO options") {
+		t.Fatalf("validation error = %q, want BTO-only deferred requirement", errMessage)
+	}
+}
+
+func TestValidateHousingOptionInputRejectsNonHDBPropertyHDBOnlyValues(t *testing.T) {
+	tests := []struct {
+		name        string
+		housingType string
+		mutate      func(*ourneztv1.HousingOption) string
+		wantMessage string
+	}{
+		{
+			name:        "EC deferred assessment",
+			housingType: "executive_condo",
+			mutate: func(option *ourneztv1.HousingOption) string {
+				return "deferred"
+			},
+			wantMessage: "deferred income assessment is only available",
+		},
+		{
+			name:        "landed grant amount",
+			housingType: "landed",
+			mutate: func(option *ourneztv1.HousingOption) string {
+				option.GrantAmountCents = 1000000
+				return "standard"
+			},
+			wantMessage: "grant amount is not applicable",
+		},
+		{
+			name:        "other HDB loan",
+			housingType: "other",
+			mutate: func(option *ourneztv1.HousingOption) string {
+				option.LoanType = "hdb"
+				return "standard"
+			},
+			wantMessage: "HDB loan is not available",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			option := validHousingOptionForValidation()
+			option.HousingType = tc.housingType
+			assessmentMode := tc.mutate(option)
+
+			errMessage := validateHousingOptionInput(option, assessmentMode)
+			if !strings.Contains(errMessage, tc.wantMessage) {
+				t.Fatalf("validation error = %q, want to contain %q", errMessage, tc.wantMessage)
+			}
+		})
+	}
+}
+
 func validHousingOptionForValidation() *ourneztv1.HousingOption {
 	return &ourneztv1.HousingOption{
 		Name:                      "Option",
