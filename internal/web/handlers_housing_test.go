@@ -74,21 +74,24 @@ func TestValidateHousingOptionInputRequiresBankInterestRate(t *testing.T) {
 	}
 }
 
-func TestValidateHousingOptionInputRejectsCondoHDBOnlyValues(t *testing.T) {
+func TestValidateHousingOptionInputRejectsNonHDBPropertyHDBOnlyValues(t *testing.T) {
 	tests := []struct {
 		name        string
+		housingType string
 		mutate      func(*ourneztv1.HousingOption) string
 		wantMessage string
 	}{
 		{
-			name: "deferred assessment",
+			name:        "EC deferred assessment",
+			housingType: "executive_condo",
 			mutate: func(option *ourneztv1.HousingOption) string {
 				return "deferred"
 			},
 			wantMessage: "deferred income assessment is not available",
 		},
 		{
-			name: "grant amount",
+			name:        "landed grant amount",
+			housingType: "landed",
 			mutate: func(option *ourneztv1.HousingOption) string {
 				option.GrantAmountCents = 1000000
 				return "standard"
@@ -96,7 +99,8 @@ func TestValidateHousingOptionInputRejectsCondoHDBOnlyValues(t *testing.T) {
 			wantMessage: "grant amount is not applicable",
 		},
 		{
-			name: "HDB loan",
+			name:        "other HDB loan",
+			housingType: "other",
 			mutate: func(option *ourneztv1.HousingOption) string {
 				option.LoanType = "hdb"
 				return "standard"
@@ -108,7 +112,7 @@ func TestValidateHousingOptionInputRejectsCondoHDBOnlyValues(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			option := validHousingOptionForValidation()
-			option.HousingType = "executive_condo"
+			option.HousingType = tc.housingType
 			assessmentMode := tc.mutate(option)
 
 			errMessage := validateHousingOptionInput(option, assessmentMode)

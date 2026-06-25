@@ -386,9 +386,9 @@ func maxLoanTenureMonthsForHousingType(housingType string) int32 {
 	return maxLoanTenureYearsForHousingType(housingType) * monthsPerYear
 }
 
-func isCondoHousingType(housingType string) bool {
+func isNonHDBHousingType(housingType string) bool {
 	switch normalizeLookup(housingType) {
-	case "executive_condo", "private_condo":
+	case "executive_condo", "private_condo", "landed", "other":
 		return true
 	default:
 		return false
@@ -417,15 +417,15 @@ func validateHousingOptionInput(option *ourneztv1.HousingOption, assessmentMode 
 	if strings.TrimSpace(option.GetExpectedKeyCollectionDate()) == "" {
 		return "expected key collection date is required"
 	}
-	if isCondoHousingType(option.GetHousingType()) {
+	if isNonHDBHousingType(option.GetHousingType()) {
 		if assessmentMode == "deferred" {
-			return "deferred income assessment is not available for EC or private condo options"
+			return "deferred income assessment is not available for non-HDB property options"
 		}
 		if option.GetGrantAmountCents() > 0 {
-			return "grant amount is not applicable for EC or private condo options"
+			return "grant amount is not applicable for non-HDB property options"
 		}
 		if option.GetLoanType() == "hdb" {
-			return "HDB loan is not available for EC or private condo options"
+			return "HDB loan is not available for non-HDB property options"
 		}
 	}
 	netPurchase := maxInt64(option.GetPurchasePriceCents()-option.GetGrantAmountCents(), 0)
@@ -521,7 +521,7 @@ func normalizeHousingOption(option *ourneztv1.HousingOption, assessmentMode stri
 
 	option.BuyerStampDutyCents = calculateResidentialBSDCents(option.GetPurchasePriceCents())
 
-	if isCondoHousingType(option.GetHousingType()) {
+	if isNonHDBHousingType(option.GetHousingType()) {
 		option.GrantAmountCents = 0
 	}
 
