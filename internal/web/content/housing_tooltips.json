@@ -2,7 +2,7 @@
   "assessment_mode": {
     "label": "Assessment Mode",
     "meaning": "Chooses whether we assess the option using today's housing setup or a Deferred Income Assessment scenario.",
-    "calculation": "Standard uses the loan details you enter. Deferred assumes a 75% bank loan, 25% downpayment, 2.60% interest, and a 25-year tenure.",
+    "calculation": "Standard uses the loan details you enter. Deferred assumes a 75% bank loan, 25% downpayment, 2.60% interest, and the applicable maximum tenure: 30 years for HDB flats or 35 years for non-HDB properties.",
     "assumptions": "Deferred planning is anchored to the assessment window before key collection.",
     "source": "User-selected scenario."
   },
@@ -42,7 +42,7 @@
     "label": "Loan Tenure",
     "meaning": "The total number of years used to spread the loan repayment.",
     "calculation": "A longer tenure usually lowers the monthly mortgage but stretches repayment over a longer period. The form accepts years and converts them internally for repayment calculations.",
-    "assumptions": "BTO with HDB loan is auto-set to 25 years. Deferred mode also assumes a 25-year tenure.",
+    "assumptions": "BTO with HDB loan is auto-set to 30 years. Deferred mode assumes the applicable maximum tenure: 30 years for HDB flats or 35 years for non-HDB properties.",
     "source": "User-provided for other standard cases, but system-derived for BTO with HDB loan and for Deferred defaults."
   },
   "buyer_stamp_duty": {

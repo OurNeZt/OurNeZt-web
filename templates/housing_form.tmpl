@@ -73,7 +73,7 @@
       </div>
       <div class="oz-field" id="loan_tenure_field">
         <label class="oz-field-label" for="loan_tenure_years"><span class="inline-flex items-center gap-1">Loan Tenure (Years){{ template "partials/help_tooltip" (dict "Key" "loan_tenure" "Label" "Loan Tenure") }}</span></label>
-        <input class="input input-bordered{{ if and (eqFold .Data.Housing.HousingType "bto") (eqFold .Data.Housing.LoanType "hdb") }} oz-readonly-input{{ end }}" id="loan_tenure_years" name="loan_tenure_years" type="number" min="0" max="35" step="1" inputmode="numeric" placeholder="e.g. 25" value="{{ if and (gt .Data.Housing.LoanTenureMonths 0) (not (and (eqFold .Data.Housing.HousingType "bto") (eqFold .Data.Housing.LoanType "hdb"))) }}{{ monthsToYears .Data.Housing.LoanTenureMonths }}{{ end }}">
+        <input class="input input-bordered{{ if and (eqFold .Data.Housing.HousingType "bto") (eqFold .Data.Housing.LoanType "hdb") }} oz-readonly-input{{ end }}" id="loan_tenure_years" name="loan_tenure_years" type="number" min="0" max="35" step="1" inputmode="numeric" placeholder="e.g. 30" value="{{ if and (gt .Data.Housing.LoanTenureMonths 0) (not (and (eqFold .Data.Housing.HousingType "bto") (eqFold .Data.Housing.LoanType "hdb"))) }}{{ monthsToYears .Data.Housing.LoanTenureMonths }}{{ end }}">
       </div>
       <div class="oz-field">
         <label class="oz-field-label" for="buyer_stamp_duty_display"><span class="inline-flex items-center gap-1">Estimated Buyer Stamp Duty (Dollars){{ template "partials/help_tooltip" (dict "Key" "buyer_stamp_duty" "Label" "Estimated Buyer Stamp Duty") }}</span></label>
@@ -163,6 +163,11 @@
 
     const formatMoney = (cents) => (Math.max(0, cents) / 100).toFixed(2);
 
+    const maxLoanTenureYears = (housingType) => {
+      const normalizedHousingType = (housingType || "").trim().toLowerCase();
+      return normalizedHousingType === "bto" || normalizedHousingType === "resale_hdb" ? 30 : 35;
+    };
+
     const calcBsd = (purchasePriceCents) => {
       let amount = Math.max(0, purchasePriceCents);
       const tiers = [
@@ -191,6 +196,7 @@
       const isDeferred = (assessmentMode.value || "").trim().toLowerCase() === "deferred";
       const selectedHousingType = (housingType.value || "").trim().toLowerCase();
       const isBtoHdb = selectedHousingType === "bto" && isHdb;
+      const maxTenureYears = maxLoanTenureYears(selectedHousingType);
       const showLoanType = !isDeferred;
       const showLoanAmount = showLoanType && !isCash;
       const showGrant = !isDeferred;
@@ -205,6 +211,7 @@
       loanAmount.required = showLoanAmount;
       interestRate.required = showLoanType && !isCash && !isHdb;
       loanTenure.required = showLoanType && !isCash && !isBtoHdb;
+      loanTenure.max = maxTenureYears.toString();
 
       if (isHdb && !isCash) {
         interestRate.value = "";
@@ -219,11 +226,11 @@
 
       if (isBtoHdb) {
         loanTenure.value = "";
-        loanTenure.placeholder = "Auto-set to 25 years for BTO + HDB";
+        loanTenure.placeholder = "Auto-set to 30 years for BTO + HDB";
         loanTenure.readOnly = true;
         loanTenure.classList.add("oz-readonly-input");
       } else {
-        loanTenure.placeholder = "e.g. 25";
+        loanTenure.placeholder = `Max ${maxTenureYears} years`;
         loanTenure.readOnly = false;
         loanTenure.classList.remove("oz-readonly-input");
       }
@@ -251,12 +258,19 @@
         loanTenure.value = "";
       }
 
+      const tenureValue = Number(loanTenure.value || "0");
+      if (!showLoanType || isCash || isBtoHdb || tenureValue <= maxTenureYears) {
+        loanTenure.setCustomValidity("");
+      } else {
+        loanTenure.setCustomValidity(`Loan tenure cannot exceed ${maxTenureYears} years for the selected housing type.`);
+      }
       bsdDisplay.value = formatMoney(calcBsd(parseMoney(purchasePriceInput.value)));
     };
 
     loanType.addEventListener("change", refreshHousingRules);
     assessmentMode.addEventListener("change", refreshHousingRules);
     housingType.addEventListener("change", refreshHousingRules);
+    loanTenure.addEventListener("input", refreshHousingRules);
     purchasePriceInput.addEventListener("input", refreshHousingRules);
     form.addEventListener("submit", () => {
       const isCash = (loanType.value || "").trim().toLowerCase() === "cash";
@@ -264,7 +278,7 @@
       const isDeferred = (assessmentMode.value || "").trim().toLowerCase() === "deferred";
       const selectedHousingType = (housingType.value || "").trim().toLowerCase();
       if (!isDeferred && !isCash && isHdb && selectedHousingType === "bto") {
-        loanTenure.value = "25";
+        loanTenure.value = "30";
       }
     });
     refreshHousingRules();
