@@ -395,6 +395,10 @@ func isNonHDBHousingType(housingType string) bool {
 	}
 }
 
+func supportsDeferredAssessmentMode(housingType string) bool {
+	return normalizeLookup(housingType) == "bto"
+}
+
 func validateHousingOptionInput(option *ourneztv1.HousingOption, assessmentMode string) string {
 	if option == nil {
 		return "invalid housing payload"
@@ -417,10 +421,10 @@ func validateHousingOptionInput(option *ourneztv1.HousingOption, assessmentMode 
 	if strings.TrimSpace(option.GetExpectedKeyCollectionDate()) == "" {
 		return "expected key collection date is required"
 	}
+	if assessmentMode == "deferred" && !supportsDeferredAssessmentMode(option.GetHousingType()) {
+		return "deferred income assessment is only available for BTO options"
+	}
 	if isNonHDBHousingType(option.GetHousingType()) {
-		if assessmentMode == "deferred" {
-			return "deferred income assessment is not available for non-HDB property options"
-		}
 		if option.GetGrantAmountCents() > 0 {
 			return "grant amount is not applicable for non-HDB property options"
 		}

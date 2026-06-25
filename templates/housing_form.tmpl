@@ -188,6 +188,11 @@
       return normalizedHousingType === "executive_condo" || normalizedHousingType === "private_condo" || normalizedHousingType === "landed" || normalizedHousingType === "other";
     };
 
+    const supportsAssessmentMode = (housingType) => {
+      const normalizedHousingType = (housingType || "").trim().toLowerCase();
+      return normalizedHousingType === "" || normalizedHousingType === "bto";
+    };
+
     const calcBsd = (purchasePriceCents) => {
       let amount = Math.max(0, purchasePriceCents);
       const tiers = [
@@ -216,17 +221,18 @@
       const isDeferred = (assessmentMode.value || "").trim().toLowerCase() === "deferred";
       const selectedHousingType = (housingType.value || "").trim().toLowerCase();
       const isNonHDB = isNonHDBHousingType(selectedHousingType);
-      if (isNonHDB && isDeferred) {
+      const canUseAssessmentMode = supportsAssessmentMode(selectedHousingType);
+      if (!canUseAssessmentMode && isDeferred) {
         assessmentMode.value = "standard";
       }
       if (isNonHDB && isHdb) {
         loanType.value = "";
       }
-      const effectiveIsDeferred = !isNonHDB && (assessmentMode.value || "").trim().toLowerCase() === "deferred";
+      const effectiveIsDeferred = canUseAssessmentMode && (assessmentMode.value || "").trim().toLowerCase() === "deferred";
       const effectiveIsHdb = (loanType.value || "").trim().toLowerCase() === "hdb";
       const isBtoHdb = selectedHousingType === "bto" && isHdb;
       const maxTenureYears = maxLoanTenureYears(selectedHousingType);
-      const showAssessmentMode = !isNonHDB;
+      const showAssessmentMode = canUseAssessmentMode;
       const showLoanType = !effectiveIsDeferred;
       const showLoanAmount = showLoanType && !isCash;
       const requiresInterestRate = showLoanType && !isCash && !effectiveIsHdb;
@@ -329,9 +335,11 @@
       const isHdb = (loanType.value || "").trim().toLowerCase() === "hdb";
       const isDeferred = (assessmentMode.value || "").trim().toLowerCase() === "deferred";
       const selectedHousingType = (housingType.value || "").trim().toLowerCase();
-      if (isNonHDBHousingType(selectedHousingType)) {
+      if (!supportsAssessmentMode(selectedHousingType)) {
         assessmentMode.disabled = false;
         assessmentMode.value = "standard";
+      }
+      if (isNonHDBHousingType(selectedHousingType)) {
         grantAmountInput.value = "";
       }
       if (!isDeferred && !isCash && isHdb && selectedHousingType === "bto") {

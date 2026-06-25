@@ -74,6 +74,16 @@ func TestValidateHousingOptionInputRequiresBankInterestRate(t *testing.T) {
 	}
 }
 
+func TestValidateHousingOptionInputRejectsDeferredForResaleHDB(t *testing.T) {
+	option := validHousingOptionForValidation()
+	option.HousingType = "resale_hdb"
+
+	errMessage := validateHousingOptionInput(option, "deferred")
+	if !strings.Contains(errMessage, "deferred income assessment is only available for BTO options") {
+		t.Fatalf("validation error = %q, want BTO-only deferred requirement", errMessage)
+	}
+}
+
 func TestValidateHousingOptionInputRejectsNonHDBPropertyHDBOnlyValues(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -87,7 +97,7 @@ func TestValidateHousingOptionInputRejectsNonHDBPropertyHDBOnlyValues(t *testing
 			mutate: func(option *ourneztv1.HousingOption) string {
 				return "deferred"
 			},
-			wantMessage: "deferred income assessment is not available",
+			wantMessage: "deferred income assessment is only available",
 		},
 		{
 			name:        "landed grant amount",
