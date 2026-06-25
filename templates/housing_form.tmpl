@@ -7,7 +7,7 @@
     <p class="text-xs opacity-70"><span class="text-error font-semibold">*</span> Required fields. Grant amount and buyer stamp duty are calculated automatically.</p>
     <form method="post" action="{{ if .Data.IsEdit }}/housing/{{ .Data.Housing.Id }}{{ else }}/housing{{ end }}" class="grid grid-cols-1 md:grid-cols-2 gap-3 oz-form-grid">
       <input type="hidden" name="family_id" value="{{ .Data.FamilyID }}">
-      <div class="oz-field">
+      <div class="oz-field" id="assessment_mode_field">
         <label class="oz-field-label" for="assessment_mode"><span class="inline-flex items-center gap-1">Assessment Mode<span class="text-error" aria-label="required" title="Required">*</span>{{ template "partials/help_tooltip" (dict "Key" "assessment_mode" "Label" "Assessment Mode") }}</span></label>
         <select class="select select-bordered w-full" name="assessment_mode" id="assessment_mode" required>
           <option value="standard" {{ if eqFold .Data.AssessmentMode "standard" }}selected{{ end }}>Standard</option>
@@ -59,10 +59,11 @@
         <span>Loan Type <span class="text-error oz-required-standard" aria-label="required" title="Required">*</span></span>
         <select class="select select-bordered w-full" name="loan_type" id="loan_type" required>
           <option value="" {{ if eq .Data.Housing.LoanType "" }}selected{{ end }}>Select loan type</option>
-          <option value="hdb" {{ if eqFold .Data.Housing.LoanType "hdb" }}selected{{ end }}>HDB Loan</option>
+          <option value="hdb" id="loan_type_hdb_option" {{ if eqFold .Data.Housing.LoanType "hdb" }}selected{{ end }}>HDB Loan</option>
           <option value="bank" {{ if eqFold .Data.Housing.LoanType "bank" }}selected{{ end }}>Bank Loan</option>
           <option value="cash" {{ if eqFold .Data.Housing.LoanType "cash" }}selected{{ end }}>Cash (No Loan)</option>
         </select>
+        <span class="text-xs opacity-70 hidden" id="condo_loan_note">HDB loans are not available for EC or private condo options.</span>
       </label>
       <div class="oz-field" id="loan_amount_field">
         <label class="oz-field-label" for="loan_amount"><span class="inline-flex items-center gap-1">Loan Amount (Dollars)<span class="text-error oz-required-loan" aria-label="required" title="Required">*</span>{{ template "partials/help_tooltip" (dict "Key" "loan_amount" "Label" "Loan Amount") }}</span></label>
@@ -130,9 +131,12 @@
 <script>
   (() => {
     const assessmentMode = document.getElementById("assessment_mode");
+    const assessmentModeField = document.getElementById("assessment_mode_field");
     const diaIncomeSection = document.getElementById("dia_income_section");
     const loanTypeField = document.getElementById("loan_type_field");
     const loanType = document.getElementById("loan_type");
+    const hdbLoanOption = document.getElementById("loan_type_hdb_option");
+    const condoLoanNote = document.getElementById("condo_loan_note");
     const housingType = document.getElementById("housing_type");
     const grantAmountField = document.getElementById("grant_amount_field");
     const loanAmountField = document.getElementById("loan_amount_field");
@@ -151,7 +155,7 @@
     const tenureRequiredIndicators = document.querySelectorAll(".oz-required-tenure");
     const autoInterestIndicators = document.querySelectorAll(".oz-auto-interest");
     const autoTenureIndicators = document.querySelectorAll(".oz-auto-tenure");
-    if (!assessmentMode || !diaIncomeSection || !loanTypeField || !loanType || !housingType || !grantAmountField || !loanAmountField || !interestRateField || !loanTenureField || !form || !purchasePriceInput || !grantAmountInput || !bsdDisplay || !loanAmount || !interestRate || !loanTenure || !expectedKeyCollectionDate) return;
+    if (!assessmentMode || !assessmentModeField || !diaIncomeSection || !loanTypeField || !loanType || !hdbLoanOption || !condoLoanNote || !housingType || !grantAmountField || !loanAmountField || !interestRateField || !loanTenureField || !form || !purchasePriceInput || !grantAmountInput || !bsdDisplay || !loanAmount || !interestRate || !loanTenure || !expectedKeyCollectionDate) return;
 
     const grantAmountEstimates = {
       "bto": {{ index .Data.GrantAmountEstimates "bto" }},
@@ -177,6 +181,11 @@
     const maxLoanTenureYears = (housingType) => {
       const normalizedHousingType = (housingType || "").trim().toLowerCase();
       return normalizedHousingType === "bto" || normalizedHousingType === "resale_hdb" ? 30 : 35;
+    };
+
+    const isCondoHousingType = (housingType) => {
+      const normalizedHousingType = (housingType || "").trim().toLowerCase();
+      return normalizedHousingType === "executive_condo" || normalizedHousingType === "private_condo";
     };
 
     const calcBsd = (purchasePriceCents) => {
@@ -206,15 +215,28 @@
       const isHdb = (loanType.value || "").trim().toLowerCase() === "hdb";
       const isDeferred = (assessmentMode.value || "").trim().toLowerCase() === "deferred";
       const selectedHousingType = (housingType.value || "").trim().toLowerCase();
+      const isCondo = isCondoHousingType(selectedHousingType);
+      if (isCondo && isDeferred) {
+        assessmentMode.value = "standard";
+      }
+      if (isCondo && isHdb) {
+        loanType.value = "";
+      }
+      const effectiveIsDeferred = !isCondo && (assessmentMode.value || "").trim().toLowerCase() === "deferred";
+      const effectiveIsHdb = (loanType.value || "").trim().toLowerCase() === "hdb";
       const isBtoHdb = selectedHousingType === "bto" && isHdb;
       const maxTenureYears = maxLoanTenureYears(selectedHousingType);
-      const showLoanType = !isDeferred;
+      const showAssessmentMode = !isCondo;
+      const showLoanType = !effectiveIsDeferred;
       const showLoanAmount = showLoanType && !isCash;
-      const requiresInterestRate = showLoanType && !isCash && !isHdb;
+      const requiresInterestRate = showLoanType && !isCash && !effectiveIsHdb;
       const requiresLoanTenure = showLoanType && !isCash && !isBtoHdb;
-      const showGrant = !isDeferred;
+      const showGrant = !effectiveIsDeferred && !isCondo;
 
-      diaIncomeSection.style.display = isDeferred ? "" : "none";
+      assessmentModeField.style.display = showAssessmentMode ? "" : "none";
+      assessmentMode.disabled = !showAssessmentMode;
+      assessmentMode.required = showAssessmentMode;
+      diaIncomeSection.style.display = effectiveIsDeferred ? "" : "none";
       loanTypeField.style.display = showLoanType ? "" : "none";
       grantAmountField.style.display = showGrant ? "" : "none";
       loanAmountField.style.display = showLoanAmount ? "" : "none";
@@ -225,13 +247,16 @@
       interestRate.required = requiresInterestRate;
       loanTenure.required = requiresLoanTenure;
       loanTenure.max = maxTenureYears.toString();
+      hdbLoanOption.disabled = isCondo;
+      hdbLoanOption.title = isCondo ? "HDB loans are not available for EC or private condo options." : "";
+      condoLoanNote.classList.toggle("hidden", !isCondo);
       setVisible(loanAmountRequiredIndicators, showLoanAmount);
       setVisible(interestRequiredIndicators, requiresInterestRate);
       setVisible(tenureRequiredIndicators, requiresLoanTenure);
-      setVisible(autoInterestIndicators, showLoanType && !isCash && isHdb);
+      setVisible(autoInterestIndicators, showLoanType && !isCash && effectiveIsHdb);
       setVisible(autoTenureIndicators, isBtoHdb);
 
-      if (isHdb && !isCash) {
+      if (effectiveIsHdb && !isCash) {
         interestRate.value = "";
         interestRate.placeholder = "Auto-set to 2.60 for HDB";
         interestRate.readOnly = true;
@@ -281,6 +306,7 @@
       const interestRateValue = Number(interestRate.value || "0");
       const tenureValue = Number(loanTenure.value || "0");
       purchasePriceInput.setCustomValidity(purchasePriceInput.value && purchasePriceCents <= 0 ? "Purchase price must be more than 0." : "");
+      loanType.setCustomValidity(isCondo && loanType.value === "hdb" ? "HDB loan is not available for EC or private condo options." : "");
       loanAmount.setCustomValidity(showLoanAmount && loanAmount.value && loanAmountCents <= 0 ? "Loan amount must be more than 0." : "");
       interestRate.setCustomValidity(requiresInterestRate && interestRate.value && interestRateValue <= 0 ? "Interest rate must be more than 0." : "");
       if (!showLoanType || isCash || isBtoHdb || tenureValue <= maxTenureYears) {
@@ -303,6 +329,11 @@
       const isHdb = (loanType.value || "").trim().toLowerCase() === "hdb";
       const isDeferred = (assessmentMode.value || "").trim().toLowerCase() === "deferred";
       const selectedHousingType = (housingType.value || "").trim().toLowerCase();
+      if (isCondoHousingType(selectedHousingType)) {
+        assessmentMode.disabled = false;
+        assessmentMode.value = "standard";
+        grantAmountInput.value = "";
+      }
       if (!isDeferred && !isCash && isHdb && selectedHousingType === "bto") {
         loanTenure.value = "30";
       }
