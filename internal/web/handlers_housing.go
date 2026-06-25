@@ -405,12 +405,12 @@ func validateHousingOptionInput(option *ourneztv1.HousingOption, assessmentMode 
 	if option.GetPurchasePriceCents() <= 0 {
 		return "purchase price is required"
 	}
+	if strings.TrimSpace(option.GetExpectedKeyCollectionDate()) == "" {
+		return "expected key collection date is required"
+	}
 	netPurchase := maxInt64(option.GetPurchasePriceCents()-option.GetGrantAmountCents(), 0)
 	if assessmentMode == "deferred" {
 		// DIA mode intentionally omits grant + loan details.
-		if strings.TrimSpace(option.GetExpectedKeyCollectionDate()) == "" {
-			return "expected key collection date is required for DIA mode"
-		}
 	} else {
 		switch option.GetLoanType() {
 		case "hdb", "bank", "cash":
@@ -426,6 +426,9 @@ func validateHousingOptionInput(option *ourneztv1.HousingOption, assessmentMode 
 	} else {
 		if option.GetLoanAmountCents() <= 0 {
 			return "loan amount is required for standard assessment"
+		}
+		if option.GetLoanType() != "hdb" && option.GetInterestRateBps() <= 0 {
+			return "interest rate is required for standard bank loan assessment"
 		}
 		if netPurchase > 0 && option.GetLoanAmountCents() > netPurchase {
 			return "loan amount cannot exceed net purchase price"
