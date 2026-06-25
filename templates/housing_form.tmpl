@@ -1,5 +1,35 @@
 {{ define "housing_form" }}
 {{ template "partials/header" . }}
+<style>
+  .oz-animated-field {
+    max-height: 12rem;
+    opacity: 1;
+    overflow: hidden;
+    transform: translateY(0);
+    transition:
+      max-height 220ms ease,
+      opacity 160ms ease,
+      transform 160ms ease,
+      margin 220ms ease;
+  }
+
+  .oz-animated-field.oz-field-hidden {
+    max-height: 0;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-0.25rem);
+  }
+
+  .oz-animated-field.oz-field-gone {
+    display: none !important;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .oz-animated-field {
+      transition: none;
+    }
+  }
+</style>
 <section class="card bg-base-100 shadow max-w-5xl mx-auto w-full">
   <div class="card-body">
     <h1 class="card-title">{{ if .Data.IsEdit }}Edit Housing{{ else }}Add Housing{{ end }}</h1>
@@ -178,6 +208,103 @@
       elements.forEach((element) => element.classList.toggle("hidden", !visible));
     };
 
+    const animatedSections = [
+      assessmentModeField,
+      diaIncomeSection,
+      loanTypeField,
+      grantAmountField,
+      loanAmountField,
+      interestRateField,
+      loanTenureField,
+    ];
+    animatedSections.forEach((section) => section.classList.add("oz-animated-field"));
+
+    let housingRulesInitialized = false;
+    const layoutAnimationDuration = 220;
+    let hiddenSectionRemovalTimer;
+    const captureFormLayout = () => {
+      const positions = new Map();
+      Array.from(form.children).forEach((section) => {
+        if (section.classList.contains("oz-field-gone")) return;
+        positions.set(section, section.getBoundingClientRect());
+      });
+      return positions;
+    };
+
+    const animateFormLayout = (previousPositions) => {
+      if (!housingRulesInitialized || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      requestAnimationFrame(() => {
+        Array.from(form.children).forEach((section) => {
+          const previous = previousPositions.get(section);
+          if (!previous || section.classList.contains("oz-field-gone")) return;
+          const current = section.getBoundingClientRect();
+          const deltaX = previous.left - current.left;
+          const deltaY = previous.top - current.top;
+          if (Math.abs(deltaX) < 1 && Math.abs(deltaY) < 1) return;
+          section.animate([
+            { transform: `translate(${deltaX}px, ${deltaY}px)` },
+            { transform: "translate(0, 0)" }
+          ], {
+            duration: layoutAnimationDuration,
+            easing: "ease",
+          });
+        });
+      });
+    };
+
+    const setSectionFocusable = (section, focusable) => {
+      section.querySelectorAll("input, select, textarea, button").forEach((control) => {
+        if (focusable) {
+          if (control.dataset.ozHadTabindex === "true") {
+            control.setAttribute("tabindex", control.dataset.ozTabindex);
+          } else {
+            control.removeAttribute("tabindex");
+          }
+          delete control.dataset.ozHadTabindex;
+          delete control.dataset.ozTabindex;
+          return;
+        }
+        if (!control.dataset.ozHadTabindex) {
+          control.dataset.ozHadTabindex = control.hasAttribute("tabindex") ? "true" : "false";
+          control.dataset.ozTabindex = control.getAttribute("tabindex") || "";
+        }
+        control.setAttribute("tabindex", "-1");
+      });
+    };
+
+    const scheduleHiddenSectionRemoval = () => {
+      window.clearTimeout(hiddenSectionRemovalTimer);
+      hiddenSectionRemovalTimer = window.setTimeout(() => {
+        const previousPositions = captureFormLayout();
+        animatedSections.forEach((section) => {
+          if (section.classList.contains("oz-field-hidden")) {
+            section.classList.add("oz-field-gone");
+          }
+        });
+        animateFormLayout(previousPositions);
+      }, layoutAnimationDuration);
+    };
+
+    const setSectionVisible = (section, visible) => {
+      if (!section) return;
+      section.setAttribute("aria-hidden", visible ? "false" : "true");
+      setSectionFocusable(section, visible);
+      if (!housingRulesInitialized) {
+        section.classList.toggle("oz-field-gone", !visible);
+        section.classList.toggle("oz-field-hidden", !visible);
+        return;
+      }
+      if (visible) {
+        section.classList.remove("oz-field-gone");
+        requestAnimationFrame(() => {
+          section.classList.remove("oz-field-hidden");
+        });
+        return;
+      }
+      section.classList.add("oz-field-hidden");
+      scheduleHiddenSectionRemoval();
+    };
+
     const maxLoanTenureYears = (housingType) => {
       const normalizedHousingType = (housingType || "").trim().toLowerCase();
       return normalizedHousingType === "bto" || normalizedHousingType === "resale_hdb" ? 30 : 35;
@@ -216,6 +343,7 @@
     };
 
     const refreshHousingRules = () => {
+      const previousPositions = captureFormLayout();
       const isCash = (loanType.value || "").trim().toLowerCase() === "cash";
       const isHdb = (loanType.value || "").trim().toLowerCase() === "hdb";
       const isDeferred = (assessmentMode.value || "").trim().toLowerCase() === "deferred";
@@ -239,15 +367,15 @@
       const requiresLoanTenure = showLoanType && !isCash && !isBtoHdb;
       const showGrant = !effectiveIsDeferred && !isNonHDB;
 
-      assessmentModeField.style.display = showAssessmentMode ? "" : "none";
+      setSectionVisible(assessmentModeField, showAssessmentMode);
       assessmentMode.disabled = !showAssessmentMode;
       assessmentMode.required = showAssessmentMode;
-      diaIncomeSection.style.display = effectiveIsDeferred ? "" : "none";
-      loanTypeField.style.display = showLoanType ? "" : "none";
-      grantAmountField.style.display = showGrant ? "" : "none";
-      loanAmountField.style.display = showLoanAmount ? "" : "none";
-      interestRateField.style.display = showLoanType && !isCash ? "" : "none";
-      loanTenureField.style.display = showLoanType && !isCash ? "" : "none";
+      setSectionVisible(diaIncomeSection, effectiveIsDeferred);
+      setSectionVisible(loanTypeField, showLoanType);
+      setSectionVisible(grantAmountField, showGrant);
+      setSectionVisible(loanAmountField, showLoanAmount);
+      setSectionVisible(interestRateField, showLoanType && !isCash);
+      setSectionVisible(loanTenureField, showLoanType && !isCash);
       loanType.required = showLoanType;
       loanAmount.required = showLoanAmount;
       interestRate.required = requiresInterestRate;
@@ -321,6 +449,7 @@
         loanTenure.setCustomValidity(`Loan tenure cannot exceed ${maxTenureYears} years for the selected housing type.`);
       }
       bsdDisplay.value = formatMoney(calcBsd(purchasePriceCents));
+      animateFormLayout(previousPositions);
     };
 
     loanType.addEventListener("change", refreshHousingRules);
@@ -347,6 +476,7 @@
       }
     });
     refreshHousingRules();
+    housingRulesInitialized = true;
   })();
 </script>
 {{ template "partials/footer" . }}
