@@ -36,6 +36,140 @@ body {
   width: 100%;
 }
 
+.oz-maintenance-banner {
+  position: relative;
+  border-top: 1px solid #f0aaa3;
+  border-bottom: 1px solid #d05b52;
+  background: #fff1ef;
+  color: #341918;
+  box-shadow: 0 14px 28px -24px #00000080;
+}
+
+.oz-maintenance-banner::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0.38rem;
+  background: #cf3d33;
+}
+
+.oz-maintenance-info {
+  border-top-color: #83b9e8;
+  border-bottom-color: #3975ad;
+  background: #eef7ff;
+  color: #142a3d;
+}
+
+.oz-maintenance-info::before {
+  background: #1f6fab;
+}
+
+.oz-maintenance-success {
+  border-top-color: #9fcd82;
+  border-bottom-color: #5e963f;
+  background: #f0fbec;
+  color: #1f321a;
+}
+
+.oz-maintenance-success::before {
+  background: #4f8733;
+}
+
+.oz-maintenance-error {
+  border-top-color: #f29a91;
+  border-bottom-color: #c3483c;
+  background: #fff0ec;
+  color: #3d1712;
+}
+
+.oz-maintenance-error::before {
+  background: #b82f24;
+}
+
+.oz-maintenance-inner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.95rem;
+}
+
+.oz-maintenance-icon {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.45rem;
+  height: 2.45rem;
+  border-radius: 9999px;
+  border: 2px solid color-mix(in srgb, var(--oz-coral) 58%, white 42%);
+  background: rgba(255, 255, 255, 0.72);
+  color: #9f2f2b;
+  box-shadow: 0 8px 18px -14px #0000009a;
+}
+
+.oz-maintenance-icon svg {
+  width: 1.28rem;
+  height: 1.28rem;
+}
+
+.oz-maintenance-copy {
+  min-width: 0;
+  display: grid;
+  gap: 0.28rem;
+}
+
+.oz-maintenance-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+}
+
+.oz-maintenance-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.35rem;
+  padding: 0.18rem 0.55rem;
+  border-radius: 9999px;
+  background: #a8322d;
+  color: #fff7f5;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.oz-maintenance-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+.oz-maintenance-message {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.4rem;
+}
+
+.oz-maintenance-window {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.12rem;
+}
+
+.oz-maintenance-window span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.45rem;
+  padding: 0.16rem 0.5rem;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.68);
+  border: 1px solid rgba(159, 47, 43, 0.2);
+  font-size: 0.78rem;
+  font-weight: 650;
+  line-height: 1.1rem;
+}
+
 .oz-brand {
   display: inline-flex;
   align-items: center;
