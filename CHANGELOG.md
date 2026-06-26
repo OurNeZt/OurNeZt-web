@@ -9,17 +9,23 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [v1.2.0] - 2026-06-26
 
 ### Added
-- (fill)
+- Added FAQ page for housing eligibility and planning questions.
+- Added pagination to the Admin Dashboard user table.
+- Added required field indicators and validation to the Add Housing form.
+- Added configurable maintenance notice banner for planned downtime messaging.
+- Added dynamic maintenance notice support through environment variables or a JSON file.
+- Added Helm ConfigMap wiring for updating maintenance notice copy without rebuilding the web image.
 
 ### Changed
-- (fill)
+- Updated loan tenure limits based on MAS rules.
+- Improved Add Housing form guidance and validation feedback.
+- Improved maintenance banner styling for desktop and mobile readability.
 
 ### Fixed
-- (fill)
+- Hid or disabled HDB-only fields for EC and private condo housing types.
 
 ### Removed
-- (fill)
-
+- No removals in this release
 
 ## [v1.1.4] - 2026-06-17
 
