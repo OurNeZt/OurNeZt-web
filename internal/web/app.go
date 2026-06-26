@@ -25,11 +25,12 @@ type CurrentUser struct {
 }
 
 type ViewData struct {
-	Title string
-	User  *CurrentUser
-	Error string
-	Flash string
-	Data  any
+	Title             string
+	User              *CurrentUser
+	Error             string
+	Flash             string
+	MaintenanceNotice *MaintenanceNotice
+	Data              any
 }
 
 const userContextKey = "current_user"

@@ -25,11 +25,12 @@ func (a *App) render(c *gin.Context, templateName, title string, payload any) {
 	}
 
 	c.HTML(http.StatusOK, templateName, ViewData{
-		Title: title,
-		User:  user,
-		Error: strings.TrimSpace(c.Query("error")),
-		Flash: strings.TrimSpace(c.Query("flash")),
-		Data:  payload,
+		Title:             title,
+		User:              user,
+		Error:             strings.TrimSpace(c.Query("error")),
+		Flash:             strings.TrimSpace(c.Query("flash")),
+		MaintenanceNotice: a.maintenanceNotice(),
+		Data:              payload,
 	})
 }
 

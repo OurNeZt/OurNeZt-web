@@ -214,6 +214,7 @@ export SESSION_COOKIE_NAME=ournezt_session
 export SESSION_COOKIE_MAX_AGE=12h
 export SESSION_COOKIE_SECURE=false
 export REQUEST_TIMEOUT=5s
+export MAINTENANCE_NOTICE_ENABLED=false
 ```
 
 ### Environment Variables
@@ -226,6 +227,27 @@ export REQUEST_TIMEOUT=5s
 | `SESSION_COOKIE_MAX_AGE` | Session cookie lifetime. | `12h` |
 | `SESSION_COOKIE_SECURE` | Whether the session cookie requires HTTPS. Set to `true` in production. | `false` |
 | `REQUEST_TIMEOUT` | Timeout used when making requests to OurNeZt Core. | `5s` |
+| `MAINTENANCE_NOTICE_FILE` | Optional JSON file path for a dynamically loaded maintenance notice. File values override env values and are read on each page render. | `/etc/ournezt/maintenance-notice/notice.json` |
+| `MAINTENANCE_NOTICE_ENABLED` | Shows or hides the maintenance banner when no notice file is configured. | `true` |
+| `MAINTENANCE_NOTICE_LEVEL` | Banner style. Supported values: `info`, `success`, `warning`, `error`. | `warning` |
+| `MAINTENANCE_NOTICE_TITLE` | Optional short banner title. | `Planned maintenance` |
+| `MAINTENANCE_NOTICE_MESSAGE` | Main maintenance banner copy. | `OurNeZt may be unavailable on 28 Jun 2026, 12:00 AM to approximately 2:00 AM SGT while we migrate ingress traffic.` |
+| `MAINTENANCE_NOTICE_STARTS_AT` | Optional human-readable maintenance start time. | `28 Jun 2026, 12:00 AM SGT` |
+| `MAINTENANCE_NOTICE_ENDS_AT` | Optional human-readable maintenance end time. | `28 Jun 2026, approximately 2:00 AM SGT` |
+
+### Maintenance Notice File
+For hot-swappable maintenance copy, set `MAINTENANCE_NOTICE_FILE` to a JSON file. The app reads the file on each page render, so a mounted Kubernetes ConfigMap can be edited without rebuilding the web image.
+
+```json
+{
+  "enabled": true,
+  "level": "warning",
+  "title": "Planned maintenance",
+  "message": "OurNeZt may be unavailable on 28 Jun 2026, 12:00 AM to approximately 2:00 AM SGT while we migrate ingress traffic.",
+  "starts_at": "28 Jun 2026, 12:00 AM SGT",
+  "ends_at": "28 Jun 2026, approximately 2:00 AM SGT"
+}
+```
 
 ### Session Behaviour
 OurNeZt Web stores the session token in an HTTP-only browser cookie. For authenticated backend calls, the token is forwarded to OurNeZt Core as gRPC metadata: `x-session-token: <session-token>`
@@ -371,11 +393,11 @@ ghcr.io/OurNeZt/ournezt-web:latest
 - [x] gRPC client integration with OurNeZt Core
 - [x] Family and household dashboard pages
 - [x] Person profile management pages
-- [ ] Finance and CPF dashboard views
-- [ ] Housing affordability planning pages
-- [ ] Responsive UI polish
-- [ ] Docker image build and release workflow
-- [ ] Deployment manifests
+- [x] Finance and CPF dashboard views
+- [x] Housing affordability planning pages
+- [x] Responsive UI polish
+- [x] Docker image build and release workflow
+- [x] Deployment manifests
 - [ ] Observability, metrics, and structured logging
 
 See the [open issues](https://github.com/OurNeZt/OurNeZt-web/issues) for planned improvements and known issues.

@@ -82,6 +82,32 @@
       {{ end }}
     </div>
   </div>
+  {{ with .MaintenanceNotice }}
+  <section class="oz-maintenance-banner oz-maintenance-{{ .Level }}" role="status" aria-live="polite">
+    <div class="max-w-6xl mx-auto px-4 md:px-6 py-4 oz-maintenance-inner">
+      <div class="oz-maintenance-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 3 2.8 19a1.4 1.4 0 0 0 1.2 2h16a1.4 1.4 0 0 0 1.2-2L12 3Z"></path>
+          <path d="M12 8v5"></path>
+          <path d="M12 17h.01"></path>
+        </svg>
+      </div>
+      <div class="oz-maintenance-copy">
+        <div class="oz-maintenance-heading">
+          <span class="oz-maintenance-badge">Maintenance Notice</span>
+          {{ if .Title }}<p class="oz-maintenance-title">{{ .Title }}</p>{{ end }}
+        </div>
+        <p class="oz-maintenance-message">{{ .Message }}</p>
+        {{ if or .StartsAt .EndsAt }}
+        <div class="oz-maintenance-window" aria-label="Maintenance window">
+          {{ if .StartsAt }}<span>Starts: {{ .StartsAt }}</span>{{ end }}
+          {{ if .EndsAt }}<span>Expected end: {{ .EndsAt }}</span>{{ end }}
+        </div>
+        {{ end }}
+      </div>
+    </div>
+  </section>
+  {{ end }}
   <main class="max-w-6xl mx-auto p-4 md:p-6 oz-main">
     {{ if .Error }}<div class="alert alert-error mb-4">{{ .Error }}</div>{{ end }}
     {{ if .Flash }}<div class="alert alert-success mb-4">{{ .Flash }}</div>{{ end }}
