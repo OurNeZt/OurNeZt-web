@@ -22,15 +22,18 @@
         <div class="hidden md:flex items-center gap-2">
           {{ if .User.MustChangePassword }}
             <a class="btn btn-warning btn-sm" href="/change-password">Change Password</a>
+            <a class="btn btn-ghost btn-sm" href="/faq">FAQ</a>
           {{ else }}
             {{ if eq .User.Role "admin" }}
               <a class="btn btn-ghost btn-sm" href="/admin">Admin Dashboard</a>
               <a class="btn btn-ghost btn-sm" href="/admin/users">All Users</a>
+              <a class="btn btn-ghost btn-sm" href="/faq">FAQ</a>
             {{ else }}
               <a class="btn btn-ghost btn-sm" href="/dashboard">Dashboard</a>
               <a class="btn btn-ghost btn-sm" href="/families">Families</a>
               <a class="btn btn-ghost btn-sm" href="/people">Profiles</a>
               <a class="btn btn-ghost btn-sm" href="/housing">Housing</a>
+              <a class="btn btn-ghost btn-sm" href="/faq">FAQ</a>
               <a class="btn btn-ghost btn-sm btn-circle oz-profile-btn" href="/profile" aria-label="Profile" title="Profile">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                   <circle cx="12" cy="8" r="4"></circle>
@@ -52,15 +55,18 @@
           <ul class="menu menu-sm oz-mobile-menu-panel">
             {{ if .User.MustChangePassword }}
               <li><a href="/change-password">Change Password</a></li>
+              <li><a href="/faq">FAQ</a></li>
             {{ else }}
               {{ if eq .User.Role "admin" }}
                 <li><a href="/admin">Admin Dashboard</a></li>
                 <li><a href="/admin/users">All Users</a></li>
+                <li><a href="/faq">FAQ</a></li>
               {{ else }}
                 <li><a href="/dashboard">Dashboard</a></li>
                 <li><a href="/families">Families</a></li>
                 <li><a href="/people">Profiles</a></li>
                 <li><a href="/housing">Housing</a></li>
+                <li><a href="/faq">FAQ</a></li>
                 <li><a href="/profile">My Profile</a></li>
               {{ end }}
             {{ end }}
@@ -76,6 +82,32 @@
       {{ end }}
     </div>
   </div>
+  {{ with .MaintenanceNotice }}
+  <section class="oz-maintenance-banner oz-maintenance-{{ .Level }}" role="status" aria-live="polite">
+    <div class="max-w-6xl mx-auto px-4 md:px-6 py-4 oz-maintenance-inner">
+      <div class="oz-maintenance-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 3 2.8 19a1.4 1.4 0 0 0 1.2 2h16a1.4 1.4 0 0 0 1.2-2L12 3Z"></path>
+          <path d="M12 8v5"></path>
+          <path d="M12 17h.01"></path>
+        </svg>
+      </div>
+      <div class="oz-maintenance-copy">
+        <div class="oz-maintenance-heading">
+          <span class="oz-maintenance-badge">Maintenance Notice</span>
+          {{ if .Title }}<p class="oz-maintenance-title">{{ .Title }}</p>{{ end }}
+        </div>
+        <p class="oz-maintenance-message">{{ .Message }}</p>
+        {{ if or .StartsAt .EndsAt }}
+        <div class="oz-maintenance-window" aria-label="Maintenance window">
+          {{ if .StartsAt }}<span>Starts: {{ .StartsAt }}</span>{{ end }}
+          {{ if .EndsAt }}<span>Expected end: {{ .EndsAt }}</span>{{ end }}
+        </div>
+        {{ end }}
+      </div>
+    </div>
+  </section>
+  {{ end }}
   <main class="max-w-6xl mx-auto p-4 md:p-6 oz-main">
     {{ if .Error }}<div class="alert alert-error mb-4">{{ .Error }}</div>{{ end }}
     {{ if .Flash }}<div class="alert alert-success mb-4">{{ .Flash }}</div>{{ end }}

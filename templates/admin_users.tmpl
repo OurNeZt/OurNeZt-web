@@ -52,11 +52,6 @@
         <input class="input input-bordered w-full" name="user_id" placeholder="User ID" required>
         <button class="btn btn-warning" type="submit">Disable user</button>
       </form>
-      {{ with .Data.JustCreated }}
-      <div class="alert alert-success mt-3">
-        Created: {{ .DisplayName }} ({{ .Email }})<br>ID: {{ .Id }}
-      </div>
-      {{ end }}
     </div>
   </section>
 </div>
@@ -77,40 +72,40 @@
             <th>Action</th>
           </tr>
         </thead>
-        <tbody>
-          {{ range .Data.Users }}
-          <tr>
-            <td>{{ .DisplayName }}</td>
-            <td>{{ .Email }}</td>
+        <tbody id="adminUserTableBody">
+          {{ range $index, $user := .Data.Users }}
+          <tr data-admin-user-row{{ if ge $index 10 }} hidden{{ end }}>
+            <td>{{ $user.DisplayName }}</td>
+            <td>{{ $user.Email }}</td>
             <td>
-              {{ if eq .Role "admin" }}
+              {{ if eq $user.Role "admin" }}
               <span class="badge badge-secondary">admin</span>
               {{ else }}
               <span class="badge badge-outline">user</span>
               {{ end }}
             </td>
             <td>
-              {{ if .Disabled }}
+              {{ if $user.Disabled }}
               <span class="badge badge-error">disabled</span>
               {{ else }}
               <span class="badge badge-success">active</span>
               {{ end }}
             </td>
             <td>
-              {{ if .MustChangePassword }}
+              {{ if $user.MustChangePassword }}
               <span class="badge badge-warning">must change</span>
               {{ else }}
               <span class="badge badge-ghost">normal</span>
               {{ end }}
             </td>
-            <td class="font-mono text-xs">{{ .Id }}</td>
+            <td class="font-mono text-xs">{{ $user.Id }}</td>
             <td>
-              {{ if .Disabled }}
+              {{ if $user.Disabled }}
               <span class="text-xs opacity-60">No action</span>
-              {{ else if eq .Id $.Data.CurrentUserID }}
+              {{ else if eq $user.Id $.Data.CurrentUserID }}
               <span class="text-xs opacity-60">Current admin</span>
               {{ else }}
-              <form method="post" action="/admin/users/{{ .Id }}/disable" class="inline">
+              <form method="post" action="/admin/users/{{ $user.Id }}/disable" class="inline">
                 <button class="btn btn-xs btn-warning" type="submit">Disable</button>
               </form>
               {{ end }}
@@ -122,7 +117,74 @@
         </tbody>
       </table>
     </div>
+    <div id="adminUserPagination" class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between" aria-label="User table pagination">
+      <label class="flex shrink-0 items-center gap-2 text-sm" for="adminUserRowsPerPage">
+        <span class="whitespace-nowrap">Rows per page</span>
+        <select id="adminUserRowsPerPage" class="select select-bordered select-sm" aria-label="Rows per page" aria-controls="adminUserTableBody">
+          <option value="10" selected>10</option>
+          <option value="25">25</option>
+          <option value="50">50</option>
+          <option value="100">100</option>
+        </select>
+      </label>
+      <div class="flex flex-wrap items-center gap-2">
+        <span id="adminUserPageRange" class="text-sm opacity-70" aria-live="polite"></span>
+        <div class="join">
+          <button id="adminUserPreviousPage" class="btn btn-sm join-item" type="button" aria-controls="adminUserTableBody">Previous</button>
+          <span id="adminUserPageIndicator" class="btn btn-sm join-item pointer-events-none" aria-live="polite"></span>
+          <button id="adminUserNextPage" class="btn btn-sm join-item" type="button" aria-controls="adminUserTableBody">Next</button>
+        </div>
+      </div>
+    </div>
   </div>
 </section>
+<script>
+  (() => {
+    const rows = Array.from(document.querySelectorAll("[data-admin-user-row]"));
+    const rowsPerPageSelect = document.getElementById("adminUserRowsPerPage");
+    const previousButton = document.getElementById("adminUserPreviousPage");
+    const nextButton = document.getElementById("adminUserNextPage");
+    const pageIndicator = document.getElementById("adminUserPageIndicator");
+    const pageRange = document.getElementById("adminUserPageRange");
+
+    if (!rowsPerPageSelect || !previousButton || !nextButton || !pageIndicator || !pageRange) return;
+
+    let currentPage = 1;
+
+    const renderPage = () => {
+      const rowsPerPage = Number(rowsPerPageSelect.value);
+      const totalPages = Math.max(1, Math.ceil(rows.length / rowsPerPage));
+      currentPage = Math.min(Math.max(currentPage, 1), totalPages);
+
+      const startIndex = (currentPage - 1) * rowsPerPage;
+      const endIndex = Math.min(startIndex + rowsPerPage, rows.length);
+      rows.forEach((row, index) => {
+        row.hidden = index < startIndex || index >= endIndex;
+      });
+
+      previousButton.disabled = currentPage === 1;
+      nextButton.disabled = currentPage === totalPages;
+      pageIndicator.textContent = `Page ${currentPage} of ${totalPages}`;
+      pageRange.textContent = rows.length === 0
+        ? "No users"
+        : `Showing ${startIndex + 1}-${endIndex} of ${rows.length}`;
+    };
+
+    previousButton.addEventListener("click", () => {
+      currentPage -= 1;
+      renderPage();
+    });
+    nextButton.addEventListener("click", () => {
+      currentPage += 1;
+      renderPage();
+    });
+    rowsPerPageSelect.addEventListener("change", () => {
+      currentPage = 1;
+      renderPage();
+    });
+
+    renderPage();
+  })();
+</script>
 {{ template "partials/footer" . }}
 {{ end }}

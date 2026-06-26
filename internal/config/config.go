@@ -23,6 +23,17 @@ type Config struct {
 	SessionCookieName string
 	SessionCookieMax  time.Duration
 	CookieSecure      bool
+	MaintenanceNotice MaintenanceNoticeConfig
+}
+
+type MaintenanceNoticeConfig struct {
+	FilePath string
+	Enabled  bool
+	Level    string
+	Title    string
+	Message  string
+	StartsAt string
+	EndsAt   string
 }
 
 func Load() Config {
@@ -41,6 +52,15 @@ func Load() Config {
 		SessionCookieName: env("SESSION_COOKIE_NAME", "ournezt_session"),
 		SessionCookieMax:  envDuration("SESSION_COOKIE_MAX_AGE", 24*time.Hour),
 		CookieSecure:      envBool("SESSION_COOKIE_SECURE", defaultCookieSecure(strings.EqualFold(env("APP_ENV", "development"), "production"))),
+		MaintenanceNotice: MaintenanceNoticeConfig{
+			FilePath: env("MAINTENANCE_NOTICE_FILE", ""),
+			Enabled:  envBool("MAINTENANCE_NOTICE_ENABLED", false),
+			Level:    env("MAINTENANCE_NOTICE_LEVEL", "warning"),
+			Title:    env("MAINTENANCE_NOTICE_TITLE", ""),
+			Message:  env("MAINTENANCE_NOTICE_MESSAGE", ""),
+			StartsAt: env("MAINTENANCE_NOTICE_STARTS_AT", ""),
+			EndsAt:   env("MAINTENANCE_NOTICE_ENDS_AT", ""),
+		},
 	}
 }
 

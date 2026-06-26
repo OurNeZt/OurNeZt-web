@@ -25,11 +25,12 @@ type CurrentUser struct {
 }
 
 type ViewData struct {
-	Title string
-	User  *CurrentUser
-	Error string
-	Flash string
-	Data  any
+	Title             string
+	User              *CurrentUser
+	Error             string
+	Flash             string
+	MaintenanceNotice *MaintenanceNotice
+	Data              any
 }
 
 const userContextKey = "current_user"
@@ -61,6 +62,7 @@ func NewRouter(cfg config.Config, clients *core.Clients) (*gin.Engine, error) {
 
 	authed := r.Group("/")
 	authed.Use(app.requireAuth())
+	authed.GET("/faq", app.faq)
 	authed.GET("/change-password", app.showChangePassword)
 	authed.POST("/change-password", app.changePassword)
 

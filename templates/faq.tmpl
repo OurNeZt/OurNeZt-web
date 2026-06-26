@@ -1,0 +1,202 @@
+{{ define "faq" }}
+{{ template "partials/header" . }}
+<section class="card oz-panel">
+  <div class="card-body">
+    <div class="max-w-3xl">
+      <h1 class="card-title text-3xl">Housing Planning FAQ</h1>
+      <p class="mt-2 opacity-80">
+        Plain-language answers to common questions about eligibility, income, grants, CPF, and housing loans.
+      </p>
+    </div>
+    <div class="alert mt-4 border border-rose-200 bg-rose-50 text-base-content">
+      <span>
+        OurNeZt provides planning estimates, not an eligibility decision or financial advice. Housing policies can change and individual circumstances matter. Use your HDB Flat Eligibility letter and official sources for final confirmation.
+      </span>
+    </div>
+  </div>
+</section>
+
+<nav class="card bg-base-100 shadow mt-6" aria-label="FAQ categories">
+  <div class="card-body py-4">
+    <h2 class="font-semibold">Jump to a topic</h2>
+    <div class="flex flex-wrap gap-2">
+      <a class="btn btn-sm btn-outline" href="#deferred-income-assessment">Deferred Income Assessment</a>
+      <a class="btn btn-sm btn-outline" href="#income-and-grants">Income and grants</a>
+      <a class="btn btn-sm btn-outline" href="#cpf-and-cash">CPF and cash</a>
+      <a class="btn btn-sm btn-outline" href="#housing-loans">Housing loans</a>
+      <a class="btn btn-sm btn-outline" href="#housing-types">Housing types</a>
+    </div>
+  </div>
+</nav>
+
+<div class="space-y-6 mt-6">
+  <section id="deferred-income-assessment" class="card bg-base-100 shadow scroll-mt-24">
+    <div class="card-body">
+      <h2 class="card-title text-2xl">Deferred Income Assessment</h2>
+      <p class="text-sm opacity-70">Questions about studying, working, and when income is assessed.</p>
+
+      <div class="space-y-3 mt-2">
+        <details class="collapse collapse-arrow border border-base-300 bg-base-100" open>
+          <summary class="collapse-title font-semibold">What is Deferred Income Assessment?</summary>
+          <div class="collapse-content space-y-2">
+            <p>Deferred Income Assessment (DIA) may allow eligible young couples to have their income assessed nearer to key collection instead of at flat application. It can affect the assessment of housing grants and an HDB housing loan.</p>
+            <p>Eligibility is determined by HDB based on the scheme conditions and the applicants' circumstances. Selecting DIA in OurNeZt only changes the planning scenario; it does not establish eligibility.</p>
+          </div>
+        </details>
+
+        <details class="collapse collapse-arrow border border-base-300 bg-base-100">
+          <summary class="collapse-title font-semibold">If I am in a work-study programme or studying part-time, am I eligible for DIA?</summary>
+          <div class="collapse-content space-y-2">
+            <p>Not automatically. Work-study and part-time programmes can combine employment and study in ways that may not match HDB's criteria for a full-time student. Your employment status, programme structure, income, and your co-applicant's circumstances may all matter.</p>
+            <p>Do not treat enrolment alone as confirmation. Declare the arrangement accurately in your HDB application and ask HDB to confirm how it will be assessed.</p>
+          </div>
+        </details>
+
+        <details class="collapse collapse-arrow border border-base-300 bg-base-100">
+          <summary class="collapse-title font-semibold">Does an internship count as employment or income if no CPF is paid?</summary>
+          <div class="collapse-content space-y-2">
+            <p>It may. The absence of CPF contributions does not by itself mean that an internship is not employment or that its payments are excluded from income assessment. HDB may consider the internship agreement, payslips or allowances, bank records, and whether the placement is part of a full-time course.</p>
+            <p>For DIA, full-time student status and assessable income are related but separate questions. A school-required internship may still form part of full-time study, while a paid internship or work arrangement may still need to be declared. An unpaid internship has no pay to assess, but the arrangement should still be disclosed accurately.</p>
+            <p>Enter known payments conservatively in OurNeZt and ask HDB to confirm how your specific programme and internship will be treated.</p>
+          </div>
+        </details>
+
+        <details class="collapse collapse-arrow border border-base-300 bg-base-100">
+          <summary class="collapse-title font-semibold">Can I use expected future income in the planner?</summary>
+          <div class="collapse-content space-y-2">
+            <p>Yes, as a planning scenario. Future income is uncertain and may not be accepted in an official assessment unless the applicable HDB process allows income to be assessed later.</p>
+            <p>Compare a conservative current-income scenario with the future-income scenario rather than relying on only the more optimistic result.</p>
+          </div>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <section id="income-and-grants" class="card bg-base-100 shadow scroll-mt-24">
+    <div class="card-body">
+      <h2 class="card-title text-2xl">Income and Grant Calculations</h2>
+      <div class="space-y-3 mt-2">
+        <details class="collapse collapse-arrow border border-base-300 bg-base-100">
+          <summary class="collapse-title font-semibold">Does the grant shown by OurNeZt confirm what I will receive?</summary>
+          <div class="collapse-content space-y-2">
+            <p>No. The planner applies assumptions to the information entered. Actual grant eligibility and amounts depend on the flat type, household composition, income assessment, ownership history, and the policies in force when HDB assesses the application.</p>
+            <p>Your HDB Flat Eligibility (HFE) letter is the authoritative starting point for your assessed eligibility and housing options.</p>
+          </div>
+        </details>
+
+        <details class="collapse collapse-arrow border border-base-300 bg-base-100">
+          <summary class="collapse-title font-semibold">How should bonuses, commissions, or irregular income be entered?</summary>
+          <div class="collapse-content space-y-2">
+            <p>Use a sustainable monthly average based on supporting records, not the best month. HDB or a lender may use a different assessment period or apply adjustments to variable income.</p>
+            <p>For affordability planning, it is safer to compare a base-income scenario with a second scenario that includes conservative variable income.</p>
+          </div>
+        </details>
+
+        <details class="collapse collapse-arrow border border-base-300 bg-base-100">
+          <summary class="collapse-title font-semibold">Why might HDB's result differ from the planner?</summary>
+          <div class="collapse-content space-y-2">
+            <p>Differences can come from assessment dates, documents, household eligibility, income treatment, grant rules, loan limits, or policy updates. OurNeZt is designed for comparison and early planning, not to reproduce an official approval.</p>
+          </div>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <section id="cpf-and-cash" class="card bg-base-100 shadow scroll-mt-24">
+    <div class="card-body">
+      <h2 class="card-title text-2xl">CPF and Cash Usage</h2>
+      <div class="space-y-3 mt-2">
+        <details class="collapse collapse-arrow border border-base-300 bg-base-100">
+          <summary class="collapse-title font-semibold">Can I use all of my CPF Ordinary Account savings?</summary>
+          <div class="collapse-content space-y-2">
+            <p>Not always. CPF usage can depend on the property, remaining lease, valuation, loan, and applicable CPF withdrawal limits. You may also choose or be required to retain funds for ongoing payments and other needs.</p>
+            <p>Treat the CPF amount in OurNeZt as an available planning input, then verify the amount you can actually use through CPF and your transaction professionals.</p>
+          </div>
+        </details>
+
+        <details class="collapse collapse-arrow border border-base-300 bg-base-100">
+          <summary class="collapse-title font-semibold">Are CPF housing grants free cash?</summary>
+          <div class="collapse-content space-y-2">
+            <p>No. CPF housing grants are generally credited to CPF accounts and used for the home purchase. When the property is sold, CPF amounts used for housing may need to be refunded to CPF together with accrued interest, subject to CPF rules.</p>
+          </div>
+        </details>
+
+        <details class="collapse collapse-arrow border border-base-300 bg-base-100">
+          <summary class="collapse-title font-semibold">How much cash buffer should I keep?</summary>
+          <div class="collapse-content space-y-2">
+            <p>There is no single correct amount. Keep enough for emergencies and costs that may sit outside the purchase price, such as renovation, legal fees, insurance, taxes, maintenance, moving, and unexpected delays.</p>
+            <p>A scenario that uses every dollar of cash and CPF may be technically possible but financially fragile.</p>
+          </div>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <section id="housing-loans" class="card bg-base-100 shadow scroll-mt-24">
+    <div class="card-body">
+      <h2 class="card-title text-2xl">Housing Loan Assumptions</h2>
+      <div class="space-y-3 mt-2">
+        <details class="collapse collapse-arrow border border-base-300 bg-base-100">
+          <summary class="collapse-title font-semibold">What is the difference between an HDB loan and a bank loan?</summary>
+          <div class="collapse-content space-y-2">
+            <p>They can differ in eligibility, downpayment structure, interest-rate behaviour, loan-to-value limits, refinancing options, and repayment terms. Bank packages and rates can change, while HDB concessionary loan eligibility is assessed under HDB rules.</p>
+            <p>Compare both using realistic rates and buffers. Confirm the actual offer and conditions with HDB or the bank before committing.</p>
+          </div>
+        </details>
+
+        <details class="collapse collapse-arrow border border-base-300 bg-base-100">
+          <summary class="collapse-title font-semibold">Does passing the planner's affordability check mean my loan will be approved?</summary>
+          <div class="collapse-content space-y-2">
+            <p>No. HDB and financial institutions assess income, debts, credit, age, tenure, regulatory limits, and supporting documents. The planner's rating is a budgeting signal, not an approval or an agreement to lend.</p>
+          </div>
+        </details>
+
+      </div>
+    </div>
+  </section>
+
+  <section id="housing-types" class="card bg-base-100 shadow scroll-mt-24">
+    <div class="card-body">
+      <h2 class="card-title text-2xl">Housing Types and Classifications</h2>
+      <div class="space-y-3 mt-2">
+        <details class="collapse collapse-arrow border border-base-300 bg-base-100">
+          <summary class="collapse-title font-semibold">How do Standard, Plus, and Prime flats differ?</summary>
+          <div class="collapse-content space-y-2">
+            <p>The classifications can carry different subsidies and conditions, including minimum occupation periods, resale eligibility, subsidy recovery, and whole-flat rental restrictions. The conditions attached to the specific project and sale exercise matter.</p>
+            <p>OurNeZt can compare costs, but it does not determine whether a household accepts or satisfies every ownership condition.</p>
+          </div>
+        </details>
+
+        <details class="collapse collapse-arrow border border-base-300 bg-base-100">
+          <summary class="collapse-title font-semibold">Can I compare an EC or private condominium with an HDB flat?</summary>
+          <div class="collapse-content space-y-2">
+            <p>Yes, for broad affordability planning, but the eligibility, grants, financing rules, fees, and ownership conditions are not the same. HDB grants or HDB loans should not be assumed to apply to a private condominium, and Executive Condominiums have their own eligibility and ownership rules.</p>
+          </div>
+        </details>
+
+        <details class="collapse collapse-arrow border border-base-300 bg-base-100">
+          <summary class="collapse-title font-semibold">How should I choose between housing options with similar affordability results?</summary>
+          <div class="collapse-content space-y-2">
+            <p>Look beyond the purchase price. Compare monthly resilience, cash buffer, CPF usage, commute, household plans, restrictions, maintenance costs, and how long you expect to stay. A slightly cheaper option is not always the safer or better fit.</p>
+          </div>
+        </details>
+      </div>
+    </div>
+  </section>
+</div>
+
+<section class="card oz-panel mt-6">
+  <div class="card-body">
+    <h2 class="card-title">Verify with official sources</h2>
+    <p class="text-sm opacity-80">Policies and individual assessments can change. Check these official resources before making a housing decision.</p>
+    <div class="flex flex-wrap gap-2 mt-2">
+      <a class="btn btn-primary btn-sm" href="https://www.hdb.gov.sg/buying-a-flat" target="_blank" rel="noopener noreferrer">HDB: Buying a Flat</a>
+      <a class="btn btn-outline btn-sm" href="https://homes.hdb.gov.sg/home/landing" target="_blank" rel="noopener noreferrer">HDB Flat Portal</a>
+      <a class="btn btn-outline btn-sm" href="https://www.cpf.gov.sg/member/home-ownership" target="_blank" rel="noopener noreferrer">CPF: Home Ownership</a>
+      <a class="btn btn-outline btn-sm" href="https://www.mas.gov.sg/regulation/explainers/new-housing-loans" target="_blank" rel="noopener noreferrer">MAS: Housing Loans</a>
+      <a class="btn btn-ghost btn-sm" href="https://homes.hdb.gov.sg/home/frequently-asked-questions" target="_blank" rel="noopener noreferrer">HDB FAQ</a>
+    </div>
+  </div>
+</section>
+{{ template "partials/footer" . }}
+{{ end }}
