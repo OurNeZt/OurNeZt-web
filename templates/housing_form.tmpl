@@ -4,8 +4,7 @@
   .oz-animated-field {
     max-height: 12rem;
     opacity: 1;
-    overflow: hidden;
-    transform: translateY(0);
+    overflow: visible;
     transition:
       max-height 220ms ease,
       opacity 160ms ease,
@@ -16,6 +15,7 @@
   .oz-animated-field.oz-field-hidden {
     max-height: 0;
     opacity: 0;
+    overflow: hidden;
     pointer-events: none;
     transform: translateY(-0.25rem);
   }
