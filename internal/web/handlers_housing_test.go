@@ -178,6 +178,18 @@ func TestVisibleHousingOptions(t *testing.T) {
 	}
 }
 
+func TestParseBoolFormValuesUsesLastSubmittedValue(t *testing.T) {
+	if !parseBoolFormValues([]string{"false", "true"}) {
+		t.Fatal("parseBoolFormValues returned false, want true")
+	}
+	if parseBoolFormValues([]string{"true", "false"}) {
+		t.Fatal("parseBoolFormValues returned true, want false")
+	}
+	if parseBoolFormValues(nil) {
+		t.Fatal("parseBoolFormValues returned true for nil input, want false")
+	}
+}
+
 func validHousingOptionForValidation() *ourneztv1.HousingOption {
 	return &ourneztv1.HousingOption{
 		Name:                      "Option",

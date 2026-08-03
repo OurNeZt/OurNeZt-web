@@ -372,7 +372,7 @@ func (a *App) updateHousingVisibility(c *gin.Context) {
 	_, err := a.clients.Housing.UpdateHousingOptionVisibility(a.grpcContext(c), &ourneztv1.UpdateHousingOptionVisibilityRequest{
 		ActorUserId:        user.ID,
 		HousingId:          c.Param("id"),
-		VisibleOnDashboard: parseBoolFormValue(c.PostForm("visible_on_dashboard")),
+		VisibleOnDashboard: parseBoolFormValues(c.PostFormArray("visible_on_dashboard")),
 	})
 	if err != nil {
 		c.Redirect(http.StatusFound, "/housing?family_id="+familyID+"&error="+urlQuerySafe(grpcMessage(err)))
@@ -387,7 +387,7 @@ func (a *App) updateHousingGroupVisibility(c *gin.Context) {
 	_, err := a.clients.Housing.BulkUpdateHousingGroupVisibility(a.grpcContext(c), &ourneztv1.BulkUpdateHousingGroupVisibilityRequest{
 		ActorUserId:        user.ID,
 		HousingGroupId:     c.Param("id"),
-		VisibleOnDashboard: parseBoolFormValue(c.PostForm("visible_on_dashboard")),
+		VisibleOnDashboard: parseBoolFormValues(c.PostFormArray("visible_on_dashboard")),
 	})
 	if err != nil {
 		c.Redirect(http.StatusFound, "/housing?family_id="+familyID+"&error="+urlQuerySafe(grpcMessage(err)))
@@ -497,7 +497,7 @@ func housingFromForm(c *gin.Context) *ourneztv1.HousingOption {
 		MonthlyMaintenanceCents:   parseMoneyCents(c.PostForm("monthly_maintenance")),
 		ExpectedKeyCollectionDate: strings.TrimSpace(c.PostForm("expected_key_collection_date")),
 		HousingGroupId:            optionalStringPointer(groupID),
-		VisibleOnDashboard:        optionalBoolPointer(parseBoolFormValue(c.PostForm("visible_on_dashboard"))),
+		VisibleOnDashboard:        optionalBoolPointer(parseBoolFormValues(c.PostFormArray("visible_on_dashboard"))),
 	}
 }
 
@@ -1201,4 +1201,11 @@ func parseBoolFormValue(value string) bool {
 	default:
 		return false
 	}
+}
+
+func parseBoolFormValues(values []string) bool {
+	if len(values) == 0 {
+		return false
+	}
+	return parseBoolFormValue(values[len(values)-1])
 }
