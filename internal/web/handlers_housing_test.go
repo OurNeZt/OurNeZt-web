@@ -133,6 +133,63 @@ func TestValidateHousingOptionInputRejectsNonHDBPropertyHDBOnlyValues(t *testing
 	}
 }
 
+func TestBuildHousingGroupSections(t *testing.T) {
+	groups := []*ourneztv1.HousingGroup{
+		{Id: "group_1", Name: "June BTO 2026"},
+	}
+	visible := true
+	hidden := false
+	options := []*ourneztv1.HousingOption{
+		{Id: "housing_1", Name: "Plan A", HousingGroupId: &groups[0].Id, VisibleOnDashboard: &visible},
+		{Id: "housing_2", Name: "Plan B", HousingGroupId: &groups[0].Id, VisibleOnDashboard: &hidden},
+		{Id: "housing_3", Name: "Plan C", VisibleOnDashboard: &visible},
+	}
+
+	sections := buildHousingGroupSections(groups, options)
+	if len(sections) != 2 {
+		t.Fatalf("sections len = %d, want 2", len(sections))
+	}
+	if sections[0].GroupName != "June BTO 2026" {
+		t.Fatalf("first section name = %q, want June BTO 2026", sections[0].GroupName)
+	}
+	if !sections[0].MixedVisibility {
+		t.Fatal("first section mixed visibility = false, want true")
+	}
+	if !sections[1].IsUngrouped {
+		t.Fatal("second section IsUngrouped = false, want true")
+	}
+}
+
+func TestVisibleHousingOptions(t *testing.T) {
+	visible := true
+	hidden := false
+	options := []*ourneztv1.HousingOption{
+		{Id: "housing_1", VisibleOnDashboard: &visible},
+		{Id: "housing_2", VisibleOnDashboard: &hidden},
+		{Id: "housing_3"},
+	}
+
+	filtered := visibleHousingOptions(options)
+	if len(filtered) != 2 {
+		t.Fatalf("filtered len = %d, want 2", len(filtered))
+	}
+	if filtered[0].GetId() != "housing_1" || filtered[1].GetId() != "housing_3" {
+		t.Fatalf("filtered ids = [%q, %q], want [housing_1, housing_3]", filtered[0].GetId(), filtered[1].GetId())
+	}
+}
+
+func TestParseBoolFormValuesUsesLastSubmittedValue(t *testing.T) {
+	if !parseBoolFormValues([]string{"false", "true"}) {
+		t.Fatal("parseBoolFormValues returned false, want true")
+	}
+	if parseBoolFormValues([]string{"true", "false"}) {
+		t.Fatal("parseBoolFormValues returned true, want false")
+	}
+	if parseBoolFormValues(nil) {
+		t.Fatal("parseBoolFormValues returned true for nil input, want false")
+	}
+}
+
 func validHousingOptionForValidation() *ourneztv1.HousingOption {
 	return &ourneztv1.HousingOption{
 		Name:                      "Option",
