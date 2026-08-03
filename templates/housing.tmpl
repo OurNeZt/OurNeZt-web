@@ -129,7 +129,7 @@
                 </div>
 
                 <div class="grid gap-2 xl:grid-cols-[minmax(0,1fr)_auto]">
-                  <form method="post" action="/housing/{{ $option.Id }}/group" class="flex flex-col gap-2 sm:flex-row">
+                  <form method="post" action="/housing/{{ $option.Id }}/group" class="flex flex-col gap-2 sm:flex-row oz-housing-group-form" data-current-group-id="{{ $option.GetHousingGroupId }}">
                     <input type="hidden" name="family_id" value="{{ $.Data.FamilyID }}">
                     <select class="select select-bordered flex-1" name="housing_group_id">
                       <option value="">Ungrouped</option>
@@ -137,7 +137,7 @@
                       <option value="{{ .Id }}" {{ if eq $option.GetHousingGroupId .Id }}selected{{ end }}>{{ .Name }}</option>
                       {{ end }}
                     </select>
-                    <button class="btn btn-sm" type="submit">Move</button>
+                    <button class="btn btn-sm" type="submit" disabled>Move</button>
                   </form>
                   <form method="post" action="/housing/{{ $option.Id }}/visibility" class="m-0">
                     <input type="hidden" name="family_id" value="{{ $.Data.FamilyID }}">
@@ -171,5 +171,29 @@
     {{ end }}
   </div>
 </section>
+<script>
+  (() => {
+    const forms = document.querySelectorAll(".oz-housing-group-form");
+    if (!forms.length) return;
+
+    forms.forEach((form) => {
+      const select = form.querySelector('select[name="housing_group_id"]');
+      const button = form.querySelector('button[type="submit"]');
+      if (!select || !button) return;
+
+      const currentGroupId = (form.dataset.currentGroupId || "").trim();
+      const syncState = () => {
+        const selectedGroupId = (select.value || "").trim();
+        const unchanged = selectedGroupId === currentGroupId;
+        button.disabled = unchanged;
+        button.classList.toggle("btn-disabled", unchanged);
+        button.title = unchanged ? "Choose a different group to move this housing option." : "";
+      };
+
+      select.addEventListener("change", syncState);
+      syncState();
+    });
+  })();
+</script>
 {{ template "partials/footer" . }}
 {{ end }}
