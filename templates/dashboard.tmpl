@@ -33,7 +33,10 @@
   <section class="card bg-base-100 shadow">
     <div class="card-body">
       <h2 class="card-title text-base">Housing Scenario Impact</h2>
-      <p class="text-xs opacity-70">Monthly housing cost and surplus after housing by option.</p>
+      <p class="text-xs opacity-70">Monthly housing cost and surplus after housing by visible option.</p>
+      {{ if gt .Data.HiddenHousingCount 0 }}
+      <div class="alert oz-alert-soft text-xs">{{ .Data.HiddenHousingCount }} hidden housing option{{ if ne .Data.HiddenHousingCount 1 }}s are{{ else }} is{{ end }} excluded from dashboard charts and timeline.</div>
+      {{ end }}
       {{ if .Data.UsesProjected }}
       <div class="alert oz-alert-soft text-xs">Projected take-home is used for this housing view because future income profiles are present.</div>
       {{ end }}
@@ -48,7 +51,7 @@
 <section class="card bg-base-100 shadow mt-4">
   <div class="card-body">
     <h2 class="card-title text-base">Payment vs Income Timeline</h2>
-    <p class="text-xs opacity-70">Follow each housing option from today through total initial payment, final downpayment, and the later monthly payment stage.</p>
+    <p class="text-xs opacity-70">Follow each visible housing option from today through total initial payment, final downpayment, and the later monthly payment stage.</p>
     {{ if .Data.TimelineSeries }}
     <label class="oz-field max-w-sm">
       <span>Housing Option</span>
