@@ -9,16 +9,25 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [v1.3.0] - 2026-08-04
 
 ### Added
-- (fill)
+- Housing group management UI for creating, renaming, and deleting housing groups.
+- Group assignment controls for moving housing options into and out of groups.
+- Per-housing-option dashboard visibility controls in housing management and housing form flows.
+- Group-level bulk show/hide actions for dashboard visibility.
+- Grouped housing display with support for ungrouped housing options.
+- Visible and hidden housing status summaries across housing management and comparison views.
 
 ### Changed
-- (fill)
+- Dashboard charts, timeline, and housing comparison now show only housing options marked as visible.
+- Housing form now includes dashboard visibility and housing group selection.
+- Housing management page now acts as the main UI for grouping and dashboard visibility control.
 
 ### Fixed
-- (fill)
+- Dashboard visibility checkbox persistence when saving housing options.
+- Tooltip rendering and positioning for animated housing form fields.
+- Move button behavior so it stays disabled until a different housing group is selected.
 
 ### Removed
-- (fill)
+- No removals in this release.
 
 ## [v1.2.0] - 2026-06-26
 
