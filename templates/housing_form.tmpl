@@ -4,8 +4,7 @@
   .oz-animated-field {
     max-height: 12rem;
     opacity: 1;
-    overflow: hidden;
-    transform: translateY(0);
+    overflow: visible;
     transition:
       max-height 220ms ease,
       opacity 160ms ease,
@@ -16,6 +15,7 @@
   .oz-animated-field.oz-field-hidden {
     max-height: 0;
     opacity: 0;
+    overflow: hidden;
     pointer-events: none;
     transform: translateY(-0.25rem);
   }
@@ -47,6 +47,15 @@
       <label class="oz-field">
         <span>Option Name <span class="text-error" aria-label="required" title="Required">*</span></span>
         <input class="input input-bordered" name="name" placeholder="e.g. Tengah BTO 4-Room" value="{{ .Data.Housing.Name }}" required>
+      </label>
+      <label class="oz-field">
+        <span>Housing Group <span class="text-xs font-normal opacity-60">(optional)</span></span>
+        <select class="select select-bordered w-full" name="housing_group_id">
+          <option value="">Ungrouped</option>
+          {{ range .Data.HousingGroups }}
+          <option value="{{ .Id }}" {{ if eq $.Data.SelectedHousingGroupID .Id }}selected{{ end }}>{{ .Name }}</option>
+          {{ end }}
+        </select>
       </label>
       <label class="oz-field">
         <span>Housing Type <span class="text-error" aria-label="required" title="Required">*</span></span>
@@ -124,6 +133,14 @@
       <div class="oz-field">
         <label class="oz-field-label" for="expected_key_collection_date"><span class="inline-flex items-center gap-1">Expected Key Collection Date<span class="text-error" aria-label="required" title="Required">*</span>{{ template "partials/help_tooltip" (dict "Key" "expected_key_collection_date" "Label" "Expected Key Collection Date") }}</span></label>
         <input class="input input-bordered" id="expected_key_collection_date" name="expected_key_collection_date" type="date" value="{{ .Data.Housing.ExpectedKeyCollectionDate }}" required>
+      </div>
+      <div class="oz-field md:col-span-2">
+        <span>Dashboard Visibility</span>
+        <input type="hidden" name="visible_on_dashboard" value="false">
+        <label class="label cursor-pointer justify-start gap-3 rounded-box border border-base-300 px-4 py-3">
+          <input class="checkbox" type="checkbox" name="visible_on_dashboard" value="true" {{ if .Data.VisibleOnDashboard }}checked{{ end }}>
+          <span class="label-text">Show this housing option on dashboard charts, timeline, and visible-only comparisons.</span>
+        </label>
       </div>
       <div class="md:col-span-2 flex flex-wrap gap-2">
         <button class="btn btn-primary" type="submit">Save</button>

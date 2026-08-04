@@ -17,6 +17,8 @@ type dashboardData struct {
 	Dashboard                      *ourneztv1.HouseholdDashboard
 	People                         []*ourneztv1.PersonProfile
 	Housing                        []*ourneztv1.HousingOption
+	VisibleHousingCount            int
+	HiddenHousingCount             int
 	Income                         *ourneztv1.HouseholdIncomeSummary
 	HousingCharts                  []dashboardHousingChartRow
 	UsesProjected                  bool
@@ -103,9 +105,11 @@ func (a *App) dashboard(c *gin.Context) {
 		historyEntries = historyResp.GetEntries()
 	}
 	incomeTrendLabels, incomeTrendGross := buildIncomeTrendSeries(historyEntries, incomeResp.GetCurrentGrossIncomeCents(), time.Now())
+	visibleHousing := visibleHousingOptions(housingResp.GetHousingOptions())
+	visibleCount, hiddenCount := housingVisibilityCounts(housingResp.GetHousingOptions())
 
 	currentYear := time.Now().Year()
-	projectedIncomeYear := inferProjectedIncomeYear(housingResp.GetHousingOptions(), currentYear)
+	projectedIncomeYear := inferProjectedIncomeYear(visibleHousing, currentYear)
 	incomeTrendLabels, incomeTrendGross, incomeTrendProjectedGross := mergeProjectedPointIntoTrend(
 		incomeTrendLabels,
 		incomeTrendGross,
@@ -114,9 +118,9 @@ func (a *App) dashboard(c *gin.Context) {
 		incomeResp.GetProjectedGrossIncomeCents(),
 		time.Now(),
 	)
-	housingCharts := make([]dashboardHousingChartRow, 0, len(housingResp.GetHousingOptions()))
-	timelineSeries := make([]dashboardTimelineSeries, 0, len(housingResp.GetHousingOptions()))
-	for i, option := range housingResp.GetHousingOptions() {
+	housingCharts := make([]dashboardHousingChartRow, 0, len(visibleHousing))
+	timelineSeries := make([]dashboardTimelineSeries, 0, len(visibleHousing))
+	for i, option := range visibleHousing {
 		optionTakeHome := a.projectedHousingTakeHomeCents(c, peopleResp.GetPeople(), option, baseTakeHome)
 		if optionTakeHome > baseTakeHome {
 			usesProjected = true
@@ -167,7 +171,9 @@ func (a *App) dashboard(c *gin.Context) {
 		Families:                       families,
 		Dashboard:                      dResp,
 		People:                         peopleResp.GetPeople(),
-		Housing:                        housingResp.GetHousingOptions(),
+		Housing:                        visibleHousing,
+		VisibleHousingCount:            visibleCount,
+		HiddenHousingCount:             hiddenCount,
 		Income:                         incomeResp,
 		HousingCharts:                  housingCharts,
 		UsesProjected:                  usesProjected,

@@ -1,52 +1,199 @@
 {{ define "housing" }}
 {{ template "partials/header" . }}
 <section class="card bg-base-100 shadow">
-  <div class="card-body">
-    <h1 class="card-title">Housing Options</h1>
-    {{ if .Data.Families }}
-    <form method="get" action="/housing" class="flex gap-2 flex-wrap">
-      <select class="select select-bordered" name="family_id">
-        {{ range .Data.Families }}<option value="{{ .Id }}" {{ if eq $.Data.FamilyID .Id }}selected{{ end }}>{{ .Name }}</option>{{ end }}
-      </select>
-      <button class="btn btn-sm" type="submit">Switch</button>
-    </form>
-    {{ end }}
+  <div class="card-body gap-5">
+    <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+      <div class="space-y-2">
+        <h1 class="card-title">Housing Options</h1>
+        {{ if .Data.FamilyID }}
+        <p class="text-sm opacity-75">Organise housing options into groups and choose what stays visible on the dashboard, charts, and comparison views.</p>
+        <div class="flex flex-wrap gap-2 text-xs">
+          <span class="badge badge-outline">{{ .Data.VisibleHousingCount }} visible on dashboard</span>
+          {{ if gt .Data.HiddenHousingCount 0 }}
+          <span class="badge badge-neutral">{{ .Data.HiddenHousingCount }} hidden from dashboard</span>
+          {{ end }}
+        </div>
+        {{ end }}
+      </div>
+      {{ if .Data.Families }}
+      <form method="get" action="/housing" class="flex gap-2 flex-wrap">
+        <select class="select select-bordered" name="family_id">
+          {{ range .Data.Families }}<option value="{{ .Id }}" {{ if eq $.Data.FamilyID .Id }}selected{{ end }}>{{ .Name }}</option>{{ end }}
+        </select>
+        <button class="btn btn-sm" type="submit">Switch</button>
+      </form>
+      {{ end }}
+    </div>
+
     {{ if .Data.FamilyID }}
-    <div class="flex flex-wrap gap-2 mt-2">
+    <div class="flex flex-wrap gap-2">
       <a class="btn btn-primary btn-sm" href="/housing/new?family_id={{ .Data.FamilyID }}">Add Housing Option</a>
-      <a class="btn btn-sm" href="/housing/compare?family_id={{ .Data.FamilyID }}">Compare</a>
+      <a class="btn btn-sm" href="/housing/compare?family_id={{ .Data.FamilyID }}">Compare Visible Options</a>
       <a class="btn btn-sm" href="/dashboard?family_id={{ .Data.FamilyID }}">Back to Dashboard</a>
+    </div>
+
+    <section class="card oz-panel">
+      <div class="card-body gap-4">
+        <div class="flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <h2 class="card-title text-base">Housing Groups</h2>
+            <p class="text-sm opacity-75">Create custom buckets like BTO launches, resale shortlists, or scenario rounds.</p>
+          </div>
+          <form method="post" action="/housing/groups" class="flex w-full flex-col gap-2 sm:flex-row lg:w-auto">
+            <input type="hidden" name="family_id" value="{{ .Data.FamilyID }}">
+            <input class="input input-bordered sm:min-w-[16rem]" name="name" placeholder="e.g. June BTO 2026" required>
+            <button class="btn btn-primary" type="submit">Create Group</button>
+          </form>
+        </div>
+        {{ if .Data.HousingGroups }}
+        <div class="flex flex-wrap gap-2">
+          {{ range .Data.HousingGroups }}
+          <span class="badge badge-lg badge-outline">{{ .Name }}</span>
+          {{ end }}
+        </div>
+        {{ else }}
+        <div class="alert oz-alert-soft text-sm">No groups yet. You can still save housing options without a group and sort them later.</div>
+        {{ end }}
+      </div>
+    </section>
+
+    <div class="grid gap-4">
+      {{ range .Data.GroupedSections }}
+      <section class="card bg-base-100 border border-base-300 shadow-sm">
+        <div class="card-body gap-4">
+          <div class="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+            <div class="space-y-2">
+              <div class="flex flex-wrap items-center gap-2">
+                <h2 class="card-title text-lg">{{ .GroupName }}</h2>
+                {{ if .MixedVisibility }}
+                <span class="badge badge-warning badge-outline">Mixed visibility</span>
+                {{ else if .AllVisible }}
+                <span class="badge badge-success badge-outline">All visible</span>
+                {{ else if .NoneVisible }}
+                <span class="badge badge-neutral">All hidden</span>
+                {{ end }}
+              </div>
+              <p class="text-sm opacity-75">{{ .VisibleCount }} visible, {{ .HiddenCount }} hidden, {{ len .HousingOptions }} total</p>
+            </div>
+
+            {{ if .IsUngrouped }}
+            <div class="alert oz-alert-soft text-sm xl:max-w-md">Ungrouped options stay fully usable. Assign them to a group whenever you want a cleaner shortlist.</div>
+            {{ else }}
+            <div class="grid gap-2 xl:min-w-[26rem]">
+              <form method="post" action="/housing/groups/{{ .GroupID }}" class="flex flex-col gap-2 sm:flex-row">
+                <input type="hidden" name="family_id" value="{{ $.Data.FamilyID }}">
+                <input class="input input-bordered flex-1" name="name" value="{{ .GroupName }}" required>
+                <button class="btn btn-sm" type="submit">Rename</button>
+              </form>
+              <div class="flex flex-wrap gap-2">
+                <form method="post" action="/housing/groups/{{ .GroupID }}/visibility" class="m-0">
+                  <input type="hidden" name="family_id" value="{{ $.Data.FamilyID }}">
+                  <input type="hidden" name="visible_on_dashboard" value="{{ if .AllVisible }}false{{ else }}true{{ end }}">
+                  <button class="btn btn-sm" type="submit">{{ if .AllVisible }}Hide Group{{ else }}Show Group{{ end }}</button>
+                </form>
+                <form method="post" action="/housing/groups/{{ .GroupID }}/delete" class="m-0">
+                  <input type="hidden" name="family_id" value="{{ $.Data.FamilyID }}">
+                  <button class="btn btn-sm btn-error" type="submit">Delete Group</button>
+                </form>
+              </div>
+            </div>
+            {{ end }}
+          </div>
+
+          <div class="grid gap-3 lg:grid-cols-2">
+            {{ range .HousingOptions }}
+            <article class="card border border-base-300 bg-base-100">
+              <div class="card-body gap-3 p-4">
+                {{ $option := . }}
+                <div class="flex flex-wrap items-start justify-between gap-2">
+                  <div>
+                    <h3 class="font-semibold text-base">{{ $option.Name }}</h3>
+                    <p class="text-sm opacity-70">{{ $option.HousingType }}{{ if $option.UnitType }} · {{ $option.UnitType }}{{ end }}{{ if $option.Location }} · {{ $option.Location }}{{ end }}</p>
+                  </div>
+                  {{ if $option.GetVisibleOnDashboard }}
+                  <span class="badge badge-success badge-outline">Visible</span>
+                  {{ else }}
+                  <span class="badge badge-neutral">Hidden</span>
+                  {{ end }}
+                </div>
+
+                <div class="grid gap-2 text-sm sm:grid-cols-2">
+                  <div class="rounded-box bg-base-200 px-3 py-2">
+                    <div class="text-xs uppercase tracking-wide opacity-60">Purchase Price</div>
+                    <div class="font-semibold">{{ cents $option.PurchasePriceCents }}</div>
+                  </div>
+                  <div class="rounded-box bg-base-200 px-3 py-2">
+                    <div class="text-xs uppercase tracking-wide opacity-60">Key Collection</div>
+                    <div class="font-semibold">{{ $option.ExpectedKeyCollectionDate }}</div>
+                  </div>
+                </div>
+
+                <div class="grid gap-2 xl:grid-cols-[minmax(0,1fr)_auto]">
+                  <form method="post" action="/housing/{{ $option.Id }}/group" class="flex flex-col gap-2 sm:flex-row oz-housing-group-form" data-current-group-id="{{ $option.GetHousingGroupId }}">
+                    <input type="hidden" name="family_id" value="{{ $.Data.FamilyID }}">
+                    <select class="select select-bordered flex-1" name="housing_group_id">
+                      <option value="">Ungrouped</option>
+                      {{ range $.Data.HousingGroups }}
+                      <option value="{{ .Id }}" {{ if eq $option.GetHousingGroupId .Id }}selected{{ end }}>{{ .Name }}</option>
+                      {{ end }}
+                    </select>
+                    <button class="btn btn-sm" type="submit" disabled>Move</button>
+                  </form>
+                  <form method="post" action="/housing/{{ $option.Id }}/visibility" class="m-0">
+                    <input type="hidden" name="family_id" value="{{ $.Data.FamilyID }}">
+                    <input type="hidden" name="visible_on_dashboard" value="{{ if $option.GetVisibleOnDashboard }}false{{ else }}true{{ end }}">
+                    <button class="btn btn-sm {{ if $option.GetVisibleOnDashboard }}btn-outline{{ else }}btn-primary{{ end }}" type="submit">
+                      {{ if $option.GetVisibleOnDashboard }}Hide on Dashboard{{ else }}Show on Dashboard{{ end }}
+                    </button>
+                  </form>
+                </div>
+
+                <div class="flex flex-wrap gap-2">
+                  <a class="btn btn-xs" href="/housing/{{ $option.Id }}?family_id={{ $.Data.FamilyID }}">View</a>
+                  <a class="btn btn-xs" href="/housing/{{ $option.Id }}/edit?family_id={{ $.Data.FamilyID }}">Edit</a>
+                  <form method="post" action="/housing/{{ $option.Id }}/delete" class="m-0">
+                    <input type="hidden" name="family_id" value="{{ $.Data.FamilyID }}">
+                    <button class="btn btn-xs btn-error" type="submit">Delete</button>
+                  </form>
+                </div>
+              </div>
+            </article>
+            {{ end }}
+          </div>
+        </div>
+      </section>
+      {{ else }}
+      <div class="alert oz-alert-soft text-sm">No housing options yet. Add your first option to start comparing scenarios.</div>
+      {{ end }}
     </div>
     {{ else }}
     <p>Select a family from <a class="link" href="/dashboard">dashboard</a>.</p>
     {{ end }}
-    <div class="overflow-x-auto mt-3">
-      <table class="table">
-        <thead><tr><th>Name</th><th>Type</th><th>Price</th><th></th></tr></thead>
-        <tbody>
-          {{ range .Data.Housing }}
-          <tr>
-            <td>{{ .Name }}</td>
-            <td>{{ .HousingType }}</td>
-            <td>{{ cents .PurchasePriceCents }}</td>
-            <td class="min-w-[10rem]">
-              <div class="flex flex-wrap gap-1">
-                <a class="btn btn-xs" href="/housing/{{ .Id }}?family_id={{ $.Data.FamilyID }}">View</a>
-                <a class="btn btn-xs" href="/housing/{{ .Id }}/edit?family_id={{ $.Data.FamilyID }}">Edit</a>
-                <form method="post" action="/housing/{{ .Id }}/delete" class="m-0">
-                  <input type="hidden" name="family_id" value="{{ $.Data.FamilyID }}">
-                  <button class="btn btn-xs btn-error" type="submit">Delete</button>
-                </form>
-              </div>
-            </td>
-          </tr>
-          {{ else }}
-          <tr><td colspan="4" class="opacity-70">No housing options yet</td></tr>
-          {{ end }}
-        </tbody>
-      </table>
-    </div>
   </div>
 </section>
+<script>
+  (() => {
+    const forms = document.querySelectorAll(".oz-housing-group-form");
+    if (!forms.length) return;
+
+    forms.forEach((form) => {
+      const select = form.querySelector('select[name="housing_group_id"]');
+      const button = form.querySelector('button[type="submit"]');
+      if (!select || !button) return;
+
+      const currentGroupId = (form.dataset.currentGroupId || "").trim();
+      const syncState = () => {
+        const selectedGroupId = (select.value || "").trim();
+        const unchanged = selectedGroupId === currentGroupId;
+        button.disabled = unchanged;
+        button.classList.toggle("btn-disabled", unchanged);
+        button.title = unchanged ? "Choose a different group to move this housing option." : "";
+      };
+
+      select.addEventListener("change", syncState);
+      syncState();
+    });
+  })();
+</script>
 {{ template "partials/footer" . }}
 {{ end }}

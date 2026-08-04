@@ -12,16 +12,23 @@ import (
 )
 
 type housingData struct {
-	FamilyID string
-	Families []*ourneztv1.Family
-	Housing  []*ourneztv1.HousingOption
+	FamilyID            string
+	Families            []*ourneztv1.Family
+	Housing             []*ourneztv1.HousingOption
+	HousingGroups       []*ourneztv1.HousingGroup
+	GroupedSections     []housingGroupSection
+	VisibleHousingCount int
+	HiddenHousingCount  int
 }
 
 type housingFormData struct {
 	FamilyID               string
 	Housing                *ourneztv1.HousingOption
+	HousingGroups          []*ourneztv1.HousingGroup
 	IsEdit                 bool
 	AssessmentMode         string
+	SelectedHousingGroupID string
+	VisibleOnDashboard     bool
 	People                 []*ourneztv1.PersonProfile
 	DIAIncomeDefaultInputs map[string]string
 	GrantAmountEstimates   map[string]int64
@@ -45,15 +52,30 @@ type housingDetailData struct {
 }
 
 type housingCompareData struct {
-	FamilyID string
-	Families []*ourneztv1.Family
-	Rows     []housingCompareRow
+	FamilyID            string
+	Families            []*ourneztv1.Family
+	Rows                []housingCompareRow
+	VisibleHousingCount int
+	HiddenHousingCount  int
 }
 
 type housingCompareRow struct {
 	Name                     string
+	GroupName                string
 	Affordability            *ourneztv1.HousingAffordability
 	TotalInitialPaymentCents int64
+}
+
+type housingGroupSection struct {
+	GroupID         string
+	GroupName       string
+	IsUngrouped     bool
+	HousingOptions  []*ourneztv1.HousingOption
+	VisibleCount    int
+	HiddenCount     int
+	AllVisible      bool
+	NoneVisible     bool
+	MixedVisibility bool
 }
 
 type housingEstimateInputs struct {
@@ -99,10 +121,16 @@ func (a *App) housing(c *gin.Context) {
 		c.Redirect(http.StatusFound, "/dashboard?family_id="+familyID+"&error="+urlQuerySafe(grpcMessage(err)))
 		return
 	}
+	groups := a.listHousingGroups(c, familyID)
+	visibleCount, hiddenCount := housingVisibilityCounts(resp.GetHousingOptions())
 	a.render(c, "housing", "Housing", housingData{
-		FamilyID: familyID,
-		Families: families,
-		Housing:  resp.GetHousingOptions(),
+		FamilyID:            familyID,
+		Families:            families,
+		Housing:             resp.GetHousingOptions(),
+		HousingGroups:       groups,
+		GroupedSections:     buildHousingGroupSections(groups, resp.GetHousingOptions()),
+		VisibleHousingCount: visibleCount,
+		HiddenHousingCount:  hiddenCount,
 	})
 }
 
@@ -110,11 +138,14 @@ func (a *App) newHousing(c *gin.Context) {
 	familyID := strings.TrimSpace(c.Query("family_id"))
 	people := a.listFamilyPeople(c, familyID)
 	grantAmountEstimates := a.housingGrantAmountEstimates(c, familyID)
+	housingGroups := a.listHousingGroups(c, familyID)
 
 	a.render(c, "housing_form", "New Housing", housingFormData{
 		FamilyID:               familyID,
 		Housing:                &ourneztv1.HousingOption{},
+		HousingGroups:          housingGroups,
 		AssessmentMode:         "standard",
+		VisibleOnDashboard:     true,
 		People:                 people,
 		DIAIncomeDefaultInputs: buildDIAIncomeDefaultInputs(people, nil),
 		GrantAmountEstimates:   grantAmountEstimates,
@@ -226,6 +257,7 @@ func (a *App) editHousing(c *gin.Context) {
 	}
 	people := a.listFamilyPeople(c, familyID)
 	grantAmountEstimates := a.housingGrantAmountEstimates(c, familyID)
+	housingGroups := a.listHousingGroups(c, familyID)
 	if inferHousingAssessmentMode(resp) != "deferred" {
 		if estimate, ok := grantAmountEstimates[normalizeLookup(resp.GetHousingType())]; ok {
 			resp.GrantAmountCents = estimate
@@ -234,8 +266,11 @@ func (a *App) editHousing(c *gin.Context) {
 	a.render(c, "housing_form", "Edit Housing", housingFormData{
 		FamilyID:               familyID,
 		Housing:                resp,
+		HousingGroups:          housingGroups,
 		IsEdit:                 true,
 		AssessmentMode:         inferHousingAssessmentMode(resp),
+		SelectedHousingGroupID: strings.TrimSpace(resp.GetHousingGroupId()),
+		VisibleOnDashboard:     resp.VisibleOnDashboard == nil || resp.GetVisibleOnDashboard(),
 		People:                 people,
 		DIAIncomeDefaultInputs: buildDIAIncomeDefaultInputs(people, resp),
 		GrantAmountEstimates:   grantAmountEstimates,
@@ -261,6 +296,104 @@ func (a *App) updateHousing(c *gin.Context) {
 	}
 
 	c.Redirect(http.StatusFound, "/housing?family_id="+option.GetFamilyId()+"&flash=Housing+option+updated")
+}
+
+func (a *App) createHousingGroup(c *gin.Context) {
+	familyID := strings.TrimSpace(c.PostForm("family_id"))
+	name := strings.TrimSpace(c.PostForm("name"))
+	if familyID == "" || name == "" {
+		c.Redirect(http.StatusFound, "/housing?family_id="+familyID+"&error="+urlQuerySafe("group name is required"))
+		return
+	}
+
+	_, err := a.clients.Housing.CreateHousingGroup(a.grpcContext(c), &ourneztv1.HousingGroup{
+		FamilyId: familyID,
+		Name:     name,
+	})
+	if err != nil {
+		c.Redirect(http.StatusFound, "/housing?family_id="+familyID+"&error="+urlQuerySafe(grpcMessage(err)))
+		return
+	}
+	c.Redirect(http.StatusFound, "/housing?family_id="+familyID+"&flash=Housing+group+created")
+}
+
+func (a *App) updateHousingGroup(c *gin.Context) {
+	familyID := strings.TrimSpace(c.PostForm("family_id"))
+	name := strings.TrimSpace(c.PostForm("name"))
+	if name == "" {
+		c.Redirect(http.StatusFound, "/housing?family_id="+familyID+"&error="+urlQuerySafe("group name is required"))
+		return
+	}
+
+	_, err := a.clients.Housing.UpdateHousingGroup(a.grpcContext(c), &ourneztv1.HousingGroup{
+		Id:       c.Param("id"),
+		FamilyId: familyID,
+		Name:     name,
+	})
+	if err != nil {
+		c.Redirect(http.StatusFound, "/housing?family_id="+familyID+"&error="+urlQuerySafe(grpcMessage(err)))
+		return
+	}
+	c.Redirect(http.StatusFound, "/housing?family_id="+familyID+"&flash=Housing+group+updated")
+}
+
+func (a *App) deleteHousingGroup(c *gin.Context) {
+	user := userFromContext(c)
+	familyID := strings.TrimSpace(c.PostForm("family_id"))
+	_, err := a.clients.Housing.DeleteHousingGroup(a.grpcContext(c), &ourneztv1.DeleteHousingGroupRequest{
+		ActorUserId:    user.ID,
+		HousingGroupId: c.Param("id"),
+	})
+	if err != nil {
+		c.Redirect(http.StatusFound, "/housing?family_id="+familyID+"&error="+urlQuerySafe(grpcMessage(err)))
+		return
+	}
+	c.Redirect(http.StatusFound, "/housing?family_id="+familyID+"&flash=Housing+group+deleted")
+}
+
+func (a *App) assignHousingGroup(c *gin.Context) {
+	user := userFromContext(c)
+	familyID := strings.TrimSpace(c.PostForm("family_id"))
+	_, err := a.clients.Housing.AssignHousingOptionGroup(a.grpcContext(c), &ourneztv1.AssignHousingOptionGroupRequest{
+		ActorUserId:    user.ID,
+		HousingId:      c.Param("id"),
+		HousingGroupId: strings.TrimSpace(c.PostForm("housing_group_id")),
+	})
+	if err != nil {
+		c.Redirect(http.StatusFound, "/housing?family_id="+familyID+"&error="+urlQuerySafe(grpcMessage(err)))
+		return
+	}
+	c.Redirect(http.StatusFound, "/housing?family_id="+familyID+"&flash=Housing+group+updated")
+}
+
+func (a *App) updateHousingVisibility(c *gin.Context) {
+	user := userFromContext(c)
+	familyID := strings.TrimSpace(c.PostForm("family_id"))
+	_, err := a.clients.Housing.UpdateHousingOptionVisibility(a.grpcContext(c), &ourneztv1.UpdateHousingOptionVisibilityRequest{
+		ActorUserId:        user.ID,
+		HousingId:          c.Param("id"),
+		VisibleOnDashboard: parseBoolFormValues(c.PostFormArray("visible_on_dashboard")),
+	})
+	if err != nil {
+		c.Redirect(http.StatusFound, "/housing?family_id="+familyID+"&error="+urlQuerySafe(grpcMessage(err)))
+		return
+	}
+	c.Redirect(http.StatusFound, "/housing?family_id="+familyID+"&flash=Housing+visibility+updated")
+}
+
+func (a *App) updateHousingGroupVisibility(c *gin.Context) {
+	user := userFromContext(c)
+	familyID := strings.TrimSpace(c.PostForm("family_id"))
+	_, err := a.clients.Housing.BulkUpdateHousingGroupVisibility(a.grpcContext(c), &ourneztv1.BulkUpdateHousingGroupVisibilityRequest{
+		ActorUserId:        user.ID,
+		HousingGroupId:     c.Param("id"),
+		VisibleOnDashboard: parseBoolFormValues(c.PostFormArray("visible_on_dashboard")),
+	})
+	if err != nil {
+		c.Redirect(http.StatusFound, "/housing?family_id="+familyID+"&error="+urlQuerySafe(grpcMessage(err)))
+		return
+	}
+	c.Redirect(http.StatusFound, "/housing?family_id="+familyID+"&flash=Housing+group+visibility+updated")
 }
 
 func (a *App) deleteHousing(c *gin.Context) {
@@ -311,8 +444,11 @@ func (a *App) compareHousing(c *gin.Context) {
 	if summary == nil {
 		summary = &ourneztv1.HouseholdIncomeSummary{}
 	}
-	rows := make([]housingCompareRow, 0, len(hResp.GetHousingOptions()))
-	for _, option := range hResp.GetHousingOptions() {
+	visibleHousing := visibleHousingOptions(hResp.GetHousingOptions())
+	_, hiddenCount := housingVisibilityCounts(hResp.GetHousingOptions())
+	rows := make([]housingCompareRow, 0, len(visibleHousing))
+	groupNameByOptionID := housingGroupNameByOptionID(a.listHousingGroups(c, familyID), hResp.GetHousingOptions())
+	for _, option := range visibleHousing {
 		planningTakeHome := a.projectedHousingTakeHomeCents(c, pResp.GetPeople(), option, summary.GetTakeHomeIncomeCents())
 		row, rowErr := a.clients.Housing.CalculateHousingAffordability(a.grpcContext(c), &ourneztv1.CalculateHousingAffordabilityRequest{
 			HousingOption:        option,
@@ -324,6 +460,7 @@ func (a *App) compareHousing(c *gin.Context) {
 		if rowErr == nil {
 			rows = append(rows, housingCompareRow{
 				Name:                     option.GetName(),
+				GroupName:                groupNameByOptionID[strings.TrimSpace(option.GetId())],
 				Affordability:            row,
 				TotalInitialPaymentCents: totalInitialPaymentCents(option, row),
 			})
@@ -331,13 +468,16 @@ func (a *App) compareHousing(c *gin.Context) {
 	}
 
 	a.render(c, "housing_compare", "Housing Compare", housingCompareData{
-		FamilyID: familyID,
-		Families: families,
-		Rows:     rows,
+		FamilyID:            familyID,
+		Families:            families,
+		Rows:                rows,
+		VisibleHousingCount: len(visibleHousing),
+		HiddenHousingCount:  hiddenCount,
 	})
 }
 
 func housingFromForm(c *gin.Context) *ourneztv1.HousingOption {
+	groupID := strings.TrimSpace(c.PostForm("housing_group_id"))
 	return &ourneztv1.HousingOption{
 		Name:                      strings.TrimSpace(c.PostForm("name")),
 		HousingType:               normalizeLookup(c.PostForm("housing_type")),
@@ -356,6 +496,8 @@ func housingFromForm(c *gin.Context) *ourneztv1.HousingOption {
 		BuyerStampDutyCents:       0,
 		MonthlyMaintenanceCents:   parseMoneyCents(c.PostForm("monthly_maintenance")),
 		ExpectedKeyCollectionDate: strings.TrimSpace(c.PostForm("expected_key_collection_date")),
+		HousingGroupId:            optionalStringPointer(groupID),
+		VisibleOnDashboard:        optionalBoolPointer(parseBoolFormValues(c.PostFormArray("visible_on_dashboard"))),
 	}
 }
 
@@ -904,4 +1046,166 @@ func totalCash(people []*ourneztv1.PersonProfile) int64 {
 		total += person.GetCashSavingsCents()
 	}
 	return total
+}
+
+func (a *App) listHousingGroups(c *gin.Context, familyID string) []*ourneztv1.HousingGroup {
+	user := userFromContext(c)
+	if user == nil || strings.TrimSpace(familyID) == "" {
+		return nil
+	}
+	resp, err := a.clients.Housing.ListHousingGroups(a.grpcContext(c), &ourneztv1.ListHousingGroupsRequest{
+		ViewerUserId: user.ID,
+		FamilyId:     familyID,
+	})
+	if err != nil {
+		return nil
+	}
+	return resp.GetHousingGroups()
+}
+
+func buildHousingGroupSections(groups []*ourneztv1.HousingGroup, options []*ourneztv1.HousingOption) []housingGroupSection {
+	sections := make([]housingGroupSection, 0, len(groups)+1)
+	indexByGroupID := make(map[string]int, len(groups))
+	for _, group := range groups {
+		if group == nil {
+			continue
+		}
+		groupID := strings.TrimSpace(group.GetId())
+		if groupID == "" {
+			continue
+		}
+		indexByGroupID[groupID] = len(sections)
+		sections = append(sections, housingGroupSection{
+			GroupID:        groupID,
+			GroupName:      strings.TrimSpace(group.GetName()),
+			HousingOptions: make([]*ourneztv1.HousingOption, 0),
+		})
+	}
+
+	ungroupedIndex := -1
+	for _, option := range options {
+		if option == nil {
+			continue
+		}
+		groupID := strings.TrimSpace(option.GetHousingGroupId())
+		if idx, ok := indexByGroupID[groupID]; ok {
+			sections[idx].HousingOptions = append(sections[idx].HousingOptions, option)
+			continue
+		}
+		if ungroupedIndex == -1 {
+			ungroupedIndex = len(sections)
+			sections = append(sections, housingGroupSection{
+				GroupName:      "Ungrouped",
+				IsUngrouped:    true,
+				HousingOptions: make([]*ourneztv1.HousingOption, 0),
+			})
+		}
+		sections[ungroupedIndex].HousingOptions = append(sections[ungroupedIndex].HousingOptions, option)
+	}
+
+	filtered := make([]housingGroupSection, 0, len(sections))
+	for _, section := range sections {
+		if len(section.HousingOptions) == 0 && section.IsUngrouped {
+			continue
+		}
+		for _, option := range section.HousingOptions {
+			if option.VisibleOnDashboard == nil || option.GetVisibleOnDashboard() {
+				section.VisibleCount++
+			} else {
+				section.HiddenCount++
+			}
+		}
+		total := len(section.HousingOptions)
+		section.AllVisible = total > 0 && section.VisibleCount == total
+		section.NoneVisible = total > 0 && section.HiddenCount == total
+		section.MixedVisibility = section.VisibleCount > 0 && section.HiddenCount > 0
+		filtered = append(filtered, section)
+	}
+	return filtered
+}
+
+func visibleHousingOptions(options []*ourneztv1.HousingOption) []*ourneztv1.HousingOption {
+	filtered := make([]*ourneztv1.HousingOption, 0, len(options))
+	for _, option := range options {
+		if option == nil {
+			continue
+		}
+		if option.VisibleOnDashboard == nil || option.GetVisibleOnDashboard() {
+			filtered = append(filtered, option)
+		}
+	}
+	return filtered
+}
+
+func housingVisibilityCounts(options []*ourneztv1.HousingOption) (visibleCount int, hiddenCount int) {
+	for _, option := range options {
+		if option == nil {
+			continue
+		}
+		if option.VisibleOnDashboard == nil || option.GetVisibleOnDashboard() {
+			visibleCount++
+		} else {
+			hiddenCount++
+		}
+	}
+	return visibleCount, hiddenCount
+}
+
+func housingGroupNameByOptionID(groups []*ourneztv1.HousingGroup, options []*ourneztv1.HousingOption) map[string]string {
+	groupNameByID := make(map[string]string, len(groups))
+	for _, group := range groups {
+		if group == nil {
+			continue
+		}
+		groupID := strings.TrimSpace(group.GetId())
+		if groupID == "" {
+			continue
+		}
+		groupNameByID[groupID] = strings.TrimSpace(group.GetName())
+	}
+
+	groupNameByOptionID := make(map[string]string, len(options))
+	for _, option := range options {
+		if option == nil {
+			continue
+		}
+		optionID := strings.TrimSpace(option.GetId())
+		if optionID == "" {
+			continue
+		}
+		groupName := groupNameByID[strings.TrimSpace(option.GetHousingGroupId())]
+		if groupName == "" {
+			groupName = "Ungrouped"
+		}
+		groupNameByOptionID[optionID] = groupName
+	}
+	return groupNameByOptionID
+}
+
+func optionalStringPointer(value string) *string {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return nil
+	}
+	return &value
+}
+
+func optionalBoolPointer(value bool) *bool {
+	return &value
+}
+
+func parseBoolFormValue(value string) bool {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "1", "true", "on", "yes":
+		return true
+	default:
+		return false
+	}
+}
+
+func parseBoolFormValues(values []string) bool {
+	if len(values) == 0 {
+		return false
+	}
+	return parseBoolFormValue(values[len(values)-1])
 }

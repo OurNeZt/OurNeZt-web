@@ -13,6 +13,12 @@
     {{ end }}
     {{ if .Data.FamilyID }}
     <a class="btn btn-sm mt-2" href="/housing?family_id={{ .Data.FamilyID }}">Back to Housing</a>
+    <div class="mt-3 flex flex-wrap gap-2 text-xs">
+      <span class="badge badge-outline">{{ .Data.VisibleHousingCount }} visible option{{ if ne .Data.VisibleHousingCount 1 }}s{{ end }} in comparison</span>
+      {{ if gt .Data.HiddenHousingCount 0 }}
+      <span class="badge badge-neutral">{{ .Data.HiddenHousingCount }} hidden option{{ if ne .Data.HiddenHousingCount 1 }}s{{ end }} excluded</span>
+      {{ end }}
+    </div>
     {{ else }}
     <p>Select a family first from <a class="link" href="/dashboard">dashboard</a>.</p>
     {{ end }}
@@ -21,6 +27,7 @@
       <section class="card border border-base-300 bg-base-100">
         <div class="card-body p-4">
           <h2 class="card-title text-lg">{{ .Name }}</h2>
+          <p class="text-xs opacity-70">{{ .GroupName }}</p>
           <div class="grid gap-3 mt-1">
             <div class="stat oz-stat-card bg-base-200 rounded-box">
               <div class="stat-title inline-flex items-center gap-1">Initial Payment{{ template "partials/help_tooltip" (dict "Key" "initial_downpayment_due_now" "Label" "Total Initial Payment Due Now") }}</div>
@@ -58,6 +65,7 @@
         <thead>
           <tr>
             <th><span class="hidden xl:inline">Option Name</span><span class="xl:hidden">Option</span></th>
+            <th>Group</th>
             <th><span class="inline-flex items-center gap-1"><span class="hidden xl:inline">Initial Payment</span><span class="xl:hidden">Initial</span>{{ template "partials/help_tooltip" (dict "Key" "initial_downpayment_due_now" "Label" "Total Initial Payment Due Now") }}</span></th>
             <th><span class="inline-flex items-center gap-1"><span class="hidden xl:inline">Downpayment + Fees</span><span class="xl:hidden">D.P. + Fees</span>{{ template "partials/help_tooltip" (dict "Key" "upfront_cost" "Label" "Downpayment + Fees") }}</span></th>
             <th><span class="hidden xl:inline">Mortgage</span><span class="xl:hidden">Mtg.</span></th>
@@ -75,6 +83,7 @@
           {{ range .Data.Rows }}
           <tr>
             <td class="font-medium">{{ .Name }}</td>
+            <td>{{ .GroupName }}</td>
             <td>{{ cents .TotalInitialPaymentCents }}</td>
             <td>{{ cents .Affordability.UpfrontCostCents }}</td>
             <td>{{ cents .Affordability.MonthlyMortgageCents }}</td>
@@ -83,7 +92,7 @@
             <td>{{ ratingLabel .Affordability.Rating }}</td>
           </tr>
           {{ else }}
-          <tr><td colspan="7" class="opacity-70">No comparison rows yet</td></tr>
+          <tr><td colspan="8" class="opacity-70">No comparison rows yet</td></tr>
           {{ end }}
         </tbody>
       </table>
