@@ -62,7 +62,7 @@ func TestSaveHousingAnswerPreservesNotesOnFailure(t *testing.T) {
 		return w
 	}
 	w := post("complete", "")
-	if w.Code != http.StatusOK || client.answer != nil || !strings.Contains(w.Body.String(), "Keep this important note") || !strings.Contains(w.Body.String(), "Add a rating before") || !strings.Contains(w.Body.String(), "family_id=actual-family") {
+	if w.Code != http.StatusOK || client.answer != nil || !strings.Contains(w.Body.String(), "Keep this important note") || !strings.Contains(w.Body.String(), "add a rating before") || !strings.Contains(w.Body.String(), "family_id=actual-family") {
 		t.Fatalf("validation lost draft or canonical family: %d %s", w.Code, w.Body.String())
 	}
 	client.saveErr = status.Error(codes.PermissionDenied, "You cannot edit this family")

@@ -96,18 +96,18 @@ func criterionFromForm(c *gin.Context) (*pb.HousingCriterion, error) {
 	criterion := &pb.HousingCriterion{Id: c.Param("criterion_id"), FamilyId: strings.TrimSpace(c.PostForm("family_id")), Name: strings.TrimSpace(c.PostForm("name")), Description: strings.TrimSpace(c.PostForm("description"))}
 	order, err := strconv.ParseInt(c.PostForm("display_order"), 10, 32)
 	if err != nil || order < 1 {
-		return criterion, fmt.Errorf("Position must be a positive whole number")
+		return criterion, fmt.Errorf("position must be a positive whole number")
 	}
 	criterion.DisplayOrder = int32(order - 1)
 	if raw := strings.TrimSpace(c.PostForm("weight")); raw != "" {
 		weight, err := strconv.ParseFloat(raw, 64)
 		if err != nil || math.IsNaN(weight) || math.IsInf(weight, 0) || weight <= 0 || weight > 1000 {
-			return criterion, fmt.Errorf("Weight must be greater than 0 and at most 1000")
+			return criterion, fmt.Errorf("weight must be greater than 0 and at most 1000")
 		}
 		criterion.Weight = &weight
 	}
 	if criterion.Name == "" || utf8.RuneCountInString(criterion.Name) > 120 || utf8.RuneCountInString(criterion.Description) > 2000 {
-		return criterion, fmt.Errorf("Enter a name of 1–120 characters and a description of at most 2000 characters")
+		return criterion, fmt.Errorf("enter a name of 1–120 characters and a description of at most 2000 characters")
 	}
 	return criterion, nil
 }
@@ -137,22 +137,22 @@ func housingAnswerFromForm(c *gin.Context) (*pb.HousingAnswer, error) {
 	if raw := strings.TrimSpace(c.PostForm("rating")); raw != "" {
 		rating, err := strconv.ParseInt(raw, 10, 32)
 		if err != nil || rating < 1 || rating > 5 {
-			return answer, fmt.Errorf("Choose a rating from 1 to 5, or leave it unrated")
+			return answer, fmt.Errorf("choose a rating from 1 to 5, or leave it unrated")
 		}
 		v := int32(rating)
 		answer.Rating = &v
 	}
 	if answer.State != "pending" && answer.State != "complete" && answer.State != "not_applicable" {
-		return answer, fmt.Errorf("Choose Pending, Complete, or Not applicable")
+		return answer, fmt.Errorf("choose Pending, Complete, or Not applicable")
 	}
 	if answer.State == "complete" && answer.Rating == nil {
-		return answer, fmt.Errorf("Add a rating before marking this criterion complete")
+		return answer, fmt.Errorf("add a rating before marking this criterion complete")
 	}
 	if answer.State == "not_applicable" {
 		answer.Rating = nil
 	}
 	if utf8.RuneCountInString(answer.Notes) > 5000 {
-		return answer, fmt.Errorf("Notes must be at most 5000 characters")
+		return answer, fmt.Errorf("notes must be at most 5000 characters")
 	}
 	return answer, nil
 }
