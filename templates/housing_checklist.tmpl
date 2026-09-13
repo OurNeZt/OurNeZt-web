@@ -1,0 +1,37 @@
+{{ define "housing_checklist" }}
+{{ template "partials/header" . }}
+<section class="card bg-base-100 shadow"><div class="card-body gap-4">
+  <h1 class="card-title">Family Housing Checklist</h1>
+  <p class="text-sm opacity-75">Use the same criteria for every housing option in this family. Changes apply to all options; ratings and notes stay specific to each home.</p>
+  <a class="btn btn-sm self-start" href="/housing?family_id={{ .Data.FamilyID }}">Back to Housing</a>
+  <p class="text-sm">Rate each criterion from 1 (poor fit) to 5 (excellent fit). Leave weight blank for equal weighting (1). Higher weights give a criterion more influence.</p>
+  {{ range .Data.Criteria }}
+  <section class="card border border-base-300"><div class="card-body p-4 gap-3">
+    <h2 class="font-semibold">{{ .Name }}</h2>
+    {{ template "housing_criterion_form" (dict "Criterion" . "FamilyID" $.Data.FamilyID "Count" (len $.Data.Criteria)) }}
+    <details><summary class="cursor-pointer text-sm">Delete criterion</summary>
+      <p class="text-sm my-2">This removes the criterion from every current checklist and score. Previous answers are retained as hidden history. Housing options are kept.</p>
+      <form method="post" action="/housing/checklist/{{ .Id }}/delete"><input type="hidden" name="family_id" value="{{ $.Data.FamilyID }}"><button class="btn btn-error btn-sm" type="submit">Delete {{ .Name }}</button></form>
+    </details>
+  </div></section>
+  {{ else }}<div class="alert oz-alert-soft">No criteria yet. Start with location, transport access, layout, or renovation needs.</div>{{ end }}
+  <section class="card bg-base-200"><div class="card-body p-4"><h2 class="card-title text-base">Add criterion</h2>
+  {{ if not .Data.Draft.Id }}{{ template "housing_criterion_form" (dict "Criterion" .Data.Draft "FamilyID" .Data.FamilyID "Count" (len .Data.Criteria)) }}
+  {{ else }}<a class="link" href="/housing/checklist?family_id={{ .Data.FamilyID }}">Add another criterion</a>{{ end }}
+  </div></section>
+</div></section>
+{{ template "partials/footer" . }}
+{{ end }}
+
+{{ define "housing_criterion_form" }}
+<form method="post" action="/housing/checklist{{ if .Criterion.Id }}/{{ .Criterion.Id }}{{ end }}" class="grid gap-3">
+  <input type="hidden" name="family_id" value="{{ .FamilyID }}">
+  <label class="oz-field"><span>Name</span><input class="input input-bordered w-full" name="name" value="{{ .Criterion.Name }}" maxlength="120" required></label>
+  <label class="oz-field"><span>Description</span><textarea class="textarea textarea-bordered w-full" name="description" maxlength="2000" rows="2">{{ .Criterion.Description }}</textarea></label>
+  <div class="grid gap-3 sm:grid-cols-2">
+    <label class="oz-field"><span>Position</span><input class="input input-bordered w-full" type="number" name="display_order" min="1" max="{{ if .Criterion.Id }}{{ .Count }}{{ else }}{{ checklistPosition .Criterion.DisplayOrder }}{{ end }}" step="1" value="{{ checklistPosition .Criterion.DisplayOrder }}" required></label>
+    <label class="oz-field"><span>Weight (optional)</span><input class="input input-bordered w-full" type="number" name="weight" min="0.000001" max="1000" step="any" placeholder="1" value="{{ criterionWeight .Criterion }}"></label>
+  </div>
+  <button class="btn btn-primary btn-sm justify-self-start" type="submit">{{ if .Criterion.Id }}Save criterion{{ else }}Add criterion{{ end }}</button>
+</form>
+{{ end }}
