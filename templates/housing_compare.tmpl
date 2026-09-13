@@ -28,6 +28,8 @@
         <div class="card-body p-4">
           <h2 class="card-title text-lg">{{ .Name }}</h2>
           <p class="text-xs opacity-70">{{ .GroupName }}</p>
+          {{ template "partials/evaluation_comparison" . }}
+          <a class="link text-sm" href="/housing/{{ .HousingID }}?family_id={{ $.Data.FamilyID }}#evaluation">Edit evaluation</a>
           <div class="grid gap-3 mt-1">
             <div class="stat oz-stat-card bg-base-200 rounded-box">
               <div class="stat-title inline-flex items-center gap-1">Initial Payment{{ template "partials/help_tooltip" (dict "Key" "initial_downpayment_due_now" "Label" "Total Initial Payment Due Now") }}</div>
@@ -66,6 +68,7 @@
           <tr>
             <th><span class="hidden xl:inline">Option Name</span><span class="xl:hidden">Option</span></th>
             <th>Group</th>
+            <th>Evaluation</th>
             <th><span class="inline-flex items-center gap-1"><span class="hidden xl:inline">Initial Payment</span><span class="xl:hidden">Initial</span>{{ template "partials/help_tooltip" (dict "Key" "initial_downpayment_due_now" "Label" "Total Initial Payment Due Now") }}</span></th>
             <th><span class="inline-flex items-center gap-1"><span class="hidden xl:inline">Downpayment + Fees</span><span class="xl:hidden">D.P. + Fees</span>{{ template "partials/help_tooltip" (dict "Key" "upfront_cost" "Label" "Downpayment + Fees") }}</span></th>
             <th><span class="hidden xl:inline">Mortgage</span><span class="xl:hidden">Mtg.</span></th>
@@ -84,6 +87,7 @@
           <tr>
             <td class="font-medium">{{ .Name }}</td>
             <td>{{ .GroupName }}</td>
+            <td>{{ template "partials/evaluation_comparison" . }}<a class="link text-sm" href="/housing/{{ .HousingID }}?family_id={{ $.Data.FamilyID }}#evaluation">Edit evaluation</a></td>
             <td>{{ cents .TotalInitialPaymentCents }}</td>
             <td>{{ cents .Affordability.UpfrontCostCents }}</td>
             <td>{{ cents .Affordability.MonthlyMortgageCents }}</td>
@@ -92,7 +96,7 @@
             <td>{{ ratingLabel .Affordability.Rating }}</td>
           </tr>
           {{ else }}
-          <tr><td colspan="8" class="opacity-70">No comparison rows yet</td></tr>
+          <tr><td colspan="9" class="opacity-70">No comparison rows yet</td></tr>
           {{ end }}
         </tbody>
       </table>
