@@ -5,6 +5,10 @@
   <p class="text-sm opacity-75">Use the same criteria for every housing option in this family. Changes apply to all options; ratings and notes stay specific to each home.</p>
   <a class="btn btn-sm self-start" href="/housing?family_id={{ .Data.FamilyID }}">Back to Housing</a>
   <p class="text-sm">Rate each criterion from 1 (poor fit) to 5 (excellent fit). Leave weight blank for equal weighting (1). Higher weights give a criterion more influence.</p>
+  <section class="card bg-base-200"><div class="card-body p-4"><h2 class="card-title text-base">Add criterion</h2>
+  {{ if not .Data.Draft.Id }}{{ template "housing_criterion_form" (dict "Criterion" .Data.Draft "FamilyID" .Data.FamilyID "Count" (len .Data.Criteria)) }}
+  {{ else }}<a class="link" href="/housing/checklist?family_id={{ .Data.FamilyID }}">Add another criterion</a>{{ end }}
+  </div></section>
   {{ range .Data.Criteria }}
   <section class="card border border-base-300"><div class="card-body p-4 gap-3">
     <h2 class="font-semibold">{{ .Name }}</h2>
@@ -15,10 +19,6 @@
     </details>
   </div></section>
   {{ else }}<div class="alert oz-alert-soft">No criteria yet. Start with location, transport access, layout, or renovation needs.</div>{{ end }}
-  <section class="card bg-base-200"><div class="card-body p-4"><h2 class="card-title text-base">Add criterion</h2>
-  {{ if not .Data.Draft.Id }}{{ template "housing_criterion_form" (dict "Criterion" .Data.Draft "FamilyID" .Data.FamilyID "Count" (len .Data.Criteria)) }}
-  {{ else }}<a class="link" href="/housing/checklist?family_id={{ .Data.FamilyID }}">Add another criterion</a>{{ end }}
-  </div></section>
 </div></section>
 {{ template "partials/footer" . }}
 {{ end }}
