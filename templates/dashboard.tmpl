@@ -16,15 +16,6 @@
   </div>
 </section>
 {{ if .Data.Dashboard }}
-{{ if .Data.Housing }}
-<section class="card bg-base-100 shadow mt-6"><div class="card-body"><h2 class="card-title text-base">Housing Evaluations</h2>
-  <div class="grid gap-3 md:grid-cols-2">{{ range .Data.Housing }}<article class="border border-base-300 rounded-box p-4">
-    <h3 class="font-semibold"><a class="link" href="/housing/{{ .Id }}?family_id={{ $.Data.FamilyID }}#evaluation">{{ .Name }}</a></h3>
-    {{ template "partials/evaluation_summary" .Evaluation }}
-  </article>{{ end }}</div>
-  <a class="link text-sm" href="/housing/compare?family_id={{ .Data.FamilyID }}">Compare visible homes</a>
-</div></section>
-{{ end }}
 <div class="grid md:grid-cols-4 gap-4 mt-6">
   <div class="stat bg-base-100 rounded-box shadow"><div class="stat-title">Gross Income</div><div class="stat-value text-lg">{{ cents .Data.Income.CurrentGrossIncomeCents }}</div></div>
   <div class="stat bg-base-100 rounded-box shadow"><div class="stat-title">Take Home</div><div class="stat-value text-lg">{{ cents .Data.Income.TakeHomeIncomeCents }}</div></div>
@@ -57,6 +48,15 @@
     </div>
   </section>
 </div>
+{{ if .Data.Housing }}
+<section class="card bg-base-100 shadow mt-4"><div class="card-body"><h2 class="card-title text-base">Housing Evaluations</h2>
+  <div class="grid gap-3 md:grid-cols-2">{{ range .Data.Housing }}<article class="border border-base-300 rounded-box p-4">
+    <h3 class="font-semibold"><a class="link" href="/housing/{{ .Id }}?family_id={{ $.Data.FamilyID }}#evaluation">{{ .Name }}</a></h3>
+    {{ template "partials/evaluation_summary" .Evaluation }}
+  </article>{{ end }}</div>
+  <a class="link text-sm" href="/housing/compare?family_id={{ .Data.FamilyID }}">Compare visible homes</a>
+</div></section>
+{{ end }}
 <section class="card bg-base-100 shadow mt-4">
   <div class="card-body">
     <h2 class="card-title text-base">Payment vs Income Timeline</h2>
