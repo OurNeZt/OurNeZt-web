@@ -100,6 +100,11 @@ func NewRouter(cfg config.Config, clients *core.Clients) (*gin.Engine, error) {
 	member.POST("/profile/person", app.profileCreateSelfPerson)
 	member.GET("/housing", app.housing)
 	member.GET("/housing/new", app.newHousing)
+	member.GET("/housing/checklist", app.housingChecklist)
+	member.POST("/housing/checklist", app.saveHousingCriterion)
+	member.POST("/housing/checklist/:criterion_id", app.saveHousingCriterion)
+	member.POST("/housing/checklist/:criterion_id/delete", app.deleteHousingCriterion)
+	member.POST("/housing/:id/evaluation/:criterion_id", app.saveHousingAnswer)
 	member.POST("/housing", app.createHousing)
 	member.POST("/housing/groups", app.createHousingGroup)
 	member.POST("/housing/groups/:id", app.updateHousingGroup)
@@ -137,6 +142,11 @@ func parseTemplates(root string) (*template.Template, error) {
 	sort.Strings(paths)
 	tpl := template.New("ournezt-web").Funcs(template.FuncMap{
 		"cents":                       centsString,
+		"evaluationScore":             evaluationScore,
+		"evaluationColor":             evaluationColor,
+		"criterionWeight":             criterionWeight,
+		"checklistPosition":           func(order int32) int32 { return order + 1 },
+		"evaluationRows":              evaluationRows,
 		"moneyInput":                  centsInputString,
 		"bpsInput":                    bpsInputString,
 		"eqFold":                      eqFold,
