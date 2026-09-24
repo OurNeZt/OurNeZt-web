@@ -13,9 +13,10 @@ import (
 )
 
 type housingChecklistData struct {
-	FamilyID string
-	Criteria []*pb.HousingCriterion
-	Draft    *pb.HousingCriterion
+	FamilyID      string
+	Criteria      []*pb.HousingCriterion
+	Draft         *pb.HousingCriterion
+	SavedCriteria map[string]*pb.HousingCriterion
 }
 type housingEvaluationRow struct {
 	Criterion *pb.HousingCriterion
@@ -91,6 +92,10 @@ func (a *App) renderHousingChecklist(c *gin.Context, familyID string, draft *pb.
 		setHousingFormError(c, message)
 	}
 	criteria := resp.GetCriteria()
+	savedCriteria := make(map[string]*pb.HousingCriterion, len(criteria))
+	for _, criterion := range criteria {
+		savedCriteria[criterion.Id] = criterion
+	}
 	if draft.Id != "" {
 		for i, criterion := range criteria {
 			if criterion.Id == draft.Id {
@@ -98,7 +103,7 @@ func (a *App) renderHousingChecklist(c *gin.Context, familyID string, draft *pb.
 			}
 		}
 	}
-	a.render(c, "housing_checklist", "Housing Checklist", housingChecklistData{FamilyID: familyID, Criteria: criteria, Draft: draft})
+	a.render(c, "housing_checklist", "Housing Checklist", housingChecklistData{FamilyID: familyID, Criteria: criteria, Draft: draft, SavedCriteria: savedCriteria})
 }
 func setHousingFormError(c *gin.Context, message string) {
 	query := c.Request.URL.Query()
