@@ -15,7 +15,7 @@
     {{ template "housing_criterion_form" (dict "Criterion" . "SavedCriterion" (index $.Data.SavedCriteria .Id) "FamilyID" $.Data.FamilyID "Count" (len $.Data.Criteria)) }}
     <details><summary class="cursor-pointer text-sm">Delete criterion</summary>
       <p class="text-sm my-2">This removes the criterion from every current checklist and score. Previous answers are retained as hidden history. Housing options are kept.</p>
-      <form method="post" action="/housing/checklist/{{ .Id }}/delete"><input type="hidden" name="family_id" value="{{ $.Data.FamilyID }}"><button class="btn btn-error btn-sm" type="submit">Delete {{ .Name }}</button></form>
+      <form method="post" action="/housing/checklist/{{ .Id }}/delete"><input type="hidden" name="family_id" value="{{ $.Data.FamilyID }}"><button class="btn btn-error btn-sm oz-criterion-delete" type="submit">Delete {{ .Name }}</button></form>
     </details>
   </div></section>
   {{ else }}<div class="alert oz-alert-soft">No criteria yet. Start with location, transport access, layout, or renovation needs.</div>{{ end }}
