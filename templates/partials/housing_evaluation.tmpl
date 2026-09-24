@@ -1,6 +1,6 @@
 {{ define "partials/evaluation_summary" }}
 <div class="space-y-1 text-sm">
-  <p class="font-semibold">Evaluation: {{ evaluationScore . }}</p>
+  <p class="font-semibold {{ evaluationColor . }}">Evaluation: {{ evaluationScore . }}</p>
   {{ if . }}{{ if gt .Total 0 }}
   <p>{{ .Completed }} / {{ .Total }} complete · {{ .NotApplicable }} not applicable · {{ .Rated }} rated</p>
   {{ if lt .Rated .Total }}<p class="text-xs opacity-75">Unrated and not-applicable criteria are excluded from the score.</p>{{ end }}

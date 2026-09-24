@@ -54,6 +54,20 @@ func evaluationScore(s *pb.HousingEvaluationSummary) string {
 	}
 	return label
 }
+
+func evaluationColor(s *pb.HousingEvaluationSummary) string {
+	if s == nil || s.Total == 0 {
+		return ""
+	}
+	if s.Score == nil {
+		return "text-error"
+	}
+	if s.Completed < s.Total-s.NotApplicable {
+		return "text-warning"
+	}
+	return "text-success"
+}
+
 func criterionWeight(c *pb.HousingCriterion) string {
 	if c.Weight == nil {
 		return ""

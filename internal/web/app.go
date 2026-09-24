@@ -143,6 +143,7 @@ func parseTemplates(root string) (*template.Template, error) {
 	tpl := template.New("ournezt-web").Funcs(template.FuncMap{
 		"cents":                       centsString,
 		"evaluationScore":             evaluationScore,
+		"evaluationColor":             evaluationColor,
 		"criterionWeight":             criterionWeight,
 		"checklistPosition":           func(order int32) int32 { return order + 1 },
 		"evaluationRows":              evaluationRows,
