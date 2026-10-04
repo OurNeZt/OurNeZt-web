@@ -1,0 +1,30 @@
+{{ define "partials/housing_notes" }}
+<section id="housing-notes" class="card bg-base-100 shadow mt-6">
+  <div class="card-body gap-3">
+    <h2 class="card-title">Housing Notes</h2>
+    <p id="housing-notes-help" class="text-sm opacity-75">A shared notepad for your family: viewing feedback, agent details, renovation concerns, or follow-up actions. Notes do not affect checklist ratings or affordability calculations.</p>
+    {{ if .NotesError }}<div id="housing-notes-error" class="alert alert-error" role="alert">{{ .NotesError }}</div>{{ end }}
+    <form method="post" action="/housing/{{ .Housing.Id }}/notes" class="grid gap-3">
+      <label class="oz-field" for="housing-notes-text"><span>Notes for this housing option</span></label>
+      <textarea id="housing-notes-text" class="textarea textarea-bordered w-full" name="notes" rows="8" aria-describedby="housing-notes-help housing-notes-count{{ if .NotesError }} housing-notes-error{{ end }}" {{ if .NotesError }}aria-invalid="true"{{ end }} placeholder="What would your family like to remember about this home?">
+{{ .Notes }}</textarea>
+      <p id="housing-notes-count" class="text-xs opacity-75">Up to 10,000 characters. Leave blank and save to clear notes.</p>
+      <button class="btn btn-primary justify-self-start" type="submit">Save notes</button>
+    </form>
+  </div>
+</section>
+<script>
+  (() => {
+    const editor = document.getElementById("housing-notes-text");
+    const counter = document.getElementById("housing-notes-count");
+    const limit = {{ .NotesMaxLength }};
+    const update = () => {
+      const count = Array.from(editor.value).length;
+      counter.textContent = count.toLocaleString() + " / " + limit.toLocaleString() + " characters. Leave blank and save to clear notes.";
+      editor.setCustomValidity(count > limit ? "Notes must be at most 10,000 characters." : "");
+    };
+    editor.addEventListener("input", update);
+    update();
+  })();
+</script>
+{{ end }}

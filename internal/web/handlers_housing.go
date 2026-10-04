@@ -35,6 +35,9 @@ type housingFormData struct {
 }
 
 type housingDetailData struct {
+	Notes                             string
+	NotesError                        string
+	NotesMaxLength                    int
 	Evaluation                        *ourneztv1.HousingEvaluation
 	EvaluationRows                    []housingEvaluationRow
 	EvaluationError                   string
@@ -187,11 +190,24 @@ func (a *App) housingDetail(c *gin.Context) {
 		HousingId:    c.Param("id"),
 	})
 	if err != nil {
+		if draft, ok := c.Get("housing_notes_draft"); ok {
+			a.render(c, "housing_notes_error", "Housing Notes", housingDetailData{
+				Housing:        &ourneztv1.HousingOption{Id: c.Param("id")},
+				Notes:          draft.(string),
+				NotesError:     c.GetString("housing_notes_error"),
+				NotesMaxLength: housingNotesMaxLength,
+			})
+			return
+		}
 		c.Redirect(http.StatusFound, "/housing?family_id="+familyID+"&error="+urlQuerySafe(grpcMessage(err)))
 		return
 	}
 
 	familyID = option.GetFamilyId()
+	notes := option.GetNotes()
+	if draft, ok := c.Get("housing_notes_draft"); ok {
+		notes = draft.(string)
+	}
 	evaluation, evaluationErr := a.clients.Housing.GetHousingEvaluation(a.grpcContext(c), &ourneztv1.GetHousingOptionRequest{HousingId: option.GetId()})
 	evaluationError := ""
 	if evaluationErr != nil {
@@ -247,6 +263,9 @@ func (a *App) housingDetail(c *gin.Context) {
 	totalInitialPaymentShortfallCents := maxInt64(totalInitialPaymentDueNowCents-availableDownpaymentFundsCents, 0)
 
 	a.render(c, "housing_detail", "Housing Detail", housingDetailData{
+		Notes:                             notes,
+		NotesError:                        c.GetString("housing_notes_error"),
+		NotesMaxLength:                    housingNotesMaxLength,
 		Evaluation:                        evaluation,
 		EvaluationRows:                    evaluationItems,
 		EvaluationError:                   evaluationError,
