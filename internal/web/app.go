@@ -113,6 +113,7 @@ func NewRouter(cfg config.Config, clients *core.Clients) (*gin.Engine, error) {
 	member.GET("/housing/:id", app.housingDetail)
 	member.GET("/housing/:id/edit", app.editHousing)
 	member.POST("/housing/:id", app.updateHousing)
+	member.POST("/housing/:id/notes", app.saveHousingNotes)
 	member.POST("/housing/:id/group", app.assignHousingGroup)
 	member.POST("/housing/:id/visibility", app.updateHousingVisibility)
 	member.POST("/housing/:id/delete", app.deleteHousing)

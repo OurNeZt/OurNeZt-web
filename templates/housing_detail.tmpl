@@ -13,6 +13,7 @@
   </div>
 </section>
 {{ template "partials/housing_evaluation" .Data }}
+{{ template "partials/housing_notes" .Data }}
 <section class="card bg-base-100 shadow mt-6">
   <div class="card-body">
     <h2 class="card-title inline-flex items-center gap-1">Total Initial Payment{{ template "partials/help_tooltip" (dict "Key" "initial_downpayment" "Label" "Total Initial Payment") }}</h2>
