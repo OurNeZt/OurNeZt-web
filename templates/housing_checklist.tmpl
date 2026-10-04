@@ -1,0 +1,69 @@
+{{ define "housing_checklist" }}
+{{ template "partials/header" . }}
+<section class="card bg-base-100 shadow"><div class="card-body gap-4">
+  <h1 class="card-title">Family Housing Checklist</h1>
+  <p class="text-sm opacity-75">Use the same criteria for every housing option in this family. Changes apply to all options; ratings and notes stay specific to each home.</p>
+  <a class="btn btn-sm self-start" href="/housing?family_id={{ .Data.FamilyID }}">Back to Housing</a>
+  <p class="text-sm">Rate each criterion from 1 (poor fit) to 5 (excellent fit). Leave weight blank for equal weighting (1). Higher weights give a criterion more influence.</p>
+  <section class="card bg-base-200"><div class="card-body p-4"><h2 class="card-title text-base">Add criterion</h2>
+  {{ if not .Data.Draft.Id }}{{ template "housing_criterion_form" (dict "Criterion" .Data.Draft "FamilyID" .Data.FamilyID) }}
+  {{ else }}<a class="link" href="/housing/checklist?family_id={{ .Data.FamilyID }}">Add another criterion</a>{{ end }}
+  </div></section>
+  {{ range .Data.Criteria }}
+  <section class="card border border-base-300"><div class="card-body p-4 gap-3">
+    <h2 class="font-semibold">{{ .Name }}</h2>
+    {{ template "housing_criterion_form" (dict "Criterion" . "SavedCriterion" (index $.Data.SavedCriteria .Id) "FamilyID" $.Data.FamilyID) }}
+    <details><summary class="cursor-pointer text-sm">Delete criterion</summary>
+      <p class="text-sm my-2">This removes the criterion from every current checklist and score. Previous answers are retained as hidden history. Housing options are kept.</p>
+      <form method="post" action="/housing/checklist/{{ .Id }}/delete"><input type="hidden" name="family_id" value="{{ $.Data.FamilyID }}"><button class="btn btn-error btn-sm oz-criterion-delete" type="submit">Delete {{ .Name }}</button></form>
+    </details>
+  </div></section>
+  {{ else }}<div class="alert oz-alert-soft">No criteria yet. Start with location, transport access, layout, or renovation needs.</div>{{ end }}
+</div></section>
+<script>
+  (() => {
+    document.querySelectorAll("form[data-saved-criterion]").forEach((form) => {
+      const button = form.querySelector('button[type="submit"]');
+      const normalize = (name, value) => {
+        const trimmed = value.trim();
+        return name === "weight" && trimmed !== ""
+          ? String(Number(trimmed)) : trimmed;
+      };
+      const saved = {
+        name: form.dataset.savedName,
+        description: form.dataset.savedDescription,
+        weight: form.dataset.savedWeight,
+      };
+      const syncState = () => {
+        const unchanged = Object.entries(saved).every(([name, value]) =>
+          normalize(name, form.elements.namedItem(name).value) === normalize(name, value)
+        );
+        button.disabled = unchanged;
+        button.classList.toggle("btn-disabled", unchanged);
+        button.title = unchanged ? "Change a criterion field to save." : "";
+      };
+      form.addEventListener("input", syncState);
+      form.addEventListener("change", syncState);
+      form.addEventListener("submit", (event) => {
+        syncState();
+        if (button.disabled) event.preventDefault();
+      });
+      window.addEventListener("pageshow", syncState);
+      syncState();
+    });
+  })();
+</script>
+{{ template "partials/footer" . }}
+{{ end }}
+
+{{ define "housing_criterion_form" }}
+{{ $saved := or .SavedCriterion .Criterion }}
+<form method="post" action="/housing/checklist{{ if .Criterion.Id }}/{{ .Criterion.Id }}{{ end }}" class="grid gap-3"{{ if .Criterion.Id }} data-saved-criterion data-saved-name="{{ $saved.Name }}" data-saved-description="{{ $saved.Description }}" data-saved-weight="{{ criterionWeight $saved }}"{{ end }}>
+  <input type="hidden" name="family_id" value="{{ .FamilyID }}">
+  <input type="hidden" name="display_order" value="{{ checklistPosition .Criterion.DisplayOrder }}">
+  <label class="oz-field"><span>Name</span><input class="input input-bordered w-full" name="name" value="{{ .Criterion.Name }}" maxlength="120" required></label>
+  <label class="oz-field"><span>Description</span><textarea class="textarea textarea-bordered w-full" name="description" maxlength="2000" rows="2">{{ .Criterion.Description }}</textarea></label>
+  <label class="oz-field"><span>Weight (optional)</span><input class="input input-bordered w-full" type="number" name="weight" min="0.000001" max="1000" step="any" placeholder="1" value="{{ criterionWeight .Criterion }}"></label>
+  <button class="btn btn-sm justify-self-start {{ if .Criterion.Id }}btn-outline oz-criterion-save btn-disabled{{ else }}btn-primary{{ end }}" type="submit"{{ if .Criterion.Id }} disabled{{ end }}>{{ if .Criterion.Id }}Save criterion{{ else }}Add criterion{{ end }}</button>
+</form>
+{{ end }}

@@ -220,6 +220,49 @@ body {
   background: color-mix(in srgb, var(--oz-coral) 85%, #000 15%);
 }
 
+.btn.oz-criterion-save {
+  background: transparent;
+  border-color: #a4423d;
+  color: #a4423d;
+  box-shadow: none;
+}
+
+.btn.oz-criterion-save:hover:not(:disabled) {
+  background: #fff1ef;
+  border-color: #84332f;
+  color: #84332f;
+}
+
+.btn.oz-criterion-save:disabled {
+  background: #d1d5db;
+  border-color: #9ca3af;
+  color: #4b5563;
+  opacity: 1;
+  box-shadow: none;
+}
+
+.btn.oz-criterion-delete {
+  background-color: #fff1f2;
+  background-image: linear-gradient(#fb7185, #fb7185);
+  background-repeat: no-repeat;
+  background-position: left center;
+  background-size: 0% 100%;
+  border-color: #e11d48;
+  color: #4c0519;
+  transition: background-size 450ms ease-out;
+}
+
+.btn.oz-criterion-delete:hover,
+.btn.oz-criterion-delete:focus-visible {
+  background-size: 100% 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn.oz-criterion-delete {
+    transition: none;
+  }
+}
+
 .link-primary {
   color: color-mix(in srgb, var(--oz-coral) 88%, #000 12%);
 }
