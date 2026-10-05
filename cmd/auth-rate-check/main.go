@@ -125,7 +125,9 @@ func run(ctx context.Context, cfg settings, out io.Writer) error {
 			return fmt.Errorf("attempt %d of %d: %w; use fresh limits and matching configuration", i, cfg.limit, err)
 		}
 	}
-	fmt.Fprintf(out, "PASS: first %d requests returned credential-failure responses.\n", cfg.limit)
+	if _, err := fmt.Fprintf(out, "PASS: first %d requests returned credential-failure responses.\n", cfg.limit); err != nil {
+		return err
+	}
 	spoof := 0
 	if cfg.mode == "ip" {
 		spoof = cfg.limit + 1
@@ -144,7 +146,9 @@ func run(ctx context.Context, cfg settings, out io.Writer) error {
 	if resp.Header.Get("Cache-Control") != "no-store" {
 		return fmt.Errorf("throttled response must use Cache-Control: no-store")
 	}
-	fmt.Fprintf(out, "PASS: request %d was throttled with HTTP 429 and Retry-After.\n", cfg.limit+1)
+	if _, err := fmt.Fprintf(out, "PASS: request %d was throttled with HTTP 429 and Retry-After.\n", cfg.limit+1); err != nil {
+		return err
+	}
 	if cfg.mode == "account" {
 		resp, err = attempt(" "+strings.ToUpper(email)+" ", 0)
 		if err != nil {
@@ -153,9 +157,13 @@ func run(ctx context.Context, cfg settings, out io.Writer) error {
 		if resp.StatusCode != http.StatusTooManyRequests {
 			return fmt.Errorf("email case/whitespace change bypassed account throttle: HTTP %d", resp.StatusCode)
 		}
-		fmt.Fprintln(out, "PASS: email case and whitespace cannot bypass the account limit.")
+		if _, err := fmt.Fprintln(out, "PASS: email case and whitespace cannot bypass the account limit."); err != nil {
+			return err
+		}
 	} else {
-		fmt.Fprintln(out, "PASS: rotating emails and spoofed forwarding headers cannot bypass the IP limit.")
+		if _, err := fmt.Fprintln(out, "PASS: rotating emails and spoofed forwarding headers cannot bypass the IP limit."); err != nil {
+			return err
+		}
 	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, loginURL, nil)
 	if err != nil {
@@ -176,13 +184,17 @@ func run(ctx context.Context, cfg settings, out io.Writer) error {
 	if page.StatusCode != http.StatusOK {
 		return fmt.Errorf("GET /login returned HTTP %d while POSTs were throttled", page.StatusCode)
 	}
-	fmt.Fprintln(out, "PASS: the login page remains available while submissions are throttled.")
+	if _, err := fmt.Fprintln(out, "PASS: the login page remains available while submissions are throttled."); err != nil {
+		return err
+	}
 	if cfg.recovery {
 		wait := time.Duration(retry+1) * time.Second
 		if wait > cfg.maxWait {
 			return fmt.Errorf("recovery requires %s, exceeding max-wait %s; increase -max-wait or use -recovery=false", wait, cfg.maxWait)
 		}
-		fmt.Fprintf(out, "Waiting %s to check recovery...\n", wait)
+		if _, err := fmt.Fprintf(out, "Waiting %s to check recovery...\n", wait); err != nil {
+			return err
+		}
 		timer := time.NewTimer(wait)
 		defer timer.Stop()
 		select {
@@ -197,10 +209,12 @@ func run(ctx context.Context, cfg settings, out io.Writer) error {
 		if err := expectCredentialFailure(resp); err != nil {
 			return fmt.Errorf("after retry window: %w", err)
 		}
-		fmt.Fprintln(out, "PASS: attempts resume after the retry window.")
+		if _, err := fmt.Fprintln(out, "PASS: attempts resume after the retry window."); err != nil {
+			return err
+		}
 	}
-	fmt.Fprintln(out, "PASS: authentication rate-limit check completed.")
-	return nil
+	_, err = fmt.Fprintln(out, "PASS: authentication rate-limit check completed.")
+	return err
 }
 
 func expectCredentialFailure(resp *http.Response) error {

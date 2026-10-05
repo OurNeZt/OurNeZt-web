@@ -3,6 +3,8 @@ package main
 import (
 	"bytes"
 	"context"
+	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
@@ -20,6 +22,26 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
+
+type brokenProgressWriter struct{}
+
+func (brokenProgressWriter) Write([]byte) (int, error) { return 0, io.ErrClosedPipe }
+
+func TestReviewerCheckStopsWhenProgressOutputFails(t *testing.T) {
+	var requests atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests.Add(1)
+		http.Redirect(w, r, "/login?error=Invalid+email+or+password.", http.StatusFound)
+	}))
+	defer server.Close()
+	err := run(context.Background(), settings{baseURL: server.URL, mode: "account", limit: 2}, brokenProgressWriter{})
+	if !errors.Is(err, io.ErrClosedPipe) {
+		t.Fatalf("output error was lost: %v", err)
+	}
+	if requests.Load() != 2 {
+		t.Fatalf("check continued after output failure: %d requests", requests.Load())
+	}
+}
 
 func TestReviewerCheckDetectsMissingThrottling(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
