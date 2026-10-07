@@ -6,6 +6,7 @@ import (
 
 	ourneztv1 "github.com/OurNeZt/ournezt-web/internal/gen/proto/ournezt/v1"
 	"github.com/gin-gonic/gin"
+	"google.golang.org/grpc/codes"
 )
 
 type adminUsersData struct {
@@ -64,6 +65,10 @@ func (a *App) adminCreateUser(c *gin.Context) {
 		Role:        role,
 	})
 	if err != nil {
+		if grpcCode(err) == codes.ResourceExhausted {
+			rejectAuthTraffic(c, authRetryDelay(err))
+			return
+		}
 		c.Redirect(http.StatusFound, "/admin/users?error="+urlQuerySafe(grpcMessage(err)))
 		return
 	}

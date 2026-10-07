@@ -5,8 +5,10 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/OurNeZt/ournezt-web/internal/authlimit"
 	ourneztv1 "github.com/OurNeZt/ournezt-web/internal/gen/proto/ournezt/v1"
 	"github.com/gin-gonic/gin"
+	"google.golang.org/grpc/codes"
 )
 
 type loginPayload struct{}
@@ -73,7 +75,16 @@ func (a *App) login(c *gin.Context) {
 		Password: password,
 	})
 	if err != nil {
-		c.Redirect(http.StatusFound, "/login?error="+urlQuerySafe(grpcMessage(err)))
+		if grpcCode(err) == codes.ResourceExhausted {
+			rejectAuthTraffic(c, authRetryDelay(err))
+			return
+		}
+		message := "Unable to log in. Please try again later."
+		switch grpcCode(err) {
+		case codes.Unauthenticated, codes.NotFound, codes.PermissionDenied:
+			message = "Invalid email or password."
+		}
+		c.Redirect(http.StatusFound, "/login?error="+urlQuerySafe(message))
 		return
 	}
 
@@ -124,6 +135,11 @@ func (a *App) changePassword(c *gin.Context) {
 	}
 
 	if err := a.changePasswordFromPost(c); err != nil {
+		var limited *authlimit.LimitError
+		if errors.As(err, &limited) {
+			rejectAuthTraffic(c, limited.RetryAfter)
+			return
+		}
 		c.Redirect(http.StatusFound, "/change-password?error="+urlQuerySafe(err.Error()))
 		return
 	}
@@ -184,6 +200,11 @@ func (a *App) profileChangePassword(c *gin.Context) {
 	}
 
 	if err := a.changePasswordFromPost(c); err != nil {
+		var limited *authlimit.LimitError
+		if errors.As(err, &limited) {
+			rejectAuthTraffic(c, limited.RetryAfter)
+			return
+		}
 		c.Redirect(http.StatusFound, "/profile?error="+urlQuerySafe(err.Error()))
 		return
 	}
@@ -373,6 +394,9 @@ func (a *App) changePasswordFromPost(c *gin.Context) error {
 		NewPassword:     newPassword,
 	})
 	if err != nil {
+		if grpcCode(err) == codes.ResourceExhausted {
+			return &authlimit.LimitError{RetryAfter: authRetryDelay(err)}
+		}
 		return errors.New(grpcMessage(err))
 	}
 	return nil

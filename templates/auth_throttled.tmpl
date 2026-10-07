@@ -1,0 +1,13 @@
+{{ define "auth_throttled" }}
+{{ template "partials/header" . }}
+<section class="card oz-panel max-w-xl mx-auto">
+  <div class="card-body">
+    <h1 class="card-title text-2xl">Please try again later</h1>
+    <p>Wait before submitting another request.</p>
+    <div class="card-actions mt-4">
+      <a class="btn btn-primary" href="{{ .Data.ReturnURL }}">Return to the form</a>
+    </div>
+  </div>
+</section>
+{{ template "partials/footer" . }}
+{{ end }}

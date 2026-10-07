@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/OurNeZt/ournezt-web/internal/authlimit"
 )
 
 type Config struct {
@@ -24,6 +26,8 @@ type Config struct {
 	SessionCookieMax  time.Duration
 	CookieSecure      bool
 	MaintenanceNotice MaintenanceNoticeConfig
+	TrustedProxies    []string
+	AuthLimits        authlimit.Config
 }
 
 type MaintenanceNoticeConfig struct {
@@ -52,6 +56,13 @@ func Load() Config {
 		SessionCookieName: env("SESSION_COOKIE_NAME", "ournezt_session"),
 		SessionCookieMax:  envDuration("SESSION_COOKIE_MAX_AGE", 24*time.Hour),
 		CookieSecure:      envBool("SESSION_COOKIE_SECURE", defaultCookieSecure(strings.EqualFold(env("APP_ENV", "development"), "production"))),
+		TrustedProxies:    envList("WEB_TRUSTED_PROXIES"),
+		AuthLimits: authlimit.Config{
+			IPLimit:       envInt("AUTH_IP_LIMIT", 30),
+			AccountLimit:  envInt("AUTH_ACCOUNT_LIMIT", 5),
+			Window:        envDuration("AUTH_RATE_WINDOW", time.Minute),
+			MaxConcurrent: envInt("AUTH_MAX_CONCURRENT", 8),
+		},
 		MaintenanceNotice: MaintenanceNoticeConfig{
 			FilePath: env("MAINTENANCE_NOTICE_FILE", ""),
 			Enabled:  envBool("MAINTENANCE_NOTICE_ENABLED", false),
@@ -104,4 +115,22 @@ func envBool(key string, fallback bool) bool {
 		return fallback
 	}
 	return parsed
+}
+
+func envInt(key string, fallback int) int {
+	parsed, err := strconv.Atoi(strings.TrimSpace(os.Getenv(key)))
+	if err != nil || parsed <= 0 {
+		return fallback
+	}
+	return parsed
+}
+
+func envList(key string) []string {
+	var values []string
+	for _, value := range strings.Split(os.Getenv(key), ",") {
+		if value = strings.TrimSpace(value); value != "" {
+			values = append(values, value)
+		}
+	}
+	return values
 }

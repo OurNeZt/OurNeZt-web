@@ -1,19 +1,22 @@
 package web
 
 import (
+	"fmt"
 	"html/template"
 	"io/fs"
 	"path/filepath"
 	"sort"
 
+	"github.com/OurNeZt/ournezt-web/internal/authlimit"
 	"github.com/OurNeZt/ournezt-web/internal/config"
 	"github.com/OurNeZt/ournezt-web/internal/core"
 	"github.com/gin-gonic/gin"
 )
 
 type App struct {
-	cfg     config.Config
-	clients *core.Clients
+	cfg        config.Config
+	clients    *core.Clients
+	authLimits *authlimit.Limiter
 }
 
 type CurrentUser struct {
@@ -37,14 +40,18 @@ const userContextKey = "current_user"
 const tokenContextKey = "session_token"
 
 func NewRouter(cfg config.Config, clients *core.Clients) (*gin.Engine, error) {
-	app := &App{cfg: cfg, clients: clients}
+	app := &App{cfg: cfg, clients: clients, authLimits: authlimit.New(cfg.AuthLimits)}
 
 	if cfg.AppEnv == "production" {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
 	r := gin.New()
+	if err := r.SetTrustedProxies(cfg.TrustedProxies); err != nil {
+		return nil, fmt.Errorf("configure trusted proxies: %w", err)
+	}
 	r.Use(gin.Logger(), gin.Recovery())
+	r.Use(app.authTrafficLimit())
 	r.Use(app.sessionLoader())
 
 	tpl, err := parseTemplates("templates")
@@ -57,14 +64,14 @@ func NewRouter(cfg config.Config, clients *core.Clients) (*gin.Engine, error) {
 	r.GET("/", app.home)
 	r.GET("/login", app.showLogin)
 	r.GET("/bootstrap-admin-help", app.bootstrapAdminHelp)
-	r.POST("/login", app.login)
+	r.POST("/login", app.authAccountLimit(), app.login)
 	r.POST("/logout", app.logout)
 
 	authed := r.Group("/")
 	authed.Use(app.requireAuth())
 	authed.GET("/faq", app.faq)
 	authed.GET("/change-password", app.showChangePassword)
-	authed.POST("/change-password", app.changePassword)
+	authed.POST("/change-password", app.authAccountLimit(), app.changePassword)
 
 	protected := authed.Group("/")
 	protected.Use(app.requirePasswordChanged())
@@ -74,7 +81,7 @@ func NewRouter(cfg config.Config, clients *core.Clients) (*gin.Engine, error) {
 	admin.Use(app.requireAdmin())
 	admin.GET("", app.adminHome)
 	admin.GET("/users", app.adminUsers)
-	admin.POST("/users", app.adminCreateUser)
+	admin.POST("/users", app.authAccountLimit(), app.adminCreateUser)
 	admin.POST("/users/:id/disable", app.adminDisableUser)
 
 	member := protected.Group("/")
@@ -93,7 +100,7 @@ func NewRouter(cfg config.Config, clients *core.Clients) (*gin.Engine, error) {
 	member.POST("/people/:id/delete", app.deletePerson)
 	member.GET("/profile", app.profile)
 	member.POST("/profile/account", app.profileUpdateAccount)
-	member.POST("/profile/password", app.profileChangePassword)
+	member.POST("/profile/password", app.authAccountLimit(), app.profileChangePassword)
 	member.GET("/profile/person/:id/edit", app.profileEditSelfPerson)
 	member.POST("/profile/person/:id", app.profileUpdateSelfPerson)
 	member.GET("/profile/person/new", app.profileNewSelfPerson)
