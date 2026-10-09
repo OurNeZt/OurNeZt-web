@@ -20,6 +20,95 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Removed
 - (fill)
 
+## [v1.3.0] - 2026-08-04
+
+### Added
+- Housing group management UI for creating, renaming, and deleting housing groups.
+- Group assignment controls for moving housing options into and out of groups.
+- Per-housing-option dashboard visibility controls in housing management and housing form flows.
+- Group-level bulk show/hide actions for dashboard visibility.
+- Grouped housing display with support for ungrouped housing options.
+- Visible and hidden housing status summaries across housing management and comparison views.
+
+### Changed
+- Dashboard charts, timeline, and housing comparison now show only housing options marked as visible.
+- Housing form now includes dashboard visibility and housing group selection.
+- Housing management page now acts as the main UI for grouping and dashboard visibility control.
+
+### Fixed
+- Dashboard visibility checkbox persistence when saving housing options.
+- Tooltip rendering and positioning for animated housing form fields.
+- Move button behavior so it stays disabled until a different housing group is selected.
+
+### Removed
+- No removals in this release.
+
+## [v1.2.0] - 2026-06-26
+
+### Added
+- Added FAQ page for housing eligibility and planning questions.
+- Added pagination to the Admin Dashboard user table.
+- Added required field indicators and validation to the Add Housing form.
+- Added configurable maintenance notice banner for planned downtime messaging.
+- Added dynamic maintenance notice support through environment variables or a JSON file.
+- Added Helm ConfigMap wiring for updating maintenance notice copy without rebuilding the web image.
+
+### Changed
+- Updated loan tenure limits based on MAS rules.
+- Improved Add Housing form guidance and validation feedback.
+- Improved maintenance banner styling for desktop and mobile readability.
+
+### Fixed
+- Hid or disabled HDB-only fields for EC and private condo housing types.
+
+### Removed
+- No removals in this release
+
+## [v1.1.4] - 2026-06-17
+
+### Added
+- Mobile-friendly card layout for Housing Comparison on narrow screens.
+
+### Changed
+- Updated Housing Comparison table styling for better readability on horizontal/tablet screens.
+- Renamed the ambiguous “Upfront” housing comparison label to “Downpayment + Fees.”
+
+### Fixed
+- Fixed Housing Comparison columns wrapping vertically and becoming unreadable on mobile viewports.
+- Fixed unclear upfront cost wording by clarifying that the value includes downpayment, legal fees, and buyer stamp duty.
+
+### Removed
+- No changes in this release.
+
+## [v1.1.3] - 2026-06-15
+
+### Added
+- Added contextual help tooltips across key housing form fields, calculated values, and housing detail views
+- Added centralized housing tooltip content for easier copy updates and maintenance
+- Added official reference links in selected tooltips for buyer stamp duty, housing grants, and HDB interest rate
+- Added initial payment visibility in housing detail, comparison, and timeline views
+
+### Changed
+- Updated housing loan tenure input from months to years in the Add/Edit Housing form
+- Updated selected system-derived housing fields to use placeholder or read-only styling instead of appearing user-entered
+- Updated `BTO + HDB loan` tenure handling to auto-assume 25 years
+- Renamed the first housing payment checkpoint from `Initial Downpayment` to `Total Initial Payment`
+- Updated the Payment vs Income Timeline chart labels, legends, and stage presentation for clearer payment journey tracking
+- Refined tooltip styling and behavior to be more minimal, consistent, and mobile-friendly
+
+### Fixed
+- Fixed housing tooltip positioning, clipping, visibility, and interaction issues across desktop and mobile layouts
+- Fixed tooltip link behavior so “See more” references are clickable and do not close incorrectly
+- Fixed grant amount handling to better reflect system-derived calculation behavior in the housing form
+- Fixed initial payment display logic so the due-now checkpoint aligns with the intended affordability flow
+- Fixed total initial payment display to include buyer stamp duty while keeping later downpayment stages separate
+- Fixed form submission issues for system-derived `BTO + HDB loan` tenure values
+- Fixed placeholder/value behavior so empty or default housing fields no longer appear as manually entered values
+
+### Removed
+- Removed misleading prefilled-looking default values from selected housing inputs
+- Removed inconsistent tooltip presentation across different housing sections
+
 ## [v1.1.2] - 2026-06-01
 
 ### Added
