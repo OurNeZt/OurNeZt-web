@@ -35,6 +35,12 @@ type housingFormData struct {
 }
 
 type housingDetailData struct {
+	Notes                             string
+	NotesError                        string
+	NotesMaxLength                    int
+	Evaluation                        *ourneztv1.HousingEvaluation
+	EvaluationRows                    []housingEvaluationRow
+	EvaluationError                   string
 	FamilyID                          string
 	Housing                           *ourneztv1.HousingOption
 	Affordability                     *ourneztv1.HousingAffordability
@@ -60,6 +66,9 @@ type housingCompareData struct {
 }
 
 type housingCompareRow struct {
+	HousingID                string
+	Evaluation               *ourneztv1.HousingEvaluation
+	EvaluationError          string
 	Name                     string
 	GroupName                string
 	Affordability            *ourneztv1.HousingAffordability
@@ -181,10 +190,37 @@ func (a *App) housingDetail(c *gin.Context) {
 		HousingId:    c.Param("id"),
 	})
 	if err != nil {
+		if draft, ok := c.Get("housing_notes_draft"); ok {
+			a.render(c, "housing_notes_error", "Housing Notes", housingDetailData{
+				Housing:        &ourneztv1.HousingOption{Id: c.Param("id")},
+				Notes:          draft.(string),
+				NotesError:     c.GetString("housing_notes_error"),
+				NotesMaxLength: housingNotesMaxLength,
+			})
+			return
+		}
 		c.Redirect(http.StatusFound, "/housing?family_id="+familyID+"&error="+urlQuerySafe(grpcMessage(err)))
 		return
 	}
 
+	familyID = option.GetFamilyId()
+	notes := option.GetNotes()
+	if draft, ok := c.Get("housing_notes_draft"); ok {
+		notes = draft.(string)
+	}
+	evaluation, evaluationErr := a.clients.Housing.GetHousingEvaluation(a.grpcContext(c), &ourneztv1.GetHousingOptionRequest{HousingId: option.GetId()})
+	evaluationError := ""
+	if evaluationErr != nil {
+		evaluationError = grpcMessage(evaluationErr)
+	}
+	evaluationItems := evaluationRows(evaluation)
+	if draft, ok := c.Get("housing_answer_draft"); ok {
+		for i := range evaluationItems {
+			if evaluationItems[i].Criterion.Id == draft.(*ourneztv1.HousingAnswer).CriterionId {
+				evaluationItems[i].Answer = draft.(*ourneztv1.HousingAnswer)
+			}
+		}
+	}
 	aff := &ourneztv1.HousingAffordability{}
 	inputs := housingEstimateInputs{}
 	if familyID != "" {
@@ -227,6 +263,12 @@ func (a *App) housingDetail(c *gin.Context) {
 	totalInitialPaymentShortfallCents := maxInt64(totalInitialPaymentDueNowCents-availableDownpaymentFundsCents, 0)
 
 	a.render(c, "housing_detail", "Housing Detail", housingDetailData{
+		Notes:                             notes,
+		NotesError:                        c.GetString("housing_notes_error"),
+		NotesMaxLength:                    housingNotesMaxLength,
+		Evaluation:                        evaluation,
+		EvaluationRows:                    evaluationItems,
+		EvaluationError:                   evaluationError,
 		FamilyID:                          familyID,
 		Housing:                           option,
 		Affordability:                     aff,
@@ -458,7 +500,15 @@ func (a *App) compareHousing(c *gin.Context) {
 			MonthlyExpensesCents: summary.GetMonthlyExpensesCents(),
 		})
 		if rowErr == nil {
+			evaluation, evaluationErr := a.clients.Housing.GetHousingEvaluation(a.grpcContext(c), &ourneztv1.GetHousingOptionRequest{HousingId: option.GetId()})
+			evaluationError := ""
+			if evaluationErr != nil {
+				evaluationError = grpcMessage(evaluationErr)
+			}
 			rows = append(rows, housingCompareRow{
+				HousingID:                option.GetId(),
+				Evaluation:               evaluation,
+				EvaluationError:          evaluationError,
 				Name:                     option.GetName(),
 				GroupName:                groupNameByOptionID[strings.TrimSpace(option.GetId())],
 				Affordability:            row,

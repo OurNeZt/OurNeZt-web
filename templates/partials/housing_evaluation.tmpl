@@ -1,0 +1,60 @@
+{{ define "partials/evaluation_summary" }}
+<div class="space-y-1 text-sm">
+  <p class="font-semibold {{ evaluationColor . }}">Evaluation: {{ evaluationScore . }}</p>
+  {{ if . }}{{ if gt .Total 0 }}
+  <p>{{ .Completed }} / {{ .Total }} complete · {{ .NotApplicable }} not applicable · {{ .Rated }} rated</p>
+  {{ if lt .Rated .Total }}<p class="text-xs opacity-75">Unrated and not-applicable criteria are excluded from the score.</p>{{ end }}
+  {{ if .Weighted }}<p class="text-xs opacity-75">Weighted average: sum of rating × weight ÷ sum of rated weights. Blank weights count as 1.</p>{{ else }}<p class="text-xs opacity-75">Average of applicable ratings, from 1 to 5.</p>{{ end }}
+  {{ end }}{{ end }}
+</div>
+{{ end }}
+
+{{ define "partials/housing_evaluation" }}
+<section id="evaluation" class="card bg-base-100 shadow mt-6"><div class="card-body gap-4">
+  <div class="flex flex-wrap gap-3 items-center justify-between"><h2 class="card-title">Housing Evaluation</h2><a class="btn btn-sm" href="/housing/checklist?family_id={{ .FamilyID }}">Manage family checklist</a></div>
+  {{ if .EvaluationError }}<div class="alert alert-error">Unable to load evaluation: {{ .EvaluationError }}</div>
+  {{ else }}
+  {{ template "partials/evaluation_summary" .Evaluation.GetSummary }}
+  <p class="text-sm opacity-75">1 = poor fit, 5 = excellent fit. Complete requires a rating. Pending ratings contribute to the score while you continue reviewing. Not applicable clears the rating and keeps your notes.</p>
+  <div class="grid gap-4 lg:grid-cols-2">
+  {{ range .EvaluationRows }}
+    <form method="post" action="/housing/{{ $.Housing.Id }}/evaluation/{{ .Criterion.Id }}" class="card border border-base-300"><div class="card-body p-4 gap-3">
+      <h3 class="font-semibold">{{ .Criterion.Name }}</h3>
+      {{ if .Criterion.Description }}<p class="text-sm whitespace-pre-wrap">{{ .Criterion.Description }}</p>{{ end }}
+      <p class="text-xs opacity-75">Weight: {{ if .Criterion.Weight }}{{ criterionWeight .Criterion }}{{ else }}1{{ end }}{{ if not .Answer.Rating }} · {{ if eq .Answer.State "not_applicable" }}Not applicable{{ else }}Unrated / pending{{ end }}{{ end }}</p>
+      <div class="grid gap-3 sm:grid-cols-2">
+        <label class="oz-field"><span>State</span><select class="select select-bordered w-full" name="state">
+          <option value="pending" {{ if eq .Answer.State "pending" }}selected{{ end }}>Pending</option>
+          <option value="complete" {{ if eq .Answer.State "complete" }}selected{{ end }}>Complete</option>
+          <option value="not_applicable" {{ if eq .Answer.State "not_applicable" }}selected{{ end }}>Not applicable</option>
+        </select></label>
+        <label class="oz-field"><span>Rating</span><select class="select select-bordered w-full" name="rating">
+          <option value="" {{ if not .Answer.Rating }}selected{{ end }}>Unrated</option>
+          <option value="1" {{ if eq .Answer.GetRating 1 }}selected{{ end }}>1 — Poor fit</option>
+          <option value="2" {{ if eq .Answer.GetRating 2 }}selected{{ end }}>2 — Fair fit</option>
+          <option value="3" {{ if eq .Answer.GetRating 3 }}selected{{ end }}>3 — Good fit</option>
+          <option value="4" {{ if eq .Answer.GetRating 4 }}selected{{ end }}>4 — Very good fit</option>
+          <option value="5" {{ if eq .Answer.GetRating 5 }}selected{{ end }}>5 — Excellent fit</option>
+        </select></label>
+      </div>
+      <label class="oz-field"><span>Notes for this home</span><textarea class="textarea textarea-bordered w-full" name="notes" rows="3" maxlength="5000" placeholder="What works, what is risky, and what needs checking">{{ .Answer.Notes }}</textarea></label>
+      <button class="btn btn-primary btn-sm self-start" type="submit">Save {{ .Criterion.Name }}</button>
+    </div></form>
+  {{ else }}<p class="text-sm">Create your family checklist to start evaluating this home.</p>{{ end }}
+  </div>
+  {{ end }}
+</div></section>
+{{ end }}
+
+{{ define "partials/evaluation_comparison" }}
+{{ if .EvaluationError }}<p class="text-sm">Evaluation unavailable: {{ .EvaluationError }}</p>
+{{ else }}
+{{ template "partials/evaluation_summary" .Evaluation.GetSummary }}
+{{ if .Evaluation.GetCriteria }}<details class="mt-2 whitespace-normal"><summary class="cursor-pointer text-sm">Criteria and notes</summary>
+  <dl class="grid gap-3 mt-2">{{ range evaluationRows .Evaluation }}<div>
+    <dt class="font-medium">{{ .Criterion.Name }}</dt><dd class="text-sm">{{ if eq .Answer.State "not_applicable" }}Not applicable{{ else }}{{ if .Answer.Rating }}{{ .Answer.GetRating }} / 5{{ else }}Unrated{{ end }} · {{ .Answer.State }}{{ end }}</dd>
+    {{ if .Answer.Notes }}<dd class="text-sm whitespace-pre-wrap">{{ .Answer.Notes }}</dd>{{ end }}
+  </div>{{ end }}</dl>
+</details>{{ end }}
+{{ end }}
+{{ end }}

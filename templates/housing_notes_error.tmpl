@@ -1,0 +1,8 @@
+{{ define "housing_notes_error" }}
+{{ template "partials/header" . }}
+<h1 class="text-xl font-semibold">Housing Notes</h1>
+<p class="mt-2">Housing details are unavailable. Your unsaved notes are below so you can copy them or try saving again.</p>
+{{ template "partials/housing_notes" .Data }}
+<a class="btn btn-sm mt-3" href="/housing/{{ .Data.Housing.Id }}">Back to housing details</a>
+{{ template "partials/footer" . }}
+{{ end }}
