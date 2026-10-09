@@ -6,6 +6,42 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ---
 
+## [v1.4.0] - 2026-10-09
+
+### Added
+
+- Family housing checklist management for creating, editing, reordering, weighting, and deleting criteria.
+- Per-housing evaluation forms with answer states, ratings, and criterion-specific notes.
+- Evaluation scores and completion progress in housing lists, detail pages, dashboard cards, and comparison views.
+- Responsive comparison layouts with expandable evaluation criteria and notes.
+- Shared housing notes editor with a character counter and a 10,000-character limit.
+- Save confirmation, validation feedback, and recovery pages for housing notes.
+- Configurable authentication throttling by browser IP and account, with concurrent request limits.
+- HTTP 429 retry pages with `Retry-After` and `Cache-Control: no-store` headers.
+- Explicit trusted proxy configuration through `WEB_TRUSTED_PROXIES`.
+- `auth-rate-check` command for verifying account throttling, IP limits, and recovery.
+- Regression tests for checklist forms, draft preservation, housing notes, and authentication throttling.
+
+### Changed
+
+- Generated gRPC bindings now support housing checklist evaluations and shared notes.
+- Login, password changes, and admin user creation are throttled before downstream authentication work.
+- Password-change routes share the same account rate-limit budget.
+- Authentication forms are limited to 16 KiB, and authentication RPCs use request deadlines.
+- Login failures display generic messages instead of raw Core authentication errors.
+- Core retry delays are preserved when authentication requests are throttled.
+
+### Fixed
+
+- Preserved evaluation drafts when validation or saving fails.
+- Preserved housing notes drafts when saving fails.
+- Prevented untrusted forwarding headers from bypassing browser IP throttling.
+- Kept shared housing notes saves separate from housing details, checklist ratings, and affordability calculations.
+
+### Removed
+
+- No removals in this release.
+
 ## [v1.3.0] - 2026-08-04
 
 ### Added
