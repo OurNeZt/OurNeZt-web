@@ -22,6 +22,12 @@ func (a *App) coreRequestDeadline() gin.HandlerFunc {
 
 func (a *App) sessionLoader() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		// Logout revokes the presented token directly, including expired tokens.
+		// Avoid a preliminary validation RPC that could block secure sign-out.
+		if c.Request.Method == http.MethodPost && c.Request.URL.Path == "/logout" {
+			c.Next()
+			return
+		}
 		cookie, err := c.Request.Cookie(a.cfg.SessionCookieName)
 		if err != nil || cookie.Value == "" {
 			c.Next()
