@@ -1,7 +1,6 @@
 package web
 
 import (
-	"context"
 	"net/http"
 	"net/netip"
 	"strconv"
@@ -37,13 +36,6 @@ func (a *App) authTrafficLimit() gin.HandlerFunc {
 			return
 		}
 		defer release()
-		timeout := a.cfg.RequestTimeout
-		if timeout <= 0 {
-			timeout = 5 * time.Second
-		}
-		ctx, cancel := context.WithTimeout(c.Request.Context(), timeout)
-		defer cancel()
-		c.Request = c.Request.WithContext(ctx)
 		c.Next()
 	}
 }
