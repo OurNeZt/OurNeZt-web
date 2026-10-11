@@ -10,24 +10,37 @@ import (
 	"github.com/OurNeZt/ournezt-web/internal/authlimit"
 )
 
+const (
+	DefaultReadHeaderTimeout         = 10 * time.Second
+	DefaultReadTimeout               = 15 * time.Second
+	DefaultWriteTimeout              = 30 * time.Second
+	DefaultIdleTimeout               = 60 * time.Second
+	DefaultMaxRequestBodyBytes int64 = 1 << 20
+)
+
 type Config struct {
-	AppEnv            string
-	WebAddr           string
-	WebTLSCertFile    string
-	WebTLSKeyFile     string
-	CoreGRPCAddr      string
-	CoreGRPCUseTLS    bool
-	CoreGRPCTLSCAFile string
-	CoreGRPCTLSServer string
-	CoreGRPCInsecure  bool
-	ShutdownTimeout   time.Duration
-	RequestTimeout    time.Duration
-	SessionCookieName string
-	SessionCookieMax  time.Duration
-	CookieSecure      bool
-	MaintenanceNotice MaintenanceNoticeConfig
-	TrustedProxies    []string
-	AuthLimits        authlimit.Config
+	AppEnv              string
+	WebAddr             string
+	WebTLSCertFile      string
+	WebTLSKeyFile       string
+	CoreGRPCAddr        string
+	CoreGRPCUseTLS      bool
+	CoreGRPCTLSCAFile   string
+	CoreGRPCTLSServer   string
+	CoreGRPCInsecure    bool
+	ShutdownTimeout     time.Duration
+	RequestTimeout      time.Duration
+	ReadHeaderTimeout   time.Duration
+	ReadTimeout         time.Duration
+	WriteTimeout        time.Duration
+	IdleTimeout         time.Duration
+	MaxRequestBodyBytes int64
+	SessionCookieName   string
+	SessionCookieMax    time.Duration
+	CookieSecure        bool
+	MaintenanceNotice   MaintenanceNoticeConfig
+	TrustedProxies      []string
+	AuthLimits          authlimit.Config
 }
 
 type MaintenanceNoticeConfig struct {
@@ -42,21 +55,26 @@ type MaintenanceNoticeConfig struct {
 
 func Load() Config {
 	return Config{
-		AppEnv:            env("APP_ENV", "development"),
-		WebAddr:           env("WEB_ADDR", ":8080"),
-		WebTLSCertFile:    env("WEB_TLS_CERT_FILE", ""),
-		WebTLSKeyFile:     env("WEB_TLS_KEY_FILE", ""),
-		CoreGRPCAddr:      env("CORE_GRPC_ADDR", "localhost:50051"),
-		CoreGRPCUseTLS:    envBool("CORE_GRPC_USE_TLS", false),
-		CoreGRPCTLSCAFile: env("CORE_GRPC_TLS_CA_FILE", ""),
-		CoreGRPCTLSServer: env("CORE_GRPC_TLS_SERVER_NAME", ""),
-		CoreGRPCInsecure:  envBool("CORE_GRPC_TLS_INSECURE_SKIP_VERIFY", false),
-		ShutdownTimeout:   envDuration("SHUTDOWN_TIMEOUT", 10*time.Second),
-		RequestTimeout:    envDuration("REQUEST_TIMEOUT", 5*time.Second),
-		SessionCookieName: env("SESSION_COOKIE_NAME", "ournezt_session"),
-		SessionCookieMax:  envDuration("SESSION_COOKIE_MAX_AGE", 24*time.Hour),
-		CookieSecure:      envBool("SESSION_COOKIE_SECURE", defaultCookieSecure(strings.EqualFold(env("APP_ENV", "development"), "production"))),
-		TrustedProxies:    envList("WEB_TRUSTED_PROXIES"),
+		AppEnv:              env("APP_ENV", "development"),
+		WebAddr:             env("WEB_ADDR", ":8080"),
+		WebTLSCertFile:      env("WEB_TLS_CERT_FILE", ""),
+		WebTLSKeyFile:       env("WEB_TLS_KEY_FILE", ""),
+		CoreGRPCAddr:        env("CORE_GRPC_ADDR", "localhost:50051"),
+		CoreGRPCUseTLS:      envBool("CORE_GRPC_USE_TLS", false),
+		CoreGRPCTLSCAFile:   env("CORE_GRPC_TLS_CA_FILE", ""),
+		CoreGRPCTLSServer:   env("CORE_GRPC_TLS_SERVER_NAME", ""),
+		CoreGRPCInsecure:    envBool("CORE_GRPC_TLS_INSECURE_SKIP_VERIFY", false),
+		ShutdownTimeout:     envDuration("SHUTDOWN_TIMEOUT", 10*time.Second),
+		RequestTimeout:      envDuration("REQUEST_TIMEOUT", 5*time.Second),
+		ReadHeaderTimeout:   envPositiveDuration("WEB_READ_HEADER_TIMEOUT", DefaultReadHeaderTimeout),
+		ReadTimeout:         envPositiveDuration("WEB_READ_TIMEOUT", DefaultReadTimeout),
+		WriteTimeout:        envPositiveDuration("WEB_WRITE_TIMEOUT", DefaultWriteTimeout),
+		IdleTimeout:         envPositiveDuration("WEB_IDLE_TIMEOUT", DefaultIdleTimeout),
+		MaxRequestBodyBytes: envPositiveInt64("WEB_MAX_REQUEST_BODY_BYTES", DefaultMaxRequestBodyBytes),
+		SessionCookieName:   env("SESSION_COOKIE_NAME", "ournezt_session"),
+		SessionCookieMax:    envDuration("SESSION_COOKIE_MAX_AGE", 24*time.Hour),
+		CookieSecure:        envBool("SESSION_COOKIE_SECURE", defaultCookieSecure(strings.EqualFold(env("APP_ENV", "development"), "production"))),
+		TrustedProxies:      envList("WEB_TRUSTED_PROXIES"),
 		AuthLimits: authlimit.Config{
 			IPLimit:       envInt("AUTH_IP_LIMIT", 30),
 			AccountLimit:  envInt("AUTH_ACCOUNT_LIMIT", 5),
@@ -103,6 +121,21 @@ func envDuration(key string, fallback time.Duration) time.Duration {
 		return fallback
 	}
 	return parsed
+}
+
+func envPositiveDuration(key string, fallback time.Duration) time.Duration {
+	if value := envDuration(key, fallback); value > 0 {
+		return value
+	}
+	return fallback
+}
+
+func envPositiveInt64(key string, fallback int64) int64 {
+	value, err := strconv.ParseInt(strings.TrimSpace(os.Getenv(key)), 10, 64)
+	if err != nil || value <= 0 {
+		return fallback
+	}
+	return value
 }
 
 func envBool(key string, fallback bool) bool {

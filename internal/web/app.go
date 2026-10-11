@@ -52,6 +52,7 @@ func NewRouter(cfg config.Config, clients *core.Clients) (*gin.Engine, error) {
 	}
 	r.Use(gin.Logger(), gin.Recovery())
 	r.Use(app.authTrafficLimit())
+	r.Use(app.requestBodyLimit())
 	r.Use(app.sessionLoader())
 
 	tpl, err := parseTemplates("templates")
