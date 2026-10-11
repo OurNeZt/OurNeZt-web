@@ -41,3 +41,19 @@ func TestHTTPProtectionConfiguration(t *testing.T) {
 		checkDefaults(t, Load())
 	})
 }
+
+func TestRequestTimeoutConfiguration(t *testing.T) {
+	for _, tc := range []struct {
+		value    string
+		expected time.Duration
+	}{
+		{"", DefaultRequestTimeout}, {"150ms", 150 * time.Millisecond}, {"invalid", DefaultRequestTimeout}, {"0s", DefaultRequestTimeout}, {"-1s", DefaultRequestTimeout},
+	} {
+		t.Run("value="+tc.value, func(t *testing.T) {
+			t.Setenv("REQUEST_TIMEOUT", tc.value)
+			if got := Load().RequestTimeout; got != tc.expected {
+				t.Fatalf("REQUEST_TIMEOUT = %s, expected %s", got, tc.expected)
+			}
+		})
+	}
+}
