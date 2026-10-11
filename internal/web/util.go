@@ -2,6 +2,7 @@ package web
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -9,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/OurNeZt/ournezt-web/internal/core"
 	ourneztv1 "github.com/OurNeZt/ournezt-web/internal/gen/proto/ournezt/v1"
 	"github.com/gin-gonic/gin"
 	"google.golang.org/grpc/codes"
@@ -17,6 +19,9 @@ import (
 )
 
 func (a *App) render(c *gin.Context, templateName, title string, payload any) {
+	if a.renderCoreFailure(c, core.RequestFailure(c.Request.Context())) {
+		return
+	}
 	var user *CurrentUser
 	if value, ok := c.Get(userContextKey); ok {
 		if current, castOK := value.(*CurrentUser); castOK {
@@ -84,6 +89,12 @@ func grpcMessage(err error) string {
 	if err == nil {
 		return ""
 	}
+	switch grpcCode(err) {
+	case codes.DeadlineExceeded:
+		return coreTimeoutMessage
+	case codes.Unavailable, codes.Canceled:
+		return coreUnavailableMessage
+	}
 	st, ok := status.FromError(err)
 	if !ok {
 		return err.Error()
@@ -92,6 +103,12 @@ func grpcMessage(err error) string {
 }
 
 func grpcCode(err error) codes.Code {
+	if errors.Is(err, context.DeadlineExceeded) {
+		return codes.DeadlineExceeded
+	}
+	if errors.Is(err, context.Canceled) {
+		return codes.Canceled
+	}
 	st, ok := status.FromError(err)
 	if !ok {
 		return codes.Unknown

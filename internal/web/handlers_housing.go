@@ -199,6 +199,9 @@ func (a *App) housingDetail(c *gin.Context) {
 			})
 			return
 		}
+		if _, hasDraft := c.Get("housing_answer_draft"); hasDraft && a.renderCoreFailure(c, grpcCode(err)) {
+			return
+		}
 		c.Redirect(http.StatusFound, "/housing?family_id="+familyID+"&error="+urlQuerySafe(grpcMessage(err)))
 		return
 	}
