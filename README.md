@@ -61,11 +61,13 @@
     </li>
     <li><a href="#authentication-protections">Authentication Protections</a></li>
     <li><a href="#http-request-protections">HTTP Request Protections</a></li>
+    <li><a href="#core-request-deadlines">Core Request Deadlines</a></li>
     <li><a href="#running-the-web-app">Running The Web App</a></li>
     <li>
       <a href="#testing">Testing</a>
       <ul>
         <li><a href="#http-protection-regression-tests">HTTP Protection Regression Tests</a></li>
+        <li><a href="#core-deadline-regression-tests">Core Deadline Regression Tests</a></li>
         <li><a href="#reviewer-check-against-a-running-web-instance">Reviewer Check Against A Running Web Instance</a></li>
       </ul>
     </li>
@@ -107,6 +109,7 @@ OurNeZt Web currently focuses on the user-facing experience for:
 - Housing affordability dashboards, comparisons, charts, and timelines powered by backend calculations.
 - Authentication throttling by client IP and normalized account identity.
 - Bounded request bodies, multipart forms, and HTTP connection timeouts.
+- Consistent Core RPC deadlines and safe timeout or service unavailable messages.
 - Responsive web pages styled with DaisyUI and Tailwind CSS.
 
 The web app is built as a lightweight server-rendered Go application. It should remain focused on routing, templates, page rendering, user interaction, and calling the backend Core service instead of duplicating finance or housing business logic.
@@ -243,7 +246,7 @@ See [.env.example](.env.example) for common settings. The HTTP timeout and body 
 | `SESSION_COOKIE_NAME` | Name of the browser session cookie. | `ournezt_session` |
 | `SESSION_COOKIE_MAX_AGE` | Session cookie lifetime. | `12h` |
 | `SESSION_COOKIE_SECURE` | Whether the session cookie requires HTTPS. Set to `true` in production. | `false` |
-| `REQUEST_TIMEOUT` | Timeout used when making requests to OurNeZt Core. | `5s` |
+| `REQUEST_TIMEOUT` | Shared Core RPC budget per HTTP request and maximum duration of an individual Core RPC; defaults to `5s`. | `5s` |
 | `SHUTDOWN_TIMEOUT` | Graceful shutdown timeout; defaults to `10s`. | `10s` |
 | `WEB_TLS_CERT_FILE` / `WEB_TLS_KEY_FILE` | Certificate and private key for optional HTTPS on the Web listener. Configure both. | `/etc/ournezt/tls/tls.crt` / `/etc/ournezt/tls/tls.key` |
 | `CORE_GRPC_USE_TLS` | Enable TLS for Web-to-Core gRPC; defaults to `false`. | `true` |
@@ -312,9 +315,21 @@ Login, password changes, and admin user creation retain a smaller **16 KiB** bod
 
 Bodies are completely checked within the size cap before session validation or handlers can use form data. This also bounds requests without a Content-Length, including chunked uploads. Oversized bodies return **HTTP 413**, malformed forms return **HTTP 400**, and body read timeouts return **HTTP 408** when a response can still be written. Multipart parsing uses bounded memory and cleans up any temporary form files. Normal housing notes, including 10,000 characters of Unicode text, fit within the default limit.
 
-`WEB_WRITE_TIMEOUT` bounds connection writes; it does not cancel handler work. `REQUEST_TIMEOUT` remains the separate downstream RPC timeout setting. These limits apply to both plaintext and TLS listeners.
+`WEB_WRITE_TIMEOUT` bounds connection writes; it does not cancel handler work. `REQUEST_TIMEOUT` controls the separate Core RPC budget described below. These limits apply to both plaintext and TLS listeners.
 
 Use the [regression tests](#http-protection-regression-tests) to verify connection timeouts and the [reviewer command](#reviewer-check-against-a-running-web-instance) to check body limits on a running instance.
+
+---
+
+## Core Request Deadlines
+
+`REQUEST_TIMEOUT` defaults to **5 seconds** and bounds every Web-to-Core RPC, including session validation, authentication, dashboard, family, person, housing, income, CPF, admin, and account operations. Missing, invalid, zero, or negative values fall back to the default.
+
+After request body validation, Web creates one deadline shared by session validation and subsequent business RPCs. A page with several sequential calls uses the remaining budget rather than receiving a fresh timeout for each call. Earlier request deadlines and client cancellation are preserved, along with the session metadata sent to Core. The Core client also applies a per-call deadline, protecting calls made outside the HTTP middleware, and cancels its timeout context when each call completes.
+
+Session validation timeouts return an HTML **504 Gateway Timeout** page; unavailable Core responses return **503 Service Unavailable**. These responses include `Cache-Control: no-store` and preserve the session cookie. Business handlers show safe error messages through their existing error redirects; page rendering also detects timeout or unavailable errors from optional RPCs, preventing incomplete backend data from appearing as a successful page. Internal gRPC connection details are not exposed in these messages. Unsaved housing notes, evaluation answers, and checklist criteria remain available to copy or retry after a timeout.
+
+`WEB_WRITE_TIMEOUT` controls response writes separately. Keep it longer than `REQUEST_TIMEOUT` so Web can send an error after a Core deadline expires. See the [gRPC deadline guide](https://grpc.io/docs/guides/deadlines/) for background.
 
 ---
 
@@ -382,6 +397,16 @@ These tests cover:
 - Real socket checks for slow headers, slow bodies, stalled chunked uploads, idle keep-alive connections, and response write deadlines.
 - TLS/HTTP2 oversized body rejection.
 - The reviewer command against the actual application router, an endpoint missing chunked protection, and unfixed or unavailable endpoints.
+
+### Core Deadline Regression Tests
+
+Run the deadline checks without a separate Core deployment or database:
+
+```bash
+go test ./internal/config ./internal/core ./internal/web -run 'TestRPC|TestCore|TestRequestTimeout' -count=1 -v
+```
+
+The tests start a local gRPC server that deliberately stalls. They verify deadlines for every Core service, unavailable connections with wait-for-ready enabled, shared budgets across sequential HTTP calls, earlier caller deadlines, cancellation, session metadata, safe error messages, session cookie preservation, and unsaved housing draft recovery. They also check that an unavailable backend cannot render an empty family list as a successful page.
 
 ### Reviewer Check Against A Running Web Instance
 
@@ -499,6 +524,7 @@ ghcr.io/OurNeZt/ournezt-web:latest
 - [x] Housing checklists, evaluations, and notes
 - [x] Authentication rate limits and trusted proxy configuration
 - [x] Request body limits and HTTP connection timeouts
+- [x] Core RPC deadlines and safe dependency failure responses
 - [x] Reviewer commands for authentication and request body checks
 - [x] Responsive UI polish
 - [x] Docker image build and release workflow
