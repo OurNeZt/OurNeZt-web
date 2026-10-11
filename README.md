@@ -59,8 +59,16 @@
         <li><a href="#configuration">Configuration</a></li>
       </ul>
     </li>
+    <li><a href="#authentication-protections">Authentication Protections</a></li>
+    <li><a href="#http-request-protections">HTTP Request Protections</a></li>
     <li><a href="#running-the-web-app">Running The Web App</a></li>
-    <li><a href="#testing">Testing</a></li>
+    <li>
+      <a href="#testing">Testing</a>
+      <ul>
+        <li><a href="#http-protection-regression-tests">HTTP Protection Regression Tests</a></li>
+        <li><a href="#reviewer-check-against-a-running-web-instance">Reviewer Check Against A Running Web Instance</a></li>
+      </ul>
+    </li>
     <li><a href="#docker">Docker</a></li>
     <li><a href="#release-flow">Release Flow</a></li>
     <li><a href="#roadmap">Roadmap</a></li>
@@ -93,7 +101,12 @@ OurNeZt Web currently focuses on the user-facing experience for:
 - Person profile forms for household members.
 - Income, CPF, cash savings, expenses, and surplus display.
 - Housing option forms for BTO, resale, EC, private, and other housing types.
-- Housing affordability dashboard views powered by backend calculations.
+- Housing groups with individual and group-level dashboard visibility controls.
+- Family-scoped housing checklists, weighted criteria, ratings, and evaluation summaries.
+- Housing notes for viewing observations and planning context.
+- Housing affordability dashboards, comparisons, charts, and timelines powered by backend calculations.
+- Authentication throttling by client IP and normalized account identity.
+- Bounded request bodies, multipart forms, and HTTP connection timeouts.
 - Responsive web pages styled with DaisyUI and Tailwind CSS.
 
 The web app is built as a lightweight server-rendered Go application. It should remain focused on routing, templates, page rendering, user interaction, and calling the backend Core service instead of duplicating finance or housing business logic.
@@ -131,7 +144,7 @@ At the centre of the web architecture is the **OurNeZt Web Server**, which acts 
 The web application is split into focused areas:
 
 - **Web Router** handles HTTP routes, page navigation, redirects, and route grouping.
-- **Middleware Layer** handles request logging, session checks, authentication guards, and common request context.
+- **Middleware Layer** handles request logging, authentication throttling, bounded request body validation, session checks, and authentication guards.
 - **Template Layer** renders HTML pages, layouts, partials, forms, and reusable UI components.
 - **Static Asset Layer** serves compiled CSS, JavaScript, images, and application assets.
 - **gRPC Client Layer** communicates with OurNeZt Core for authentication, family, person, finance, housing, and dashboard data.
@@ -142,6 +155,7 @@ The expected flow is:
 ```text
 Browser
   -> OurNeZt Web HTTP/Gin Server
+  -> Authentication traffic limits and request body validation
   -> Auth/session middleware
   -> Page handler
   -> OurNeZt Core gRPC API
@@ -217,7 +231,10 @@ export REQUEST_TIMEOUT=5s
 export MAINTENANCE_NOTICE_ENABLED=false
 ```
 
+See [.env.example](.env.example) for common settings. The HTTP timeout and body size defaults are documented in [HTTP Request Protections](#http-request-protections).
+
 ### Environment Variables
+
 | Variables | Description | Example |
 | --- | --- | --- |
 | `APP_ENV` | Application environment. Usually `development` or `production`. | `development` |
@@ -227,6 +244,11 @@ export MAINTENANCE_NOTICE_ENABLED=false
 | `SESSION_COOKIE_MAX_AGE` | Session cookie lifetime. | `12h` |
 | `SESSION_COOKIE_SECURE` | Whether the session cookie requires HTTPS. Set to `true` in production. | `false` |
 | `REQUEST_TIMEOUT` | Timeout used when making requests to OurNeZt Core. | `5s` |
+| `SHUTDOWN_TIMEOUT` | Graceful shutdown timeout; defaults to `10s`. | `10s` |
+| `WEB_TLS_CERT_FILE` / `WEB_TLS_KEY_FILE` | Certificate and private key for optional HTTPS on the Web listener. Configure both. | `/etc/ournezt/tls/tls.crt` / `/etc/ournezt/tls/tls.key` |
+| `CORE_GRPC_USE_TLS` | Enable TLS for Web-to-Core gRPC; defaults to `false`. | `true` |
+| `CORE_GRPC_TLS_CA_FILE` | Optional CA certificate file for the Core connection. | `/etc/ournezt/tls/ca.crt` |
+| `CORE_GRPC_TLS_SERVER_NAME` | Optional server name for Core TLS verification. | `ournezt-core` |
 | `MAINTENANCE_NOTICE_FILE` | Optional JSON file path for a dynamically loaded maintenance notice. File values override env values and are read on each page render. | `/etc/ournezt/maintenance-notice/notice.json` |
 | `MAINTENANCE_NOTICE_ENABLED` | Shows or hides the maintenance banner when no notice file is configured. | `true` |
 | `MAINTENANCE_NOTICE_LEVEL` | Banner style. Supported values: `info`, `success`, `warning`, `error`. | `warning` |
@@ -253,6 +275,46 @@ For hot-swappable maintenance copy, set `MAINTENANCE_NOTICE_FILE` to a JSON file
 OurNeZt Web stores the session token in an HTTP-only browser cookie. For authenticated backend calls, the token is forwarded to OurNeZt Core as gRPC metadata: `x-session-token: <session-token>`
 
 If OurNeZt Core returns that a user must change their password, the web app redirects the user to: `/change-password`. This ensures bootstrap-created admin users and password-reset users update their password before continuing to other authenticated pages.
+
+---
+
+## Authentication Protections
+
+Authentication submissions are limited before expensive Core calls. Web applies these defaults per running instance:
+
+| Environment variable | Default | Purpose |
+| --- | --- | --- |
+| `AUTH_IP_LIMIT` | `30` | Authentication submissions per client IP within the window. |
+| `AUTH_ACCOUNT_LIMIT` | `5` | Submissions per normalized account identity within the window. |
+| `AUTH_RATE_WINDOW` | `1m` | Rate limit window. |
+| `AUTH_MAX_CONCURRENT` | `8` | Concurrent authentication submissions. |
+| `WEB_TRUSTED_PROXIES` | Empty | Comma-separated proxy IPs or CIDRs allowed to supply forwarded client IPs. |
+
+Rejected submissions return **HTTP 429** with `Retry-After` and `Cache-Control: no-store`. Limits cover login, password changes, and admin user creation. Set `WEB_TRUSTED_PROXIES` to the actual ingress proxy source addresses when running behind a reverse proxy; the empty default ignores forwarded headers. Core also enforces its own authentication limits.
+
+---
+
+## HTTP Request Protections
+
+The Web server bounds request bodies and connection I/O with the following defaults:
+
+| Environment variable | Default | Purpose |
+| --- | --- | --- |
+| `WEB_READ_HEADER_TIMEOUT` | `10s` | Maximum time to read request headers. |
+| `WEB_READ_TIMEOUT` | `15s` | Maximum time to read the entire request, including its body. |
+| `WEB_WRITE_TIMEOUT` | `30s` | Deadline for response writes. |
+| `WEB_IDLE_TIMEOUT` | `60s` | Maximum idle time between keep-alive requests. |
+| `WEB_MAX_REQUEST_BODY_BYTES` | `1048576` (1 MiB) | Maximum body size for every request, including multipart requests. |
+
+Timeouts must be positive Go durations, and the body limit must be a positive integer in bytes. Missing, invalid, zero, or negative values retain the protective defaults.
+
+Login, password changes, and admin user creation retain a smaller **16 KiB** body limit, even if the global limit is increased. A smaller global limit also applies to these routes.
+
+Bodies are completely checked within the size cap before session validation or handlers can use form data. This also bounds requests without a Content-Length, including chunked uploads. Oversized bodies return **HTTP 413**, malformed forms return **HTTP 400**, and body read timeouts return **HTTP 408** when a response can still be written. Multipart parsing uses bounded memory and cleans up any temporary form files. Normal housing notes, including 10,000 characters of Unicode text, fit within the default limit.
+
+`WEB_WRITE_TIMEOUT` bounds connection writes; it does not cancel handler work. `REQUEST_TIMEOUT` remains the separate downstream RPC timeout setting. These limits apply to both plaintext and TLS listeners.
+
+Use the [regression tests](#http-protection-regression-tests) to verify connection timeouts and the [reviewer command](#reviewer-check-against-a-running-web-instance) to check body limits on a running instance.
 
 ---
 
@@ -302,6 +364,44 @@ Generate an HTML coverage report:
 go test -coverprofile=coverage.out ./...
 go tool cover -html=coverage.out
 ```
+
+### HTTP Protection Regression Tests
+
+Run the focused checks without a running Core service or database:
+
+```bash
+go test ./cmd/http-limits-check ./internal/config ./internal/web -run 'TestHTTP|TestRequestBody|TestBoundedMultipart|TestRouterRejects|TestMaximumHousingNotes' -count=1 -v
+```
+
+These tests cover:
+
+- Default, custom, invalid, and nonpositive configuration values.
+- Known-length and chunked bodies, exact size boundaries, and the smaller authentication limit.
+- Malformed forms, bounded multipart parsing, temporary file cleanup, and 10,000-character Unicode housing notes.
+- Rejection before session validation or Core calls.
+- Real socket checks for slow headers, slow bodies, stalled chunked uploads, idle keep-alive connections, and response write deadlines.
+- TLS/HTTP2 oversized body rejection.
+- The reviewer command against the actual application router, an endpoint missing chunked protection, and unfixed or unavailable endpoints.
+
+### Reviewer Check Against A Running Web Instance
+
+Start Web as described above, then run this command in another terminal:
+
+```bash
+go run ./cmd/http-limits-check -url http://localhost:8080
+```
+
+The command prints a `PASS` line for each check and exits with a nonzero status on failure. It verifies that a body exactly at the global cap is accepted, oversized known-length/chunked/multipart bodies return **413**, malformed forms return **400**, and the smaller login body cap still applies. Rejections must also include `Cache-Control: no-store`.
+
+Most probes POST to an intentionally unregistered path, so **404** is the expected result for accepted bodies. One oversized probe targets `/login`; it is rejected before login processing and consumes one authentication IP-limit slot. The command sends no credentials or session cookies and changes no application records.
+
+If the instance uses a custom global body limit, supply the same byte count:
+
+```bash
+go run ./cmd/http-limits-check -url http://localhost:8080 -max-body-bytes 2097152 -timeout 15s
+```
+
+The checker supports body limits from 64 bytes to 64 MiB. Use a direct local or staging Web listener, or a Kubernetes port-forward to Web, to verify the application limits. An ingress proxy may reject requests first and apply different limits. This command checks body handling; the automated socket tests above verify connection timeouts.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -395,6 +495,11 @@ ghcr.io/OurNeZt/ournezt-web:latest
 - [x] Person profile management pages
 - [x] Finance and CPF dashboard views
 - [x] Housing affordability planning pages
+- [x] Housing groups and dashboard visibility controls
+- [x] Housing checklists, evaluations, and notes
+- [x] Authentication rate limits and trusted proxy configuration
+- [x] Request body limits and HTTP connection timeouts
+- [x] Reviewer commands for authentication and request body checks
 - [x] Responsive UI polish
 - [x] Docker image build and release workflow
 - [x] Deployment manifests
