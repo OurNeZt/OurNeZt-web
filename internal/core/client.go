@@ -54,7 +54,7 @@ func NewClients(ctx context.Context, cfg config.Config) (*Clients, error) {
 		transportCreds = insecure.NewCredentials()
 	}
 
-	conn, err := grpc.NewClient(cfg.CoreGRPCAddr, grpc.WithTransportCredentials(transportCreds))
+	conn, err := grpc.NewClient(cfg.CoreGRPCAddr, grpc.WithTransportCredentials(transportCreds), grpc.WithUnaryInterceptor(rpcDeadline(cfg.RequestTimeout)))
 	if err != nil {
 		return nil, err
 	}
