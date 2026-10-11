@@ -11,6 +11,7 @@ import (
 )
 
 const (
+	DefaultRequestTimeout            = 5 * time.Second
 	DefaultReadHeaderTimeout         = 10 * time.Second
 	DefaultReadTimeout               = 15 * time.Second
 	DefaultWriteTimeout              = 30 * time.Second
@@ -65,7 +66,7 @@ func Load() Config {
 		CoreGRPCTLSServer:   env("CORE_GRPC_TLS_SERVER_NAME", ""),
 		CoreGRPCInsecure:    envBool("CORE_GRPC_TLS_INSECURE_SKIP_VERIFY", false),
 		ShutdownTimeout:     envDuration("SHUTDOWN_TIMEOUT", 10*time.Second),
-		RequestTimeout:      envDuration("REQUEST_TIMEOUT", 5*time.Second),
+		RequestTimeout:      envPositiveDuration("REQUEST_TIMEOUT", DefaultRequestTimeout),
 		ReadHeaderTimeout:   envPositiveDuration("WEB_READ_HEADER_TIMEOUT", DefaultReadHeaderTimeout),
 		ReadTimeout:         envPositiveDuration("WEB_READ_TIMEOUT", DefaultReadTimeout),
 		WriteTimeout:        envPositiveDuration("WEB_WRITE_TIMEOUT", DefaultWriteTimeout),
