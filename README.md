@@ -292,6 +292,34 @@ Deploy the matching Core change before updating Web. The existing `revoked_at` d
 
 ## Authentication Protections
 
+Failed logins display only `Invalid email or password.` Web uses the same redirect and rendered message for unknown emails, wrong passwords, disabled accounts, lookup failures, and other Core login errors. It never displays raw Core login error messages or sets a session cookie after failure. Missing email or password uses the same message. Authentication throttling still returns HTTP 429 with retry information.
+
+Deploy the matching Core fix for [core #54](https://github.com/OurNeZt/OurNeZt-core/issues/54) to normalize gRPC login responses and perform bounded dummy Argon2id verification for unknown accounts. Web's message protection works independently, but Core is needed to reduce backend timing differences.
+
+Run the login response and traffic limit regression checks without a Core deployment:
+
+```bash
+go test ./internal/web -run 'TestLogin|TestAuthenticationRouteLimits|TestWebAuthenticationConcurrencyCap' -count=1 -v
+```
+
+### Login Enumeration Reviewer Checks
+
+Start Web and Core on a local/staging instance with an existing active test account. Optionally create a second test account through the admin UI and disable it. Supply those fixture emails below; the checker does not create or disable accounts, and never asks for a real password:
+
+```bash
+go run ./cmd/login-enumeration-check -url http://localhost:8080 -email active@example.com -disabled-email disabled@example.com
+```
+
+Replace the example emails with your fixtures. The command generates an unknown email and a random wrong password, then submits two or three failed logins. It requires the same HTTP 302 redirect to `Invalid email or password.`, identical response bodies and rendered login pages, and no `Set-Cookie`. It prints `PASS` for each case and exits nonzero on failure. Omitting `-disabled-email` explicitly reports that case as `SKIP`. These requests consume authentication limit slots; a 429 fails the check with a retry instruction.
+
+This checks Web's public responses. A generic Web response alone cannot prove Core connectivity or account fixture state. Confirm Core is running and use the Core regression command in its README to verify matching gRPC responses, successful login, and dummy Argon2 work. Lookup failures are injected by automated tests; they do not require breaking a running database. Timing is verified by checking the password work and configured cost, without a flaky wall-clock threshold.
+
+The reviewer checker itself is tested against the application router, plus simulated endpoints that leak messages, set cookies, return different bodies, succeed unexpectedly, throttle, redirect elsewhere, or return an HTTP outage:
+
+```bash
+go test ./cmd/login-enumeration-check ./internal/web -run 'TestReviewerCheck|TestLogin' -count=1 -v
+```
+
 Authentication submissions are limited before expensive Core calls. Web applies these defaults per running instance:
 
 | Environment variable | Default | Purpose |
