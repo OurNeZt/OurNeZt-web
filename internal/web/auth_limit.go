@@ -19,13 +19,7 @@ const authRetryMessage = "Too many authentication attempts. Please try again lat
 // authentication routes share an IP budget and an in-flight RPC budget.
 func (a *App) authTrafficLimit() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if c.Request.Method != http.MethodPost {
-			c.Next()
-			return
-		}
-		switch c.Request.URL.Path {
-		case "/login", "/change-password", "/profile/password", "/admin/users":
-		default:
+		if !isAuthSubmission(c.Request) {
 			c.Next()
 			return
 		}
@@ -43,12 +37,6 @@ func (a *App) authTrafficLimit() gin.HandlerFunc {
 			return
 		}
 		defer release()
-		// Limit these small forms before parsing attacker-controlled account keys.
-		c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 16*1024)
-		if err := c.Request.ParseForm(); err != nil {
-			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Invalid authentication request."})
-			return
-		}
 		timeout := a.cfg.RequestTimeout
 		if timeout <= 0 {
 			timeout = 5 * time.Second

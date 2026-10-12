@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/OurNeZt/ournezt-web/internal/config"
 	"github.com/OurNeZt/ournezt-web/internal/core"
@@ -39,11 +38,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	httpServer := &http.Server{
-		Addr:              cfg.WebAddr,
-		Handler:           router,
-		ReadHeaderTimeout: 10 * time.Second,
-	}
+	httpServer := web.NewHTTPServer(cfg, router)
 
 	go func() {
 		webTLS := cfg.WebTLSCertFile != "" && cfg.WebTLSKeyFile != ""

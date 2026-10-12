@@ -155,7 +155,7 @@ func TestAuthenticationRouteLimits(t *testing.T) {
 		client := &limitedAuthClient{}
 		r := authTestRouter(t, config.Config{}, client)
 		w := postAuth(r, "/login", "192.0.2.1", "", url.Values{"email": {"a@example.com"}, "password": {strings.Repeat("x", 20000)}}, false)
-		if w.Code != http.StatusBadRequest || client.logins.Load() != 0 {
+		if w.Code != http.StatusRequestEntityTooLarge || client.logins.Load() != 0 {
 			t.Fatal("oversized form reached Core")
 		}
 	})
