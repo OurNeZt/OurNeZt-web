@@ -1,26 +1,44 @@
 package web
 
 import (
-	"context"
 	"net/http"
 
+	"github.com/OurNeZt/ournezt-web/internal/core"
 	ourneztv1 "github.com/OurNeZt/ournezt-web/internal/gen/proto/ournezt/v1"
 	"github.com/gin-gonic/gin"
 	"google.golang.org/grpc/codes"
 )
 
+// coreRequestDeadline starts after bounded body parsing so upload time does not
+// consume the shared Core budget. All downstream handlers inherit this context.
+func (a *App) coreRequestDeadline() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		ctx, cancel := core.WithRequestTimeout(c.Request.Context(), a.cfg.RequestTimeout)
+		defer cancel()
+		c.Request = c.Request.WithContext(ctx)
+		c.Next()
+	}
+}
+
 func (a *App) sessionLoader() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		// Logout revokes the presented token directly, including expired tokens.
+		// Avoid a preliminary validation RPC that could block secure sign-out.
+		if c.Request.Method == http.MethodPost && c.Request.URL.Path == "/logout" {
+			c.Next()
+			return
+		}
 		cookie, err := c.Request.Cookie(a.cfg.SessionCookieName)
 		if err != nil || cookie.Value == "" {
 			c.Next()
 			return
 		}
 
-		ctx, cancel := context.WithTimeout(c.Request.Context(), a.cfg.RequestTimeout)
-		defer cancel()
-		resp, rpcErr := a.clients.Auth.ValidateSession(ctx, &ourneztv1.ValidateSessionRequest{SessionToken: cookie.Value})
+		resp, rpcErr := a.clients.Auth.ValidateSession(a.grpcContext(c), &ourneztv1.ValidateSessionRequest{SessionToken: cookie.Value})
 		if rpcErr != nil {
+			if a.renderCoreFailure(c, grpcCode(rpcErr)) {
+				return
+			}
 			if grpcCode(rpcErr) == codes.Unauthenticated || grpcCode(rpcErr) == codes.PermissionDenied {
 				http.SetCookie(c.Writer, clearSessionCookie(a.cfg.SessionCookieName, a.cfg.CookieSecure))
 			}

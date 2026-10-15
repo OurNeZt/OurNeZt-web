@@ -61,11 +61,14 @@
     </li>
     <li><a href="#authentication-protections">Authentication Protections</a></li>
     <li><a href="#http-request-protections">HTTP Request Protections</a></li>
+    <li><a href="#core-request-deadlines">Core Request Deadlines</a></li>
     <li><a href="#running-the-web-app">Running The Web App</a></li>
     <li>
       <a href="#testing">Testing</a>
       <ul>
         <li><a href="#http-protection-regression-tests">HTTP Protection Regression Tests</a></li>
+        <li><a href="#core-deadline-regression-tests">Core Deadline Regression Tests</a></li>
+        <li><a href="#session-revocation-regression-tests">Session Revocation Regression Tests</a></li>
         <li><a href="#reviewer-check-against-a-running-web-instance">Reviewer Check Against A Running Web Instance</a></li>
       </ul>
     </li>
@@ -95,6 +98,7 @@ This repository is designed to act as the main web client for OurNeZt. It uses G
 OurNeZt Web currently focuses on the user-facing experience for:
 
 - Login, session handling, and authenticated web access.
+- Server-side logout revocation and fresh login after password changes.
 - Admin-created user onboarding and first-time password flow.
 - Family and household dashboard views.
 - Family creation, joining, invite code, and member management workflows.
@@ -107,6 +111,7 @@ OurNeZt Web currently focuses on the user-facing experience for:
 - Housing affordability dashboards, comparisons, charts, and timelines powered by backend calculations.
 - Authentication throttling by client IP and normalized account identity.
 - Bounded request bodies, multipart forms, and HTTP connection timeouts.
+- Consistent Core RPC deadlines and safe timeout or service unavailable messages.
 - Responsive web pages styled with DaisyUI and Tailwind CSS.
 
 The web app is built as a lightweight server-rendered Go application. It should remain focused on routing, templates, page rendering, user interaction, and calling the backend Core service instead of duplicating finance or housing business logic.
@@ -243,7 +248,7 @@ See [.env.example](.env.example) for common settings. The HTTP timeout and body 
 | `SESSION_COOKIE_NAME` | Name of the browser session cookie. | `ournezt_session` |
 | `SESSION_COOKIE_MAX_AGE` | Session cookie lifetime. | `12h` |
 | `SESSION_COOKIE_SECURE` | Whether the session cookie requires HTTPS. Set to `true` in production. | `false` |
-| `REQUEST_TIMEOUT` | Timeout used when making requests to OurNeZt Core. | `5s` |
+| `REQUEST_TIMEOUT` | Shared Core RPC budget per HTTP request and maximum duration of an individual Core RPC; defaults to `5s`. | `5s` |
 | `SHUTDOWN_TIMEOUT` | Graceful shutdown timeout; defaults to `10s`. | `10s` |
 | `WEB_TLS_CERT_FILE` / `WEB_TLS_KEY_FILE` | Certificate and private key for optional HTTPS on the Web listener. Configure both. | `/etc/ournezt/tls/tls.crt` / `/etc/ournezt/tls/tls.key` |
 | `CORE_GRPC_USE_TLS` | Enable TLS for Web-to-Core gRPC; defaults to `false`. | `true` |
@@ -272,13 +277,48 @@ For hot-swappable maintenance copy, set `MAINTENANCE_NOTICE_FILE` to a JSON file
 ```
 
 ### Session Behaviour
+
 OurNeZt Web stores the session token in an HTTP-only browser cookie. For authenticated backend calls, the token is forwarded to OurNeZt Core as gRPC metadata: `x-session-token: <session-token>`
 
 If OurNeZt Core returns that a user must change their password, the web app redirects the user to: `/change-password`. This ensures bootstrap-created admin users and password-reset users update their password before continuing to other authenticated pages.
 
+Logout calls Core’s `RevokeCurrentSession` RPC with the browser token before clearing the cookie. Repeated logout remains safe even when the token has expired or was already revoked. If Core cannot confirm revocation, Web keeps the cookie, displays a safe error, and offers **Retry logout**. Logout uses the shared Core request deadline and does not perform a preliminary session validation call.
+
+After a successful password change through either `/change-password` or `/profile/password`, Core has revoked all sessions for that user. Web clears the cookie and redirects to login with a confirmation. Failed password changes keep the cookie. This also applies to the first-login password-change flow.
+
+Deploy the matching Core change before updating Web. The existing `revoked_at` database column supports this behavior; no new schema migration or Web environment setting is needed.
+
 ---
 
 ## Authentication Protections
+
+Failed logins display only `Invalid email or password.` Web uses the same redirect and rendered message for unknown emails, wrong passwords, disabled accounts, lookup failures, and other Core login errors. It never displays raw Core login error messages or sets a session cookie after failure. Missing email or password uses the same message. Authentication throttling still returns HTTP 429 with retry information.
+
+Deploy the matching Core fix for [core #54](https://github.com/OurNeZt/OurNeZt-core/issues/54) to normalize gRPC login responses and perform bounded dummy Argon2id verification for unknown accounts. Web's message protection works independently, but Core is needed to reduce backend timing differences.
+
+Run the login response and traffic limit regression checks without a Core deployment:
+
+```bash
+go test ./internal/web -run 'TestLogin|TestAuthenticationRouteLimits|TestWebAuthenticationConcurrencyCap' -count=1 -v
+```
+
+### Login Enumeration Reviewer Checks
+
+Start Web and Core on a local/staging instance with an existing active test account. Optionally create a second test account through the admin UI and disable it. Supply those fixture emails below; the checker does not create or disable accounts, and never asks for a real password:
+
+```bash
+go run ./cmd/login-enumeration-check -url http://localhost:8080 -email active@example.com -disabled-email disabled@example.com
+```
+
+Replace the example emails with your fixtures. The command generates an unknown email and a random wrong password, then submits two or three failed logins. It requires the same HTTP 302 redirect to `Invalid email or password.`, identical response bodies and rendered login pages, and no `Set-Cookie`. It prints `PASS` for each case and exits nonzero on failure. Omitting `-disabled-email` explicitly reports that case as `SKIP`. These requests consume authentication limit slots; a 429 fails the check with a retry instruction.
+
+This checks Web's public responses. A generic Web response alone cannot prove Core connectivity or account fixture state. Confirm Core is running and use the Core regression command in its README to verify matching gRPC responses, successful login, and dummy Argon2 work. Lookup failures are injected by automated tests; they do not require breaking a running database. Timing is verified by checking the password work and configured cost, without a flaky wall-clock threshold.
+
+The reviewer checker itself is tested against the application router, plus simulated endpoints that leak messages, set cookies, return different bodies, succeed unexpectedly, throttle, redirect elsewhere, or return an HTTP outage:
+
+```bash
+go test ./cmd/login-enumeration-check ./internal/web -run 'TestReviewerCheck|TestLogin' -count=1 -v
+```
 
 Authentication submissions are limited before expensive Core calls. Web applies these defaults per running instance:
 
@@ -312,9 +352,21 @@ Login, password changes, and admin user creation retain a smaller **16 KiB** bod
 
 Bodies are completely checked within the size cap before session validation or handlers can use form data. This also bounds requests without a Content-Length, including chunked uploads. Oversized bodies return **HTTP 413**, malformed forms return **HTTP 400**, and body read timeouts return **HTTP 408** when a response can still be written. Multipart parsing uses bounded memory and cleans up any temporary form files. Normal housing notes, including 10,000 characters of Unicode text, fit within the default limit.
 
-`WEB_WRITE_TIMEOUT` bounds connection writes; it does not cancel handler work. `REQUEST_TIMEOUT` remains the separate downstream RPC timeout setting. These limits apply to both plaintext and TLS listeners.
+`WEB_WRITE_TIMEOUT` bounds connection writes; it does not cancel handler work. `REQUEST_TIMEOUT` controls the separate Core RPC budget described below. These limits apply to both plaintext and TLS listeners.
 
 Use the [regression tests](#http-protection-regression-tests) to verify connection timeouts and the [reviewer command](#reviewer-check-against-a-running-web-instance) to check body limits on a running instance.
+
+---
+
+## Core Request Deadlines
+
+`REQUEST_TIMEOUT` defaults to **5 seconds** and bounds every Web-to-Core RPC, including session validation, authentication, dashboard, family, person, housing, income, CPF, admin, and account operations. Missing, invalid, zero, or negative values fall back to the default.
+
+After request body validation, Web creates one deadline shared by session validation and subsequent business RPCs. A page with several sequential calls uses the remaining budget rather than receiving a fresh timeout for each call. Earlier request deadlines and client cancellation are preserved, along with the session metadata sent to Core. The Core client also applies a per-call deadline, protecting calls made outside the HTTP middleware, and cancels its timeout context when each call completes.
+
+Session validation timeouts return an HTML **504 Gateway Timeout** page; unavailable Core responses return **503 Service Unavailable**. These responses include `Cache-Control: no-store` and preserve the session cookie. Business handlers show safe error messages through their existing error redirects; page rendering also detects timeout or unavailable errors from optional RPCs, preventing incomplete backend data from appearing as a successful page. Internal gRPC connection details are not exposed in these messages. Unsaved housing notes, evaluation answers, and checklist criteria remain available to copy or retry after a timeout.
+
+`WEB_WRITE_TIMEOUT` controls response writes separately. Keep it longer than `REQUEST_TIMEOUT` so Web can send an error after a Core deadline expires. See the [gRPC deadline guide](https://grpc.io/docs/guides/deadlines/) for background.
 
 ---
 
@@ -382,6 +434,26 @@ These tests cover:
 - Real socket checks for slow headers, slow bodies, stalled chunked uploads, idle keep-alive connections, and response write deadlines.
 - TLS/HTTP2 oversized body rejection.
 - The reviewer command against the actual application router, an endpoint missing chunked protection, and unfixed or unavailable endpoints.
+
+### Core Deadline Regression Tests
+
+Run the deadline checks without a separate Core deployment or database:
+
+```bash
+go test ./internal/config ./internal/core ./internal/web -run 'TestRPC|TestCore|TestRequestTimeout' -count=1 -v
+```
+
+The tests start a local gRPC server that deliberately stalls. They verify deadlines for every Core service, unavailable connections with wait-for-ready enabled, shared budgets across sequential HTTP calls, earlier caller deadlines, cancellation, session metadata, safe error messages, session cookie preservation, and unsaved housing draft recovery. They also check that an unavailable backend cannot render an empty family list as a successful page.
+
+### Session Revocation Regression Tests
+
+Run the logout and password-change checks without a separate Core deployment:
+
+```bash
+go test ./internal/web -run TestSession -count=1 -v
+```
+
+These verify revocation before cookie deletion, repeated logout, rejected token reuse, timeout and unavailable Core responses, retry behavior, first-login and normal password changes, and preservation of cookies after failures. Run the matching Core lifecycle and PostgreSQL tests to verify backend invalidation and transaction behavior.
 
 ### Reviewer Check Against A Running Web Instance
 
@@ -490,6 +562,7 @@ ghcr.io/OurNeZt/ournezt-web:latest
 - [x] Static asset handling
 - [x] Authentication pages
 - [x] Session middleware integration
+- [x] Server-side logout and password-change session revocation
 - [x] gRPC client integration with OurNeZt Core
 - [x] Family and household dashboard pages
 - [x] Person profile management pages
@@ -499,6 +572,7 @@ ghcr.io/OurNeZt/ournezt-web:latest
 - [x] Housing checklists, evaluations, and notes
 - [x] Authentication rate limits and trusted proxy configuration
 - [x] Request body limits and HTTP connection timeouts
+- [x] Core RPC deadlines and safe dependency failure responses
 - [x] Reviewer commands for authentication and request body checks
 - [x] Responsive UI polish
 - [x] Docker image build and release workflow

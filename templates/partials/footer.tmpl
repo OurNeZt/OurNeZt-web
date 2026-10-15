@@ -213,9 +213,9 @@
       const actionBtn = document.getElementById("ozTourAction");
       const dontShowAgain = document.getElementById("ozTourDontShowAgain");
 
-      const forcePasswordChange = {{ if .User.MustChangePassword }}true{{ else }}false{{ end }};
-      const isAdmin = {{ if eq .User.Role "admin" }}true{{ else }}false{{ end }};
-      const userID = {{ printf "%q" .User.ID }};
+      const forcePasswordChange = {{ if and .User .User.MustChangePassword }}true{{ else }}false{{ end }};
+      const isAdmin = {{ if and .User (eq .User.Role "admin") }}true{{ else }}false{{ end }};
+      const userID = {{ if .User }}{{ printf "%q" .User.ID }}{{ else }}""{{ end }};
       const storage = window.localStorage;
       const path = window.location.pathname;
       const isFamilyDetail = /^\/families\/[^/]+$/.test(path);
