@@ -9,6 +9,7 @@ import (
 	ourneztv1 "github.com/OurNeZt/ournezt-web/internal/gen/proto/ournezt/v1"
 	"github.com/gin-gonic/gin"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 )
 
 type loginPayload struct{}
@@ -97,6 +98,17 @@ func (a *App) login(c *gin.Context) {
 }
 
 func (a *App) logout(c *gin.Context) {
+	c.Header("Cache-Control", "no-store")
+	if cookie, err := c.Request.Cookie(a.cfg.SessionCookieName); err == nil && cookie.Value != "" {
+		// The token is only used to revoke this session, even if it is no longer valid.
+		ctx := metadata.AppendToOutgoingContext(c.Request.Context(), "x-session-token", cookie.Value)
+		if _, err := a.clients.Auth.RevokeCurrentSession(ctx, &ourneztv1.RevokeCurrentSessionRequest{}); err != nil && grpcCode(err) != codes.Unauthenticated {
+			if !a.renderCoreFailure(c, grpcCode(err)) {
+				a.renderCoreFailure(c, codes.Unavailable)
+			}
+			return
+		}
+	}
 	http.SetCookie(c.Writer, clearSessionCookie(a.cfg.SessionCookieName, a.cfg.CookieSecure))
 	c.Redirect(http.StatusFound, "/login?flash=Logged+out")
 }
@@ -143,11 +155,15 @@ func (a *App) changePassword(c *gin.Context) {
 		c.Redirect(http.StatusFound, "/change-password?error="+urlQuerySafe(err.Error()))
 		return
 	}
-	if isAdmin {
-		c.Redirect(http.StatusFound, "/admin?flash=Password+updated")
-		return
-	}
-	c.Redirect(http.StatusFound, "/dashboard?flash=Password+updated")
+	a.passwordChanged(c)
+}
+
+// Core confirms password update and all-session revocation in the same operation.
+// Clear the browser session only after that operation succeeds.
+func (a *App) passwordChanged(c *gin.Context) {
+	c.Header("Cache-Control", "no-store")
+	http.SetCookie(c.Writer, clearSessionCookie(a.cfg.SessionCookieName, a.cfg.CookieSecure))
+	c.Redirect(http.StatusFound, "/login?flash=Password+updated.+Please+log+in+again.")
 }
 
 func (a *App) profile(c *gin.Context) {
@@ -209,7 +225,7 @@ func (a *App) profileChangePassword(c *gin.Context) {
 		return
 	}
 
-	c.Redirect(http.StatusFound, "/profile?flash=Password+updated")
+	a.passwordChanged(c)
 }
 
 func (a *App) profileEditSelfPerson(c *gin.Context) {
@@ -397,7 +413,14 @@ func (a *App) changePasswordFromPost(c *gin.Context) error {
 		if grpcCode(err) == codes.ResourceExhausted {
 			return &authlimit.LimitError{RetryAfter: authRetryDelay(err)}
 		}
-		return errors.New(grpcMessage(err))
+		switch grpcCode(err) {
+		case codes.Unauthenticated:
+			return errors.New("current password is incorrect or your session has expired")
+		case codes.DeadlineExceeded, codes.Unavailable, codes.Canceled:
+			return errors.New(grpcMessage(err))
+		default:
+			return errors.New("unable to change your password; please try again later")
+		}
 	}
 	return nil
 }

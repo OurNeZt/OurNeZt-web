@@ -127,6 +127,10 @@ func TestRPCDeadlinesAgainstStalledCoreForEveryService(t *testing.T) {
 			_, err := clients.Auth.ValidateSession(ctx, &pb.ValidateSessionRequest{})
 			return err
 		}},
+		{"revoke session", func(ctx context.Context) error {
+			_, err := clients.Auth.RevokeCurrentSession(ctx, &pb.RevokeCurrentSessionRequest{})
+			return err
+		}},
 		{"auth", func(ctx context.Context) error { _, err := clients.Auth.Login(ctx, &pb.LoginRequest{}); return err }},
 		{"family", func(ctx context.Context) error {
 			_, err := clients.Family.ListUserFamilies(ctx, &pb.ListUserFamiliesRequest{})
