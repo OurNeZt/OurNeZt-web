@@ -13,6 +13,7 @@ import (
 	"github.com/OurNeZt/ournezt-web/internal/core"
 	ourneztv1 "github.com/OurNeZt/ournezt-web/internal/gen/proto/ournezt/v1"
 	"github.com/gin-gonic/gin"
+	"github.com/gorilla/csrf"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
@@ -30,6 +31,7 @@ func (a *App) render(c *gin.Context, templateName, title string, payload any) {
 	}
 
 	c.HTML(http.StatusOK, templateName, ViewData{
+		CSRFField:         csrf.TemplateField(c.Request),
 		Title:             title,
 		User:              user,
 		Error:             strings.TrimSpace(c.Query("error")),

@@ -39,6 +39,7 @@ type Config struct {
 	SessionCookieName   string
 	SessionCookieMax    time.Duration
 	CookieSecure        bool
+	CSRFAuthKey         string
 	MaintenanceNotice   MaintenanceNoticeConfig
 	TrustedProxies      []string
 	AuthLimits          authlimit.Config
@@ -75,6 +76,7 @@ func Load() Config {
 		SessionCookieName:   env("SESSION_COOKIE_NAME", "ournezt_session"),
 		SessionCookieMax:    envDuration("SESSION_COOKIE_MAX_AGE", 24*time.Hour),
 		CookieSecure:        envBool("SESSION_COOKIE_SECURE", defaultCookieSecure(strings.EqualFold(env("APP_ENV", "development"), "production"))),
+		CSRFAuthKey:         env("CSRF_AUTH_KEY", ""),
 		TrustedProxies:      envList("WEB_TRUSTED_PROXIES"),
 		AuthLimits: authlimit.Config{
 			IPLimit:       envInt("AUTH_IP_LIMIT", 30),
