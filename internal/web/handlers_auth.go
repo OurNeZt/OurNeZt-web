@@ -13,6 +13,9 @@ import (
 )
 
 type loginPayload struct{}
+
+const loginFailureMessage = "Invalid email or password."
+
 type changePasswordPayload struct {
 	IsAdmin  bool
 	IsForced bool
@@ -67,7 +70,7 @@ func (a *App) login(c *gin.Context) {
 	email := strings.TrimSpace(c.PostForm("email"))
 	password := c.PostForm("password")
 	if email == "" || password == "" {
-		c.Redirect(http.StatusFound, "/login?error=Email+and+password+are+required")
+		c.Redirect(http.StatusFound, "/login?error="+urlQuerySafe(loginFailureMessage))
 		return
 	}
 
@@ -80,12 +83,7 @@ func (a *App) login(c *gin.Context) {
 			rejectAuthTraffic(c, authRetryDelay(err))
 			return
 		}
-		message := "Unable to log in. Please try again later."
-		switch grpcCode(err) {
-		case codes.Unauthenticated, codes.NotFound, codes.PermissionDenied:
-			message = "Invalid email or password."
-		}
-		c.Redirect(http.StatusFound, "/login?error="+urlQuerySafe(message))
+		c.Redirect(http.StatusFound, "/login?error="+urlQuerySafe(loginFailureMessage))
 		return
 	}
 
