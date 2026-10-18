@@ -110,6 +110,7 @@ func postSessionForm(router *gin.Engine, path, token string, form url.Values) *h
 	if token != "" {
 		req.AddCookie(&http.Cookie{Name: "session", Value: token})
 	}
+	addCSRF(router, req)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 	return w
@@ -132,6 +133,7 @@ func TestSessionLogoutRevokesBeforeClearingCookie(t *testing.T) {
 	router := revocationRouter(t, client, time.Second)
 	req := httptest.NewRequest(http.MethodPost, "/logout", nil)
 	req.AddCookie(&http.Cookie{Name: "session", Value: "token"})
+	addCSRF(router, req)
 	w := httptest.NewRecorder()
 	client.beforeRevoke = func() {
 		if w.Header().Get("Set-Cookie") != "" {

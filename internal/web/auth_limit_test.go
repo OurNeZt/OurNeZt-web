@@ -78,6 +78,7 @@ func postAuth(r *gin.Engine, path, ip, forwarded string, values url.Values, cook
 	if cookie {
 		req.AddCookie(&http.Cookie{Name: "session", Value: "token"})
 	}
+	addCSRF(r, req)
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 	return w
