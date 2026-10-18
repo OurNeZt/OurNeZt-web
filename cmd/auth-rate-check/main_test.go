@@ -38,7 +38,7 @@ func TestReviewerCheckStopsWhenProgressOutputFails(t *testing.T) {
 	if !errors.Is(err, io.ErrClosedPipe) {
 		t.Fatalf("output error was lost: %v", err)
 	}
-	if requests.Load() != 2 {
+	if requests.Load() != 3 {
 		t.Fatalf("check continued after output failure: %d requests", requests.Load())
 	}
 }

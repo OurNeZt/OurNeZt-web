@@ -26,6 +26,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/OurNeZt/ournezt-web/internal/checkclient"
 )
 
 type settings struct {
@@ -81,6 +83,10 @@ func run(ctx context.Context, cfg settings, out io.Writer) error {
 	}
 	client := &http.Client{Timeout: 10 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
 	loginURL := strings.TrimRight(cfg.baseURL, "/") + "/login"
+	token, err := checkclient.PrimeCSRF(ctx, client, cfg.baseURL)
+	if err != nil {
+		return fmt.Errorf("load login form: %w", err)
+	}
 	attempt := func(email string, spoof int) (*http.Response, error) {
 		form := url.Values{"email": {email}, "password": {"deliberately-wrong-" + nonce}}
 		req, err := http.NewRequestWithContext(ctx, http.MethodPost, loginURL, strings.NewReader(form.Encode()))
@@ -88,6 +94,8 @@ func run(ctx context.Context, cfg settings, out io.Writer) error {
 			return nil, err
 		}
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		req.Header.Set("Origin", strings.TrimRight(cfg.baseURL, "/"))
+		req.Header.Set("X-CSRF-Token", token)
 		if spoof > 0 {
 			address := fmt.Sprintf("198.18.%d.%d", spoof/256, spoof%256)
 			req.Header.Set("X-Forwarded-For", address)

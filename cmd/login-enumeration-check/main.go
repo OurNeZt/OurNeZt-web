@@ -14,6 +14,8 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"github.com/OurNeZt/ournezt-web/internal/checkclient"
 )
 
 type settings struct {
@@ -66,6 +68,10 @@ func run(ctx context.Context, cfg settings, out io.Writer) error {
 	}
 	client := &http.Client{Timeout: cfg.timeout, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
 	base := strings.TrimRight(origin.String(), "/")
+	token, err := checkclient.PrimeCSRF(ctx, client, base)
+	if err != nil {
+		return fmt.Errorf("load login form: %w", err)
+	}
 	var baselinePost, baselinePage string
 	for i, probe := range probes {
 		form := url.Values{"email": {probe.email}, "password": {password}}
@@ -74,6 +80,8 @@ func run(ctx context.Context, cfg settings, out io.Writer) error {
 			return err
 		}
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		req.Header.Set("Origin", base)
+		req.Header.Set("X-CSRF-Token", token)
 		response, post, err := request(client, req)
 		if err != nil {
 			return fmt.Errorf("%s request failed: %w", probe.name, err)
@@ -96,6 +104,7 @@ func run(ctx context.Context, cfg settings, out io.Writer) error {
 		if pageResponse.StatusCode != http.StatusOK || !strings.Contains(pageResponse.Header.Get("Content-Type"), "text/html") || !strings.Contains(page, "Invalid email or password.") || len(pageResponse.Header.Values("Set-Cookie")) != 0 {
 			return fmt.Errorf("%s: expected an HTML login page with the generic message and no Set-Cookie", probe.name)
 		}
+		page = checkclient.NormalizeCSRF(page)
 		if i == 0 {
 			baselinePost, baselinePage = post, page
 		} else if post != baselinePost || page != baselinePage {

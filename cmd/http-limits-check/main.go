@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/OurNeZt/ournezt-web/internal/checkclient"
 	"github.com/OurNeZt/ournezt-web/internal/config"
 )
 
@@ -24,6 +25,7 @@ type settings struct {
 }
 
 type probe struct {
+	csrfToken               string
 	name, path, contentType string
 	body                    []byte
 	chunked                 bool
@@ -58,6 +60,10 @@ func run(ctx context.Context, cfg settings, out io.Writer) error {
 		Timeout:       cfg.timeout,
 		CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
 	}
+	token, err := checkclient.PrimeCSRF(ctx, client, base)
+	if err != nil {
+		return fmt.Errorf("load login form: %w", err)
+	}
 	// This deliberately unregistered path cannot submit an application form.
 	const path = "/__ournezt_http_limits_check__"
 	payload := bytes.Repeat([]byte("x"), int(cfg.bodyLimit)+1)
@@ -85,6 +91,7 @@ func run(ctx context.Context, cfg settings, out io.Writer) error {
 		{name: "smaller authentication body cap", path: "/login", body: payload[:authLimit+1], contentType: "application/x-www-form-urlencoded", status: http.StatusRequestEntityTooLarge},
 	}
 	for _, p := range probes {
+		p.csrfToken = token
 		if err := check(ctx, client, base, p); err != nil {
 			return err
 		}
@@ -104,6 +111,8 @@ func check(ctx context.Context, client *http.Client, base string, p probe) error
 	if p.chunked {
 		req.ContentLength = -1
 	}
+	req.Header.Set("Origin", base)
+	req.Header.Set("X-CSRF-Token", p.csrfToken)
 	if p.contentType != "" {
 		req.Header.Set("Content-Type", p.contentType)
 	}
