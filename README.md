@@ -305,7 +305,23 @@ Before deploying, generate `CSRF_AUTH_KEY` once with `openssl rand -hex 32`, sto
 
 Production CSRF cookies are HTTP-only, Secure, SameSite=Lax, host-only, and use the `__Host-` prefix. This applies even when TLS terminates at ingress. The ingress must preserve the public `Host`; arbitrary forwarded-host/protocol headers are not used for CSRF trust. Local HTTP uses an unprefixed cookie. Keep `SESSION_COOKIE_SECURE=true` in production as well.
 
-Run the automated checks without Core or a database:
+For a running local/staging Web instance, reviewers can run this without an account or password:
+
+```bash
+go run ./cmd/csrf-check -url http://localhost:8080
+```
+
+The command prints readable `PASS` results for login/logout, password/account, admin, family, person, and housing POST routes. It checks missing and invalid tokens, missing cookies, tokens from another browser, foreign/sibling/null origins, Referer fallback, noncacheable token pages, and tokens from two tabs. Valid-token controls submit empty login forms and must reach normal validation, so an app that always returns 403 cannot falsely pass.
+
+Probes run signed out and do not supply application form data. Authenticated actions and backend side effects are explicitly reported as `SKIP`; use the regression suite below for those checks. Unexpected session cookies, outages, oversized responses, or HTTP 429 fail the checker. Redirects are not followed. Each run consumes authentication rate-limit slots; allow a fresh rate-limit window before repeating it.
+
+The reviewer command is tested against the actual router over HTTP and HTTPS, with broken endpoints to verify that missing protection and blanket rejection are detected:
+
+```bash
+go test ./cmd/csrf-check
+```
+
+Run the broader automated checks without Core or a database:
 
 ```bash
 go test ./internal/web -run TestCSRF -count=1
