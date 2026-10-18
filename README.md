@@ -248,6 +248,7 @@ See [.env.example](.env.example) for common settings. The HTTP timeout and body 
 | `SESSION_COOKIE_NAME` | Name of the browser session cookie. | `ournezt_session` |
 | `SESSION_COOKIE_MAX_AGE` | Session cookie lifetime. | `12h` |
 | `SESSION_COOKIE_SECURE` | Whether the session cookie requires HTTPS. Set to `true` in production. | `false` |
+| `CSRF_AUTH_KEY` | Secret for signing CSRF cookies: 32 random bytes encoded as 64 hex characters. Required in production; persist and share across Web replicas. | Generate with `openssl rand -hex 32` |
 | `REQUEST_TIMEOUT` | Shared Core RPC budget per HTTP request and maximum duration of an individual Core RPC; defaults to `5s`. | `5s` |
 | `SHUTDOWN_TIMEOUT` | Graceful shutdown timeout; defaults to `10s`. | `10s` |
 | `WEB_TLS_CERT_FILE` / `WEB_TLS_KEY_FILE` | Certificate and private key for optional HTTPS on the Web listener. Configure both. | `/etc/ournezt/tls/tls.crt` / `/etc/ournezt/tls/tls.key` |
@@ -292,6 +293,38 @@ Deploy the matching Core change before updating Web. The existing `revoked_at` d
 
 ## Authentication Protections
 
+### CSRF Protection
+
+All state-changing routes require a valid CSRF token and its signed browser cookie, including login, logout, password changes, account updates, admin actions, families, people, and housing forms. Shared middleware also protects future POST, PUT, PATCH, and DELETE routes before any Core call. Hidden tokens are rendered by the server, so normal form submissions need no JavaScript.
+
+Web validates `Origin` against the request's scheme and host, including the port. Sibling subdomains are rejected. If `Origin` is absent, a supplied `Referer` must match; HTTPS submissions require either `Origin` or `Referer` as well as the token. Local HTTP allows both headers to be absent only with a valid token/cookie pair. Tokens supplied only in the URL query are rejected. Scripted clients can send the form token in `X-CSRF-Token` instead.
+
+Rejected submissions return HTTP 403 with a message to reopen the form. They do not call Core or change the session cookie. Pages with tokens use `Cache-Control: no-store`. Masked tokens vary per page load and remain usable across browser tabs.
+
+Before deploying, generate `CSRF_AUTH_KEY` once with `openssl rand -hex 32`, store it as a deployment secret, and supply the same value to every Web replica. Production startup fails if this setting is missing or malformed. Development can leave it empty to generate a temporary key; reload open forms after restarting Web. Rotating the key invalidates open forms but does not revoke login sessions.
+
+Production CSRF cookies are HTTP-only, Secure, SameSite=Lax, host-only, and use the `__Host-` prefix. This applies even when TLS terminates at ingress. The ingress must preserve the public `Host`; arbitrary forwarded-host/protocol headers are not used for CSRF trust. Local HTTP uses an unprefixed cookie. Keep `SESSION_COOKIE_SECURE=true` in production as well.
+
+Run the automated checks without Core or a database:
+
+```bash
+go test ./internal/web -run TestCSRF -count=1
+```
+
+The checks verify every registered POST route, invalid/missing tokens and cookies, tokens from another browser, foreign and sibling origins, Referer fallback, form fields including retry pages, and cookies shared between replicas. For a manual review:
+
+| Check | Expected result |
+| --- | --- |
+| Open a form and submit it normally | The usual action or validation message |
+| Remove its hidden `csrf_token` field and submit | 403; the change is not made |
+| Replace the token with a value from another browser | 403; the change is not made |
+| POST with a foreign or sibling `Origin`, even with a valid token | 403; the change is not made |
+| Use forms in two browser tabs | Both remain usable |
+
+The existing reviewer commands load the login form and retain its CSRF cookie before running their probes. The login enumeration comparison ignores only the randomized hidden token; all other response content must match.
+
+### Login Response Protection
+
 Failed logins display only `Invalid email or password.` Web uses the same redirect and rendered message for unknown emails, wrong passwords, disabled accounts, lookup failures, and other Core login errors. It never displays raw Core login error messages or sets a session cookie after failure. Missing email or password uses the same message. Authentication throttling still returns HTTP 429 with retry information.
 
 Deploy the matching Core fix for [core #54](https://github.com/OurNeZt/OurNeZt-core/issues/54) to normalize gRPC login responses and perform bounded dummy Argon2id verification for unknown accounts. Web's message protection works independently, but Core is needed to reduce backend timing differences.
@@ -310,7 +343,7 @@ Start Web and Core on a local/staging instance with an existing active test acco
 go run ./cmd/login-enumeration-check -url http://localhost:8080 -email active@example.com -disabled-email disabled@example.com
 ```
 
-Replace the example emails with your fixtures. The command generates an unknown email and a random wrong password, then submits two or three failed logins. It requires the same HTTP 302 redirect to `Invalid email or password.`, identical response bodies and rendered login pages, and no `Set-Cookie`. It prints `PASS` for each case and exits nonzero on failure. Omitting `-disabled-email` explicitly reports that case as `SKIP`. These requests consume authentication limit slots; a 429 fails the check with a retry instruction.
+Replace the example emails with your fixtures. The command generates an unknown email and a random wrong password, then submits two or three failed logins. After acquiring the CSRF cookie, it requires the same HTTP 302 redirect to `Invalid email or password.`, identical response bodies and rendered login pages (apart from masked CSRF tokens), and no additional `Set-Cookie`. It prints `PASS` for each case and exits nonzero on failure. Omitting `-disabled-email` explicitly reports that case as `SKIP`. These requests consume authentication limit slots; a 429 fails the check with a retry instruction.
 
 This checks Web's public responses. A generic Web response alone cannot prove Core connectivity or account fixture state. Confirm Core is running and use the Core regression command in its README to verify matching gRPC responses, successful login, and dummy Argon2 work. Lookup failures are injected by automated tests; they do not require breaking a running database. Timing is verified by checking the password work and configured cost, without a flaky wall-clock threshold.
 
@@ -410,7 +443,7 @@ Run tests with coverage:
 go test -v -cover ./...
 ```
 
-Generate an HTML coverage report:
+Optional developer code coverage report (shows which source code ran; this is not a feature pass/fail report):
 
 ```bash
 go test -coverprofile=coverage.out ./...
@@ -487,7 +520,7 @@ Build the image locally:
 docker build -t ournezt-web:local .
 ```
 
-Run the container:
+Run the container with the persistent CSRF secret configured (see [CSRF Protection](#csrf-protection)):
 
 ```bash
 docker run --rm \
@@ -498,6 +531,7 @@ docker run --rm \
   -e SESSION_COOKIE_NAME="ournezt_session" \
   -e SESSION_COOKIE_MAX_AGE="12h" \
   -e SESSION_COOKIE_SECURE="true" \
+  -e CSRF_AUTH_KEY="${CSRF_AUTH_KEY}" \
   -e REQUEST_TIMEOUT="5s" \
   ournezt-web:local
 ```
