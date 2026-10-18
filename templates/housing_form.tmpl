@@ -1,4 +1,5 @@
 {{ define "housing_form" }}
+{{ $csrf := .CSRFField }}
 {{ template "partials/header" . }}
 <style>
   .oz-animated-field {
@@ -35,7 +36,7 @@
     <h1 class="card-title">{{ if .Data.IsEdit }}Edit Housing{{ else }}Add Housing{{ end }}</h1>
     <p class="text-sm opacity-75">All money inputs are in dollars. Example: 1250.50 means $1,250.50.</p>
     <p class="text-xs opacity-70"><span class="text-error font-semibold">*</span> Required fields. Grant amount and buyer stamp duty are calculated automatically.</p>
-    <form method="post" action="{{ if .Data.IsEdit }}/housing/{{ .Data.Housing.Id }}{{ else }}/housing{{ end }}" class="grid grid-cols-1 md:grid-cols-2 gap-3 oz-form-grid">
+    <form method="post" action="{{ if .Data.IsEdit }}/housing/{{ .Data.Housing.Id }}{{ else }}/housing{{ end }}" class="grid grid-cols-1 md:grid-cols-2 gap-3 oz-form-grid">{{ $csrf }}
       <input type="hidden" name="family_id" value="{{ .Data.FamilyID }}">
       <div class="oz-field" id="assessment_mode_field">
         <label class="oz-field-label" for="assessment_mode"><span class="inline-flex items-center gap-1">Assessment Mode<span class="text-error" aria-label="required" title="Required">*</span>{{ template "partials/help_tooltip" (dict "Key" "assessment_mode" "Label" "Assessment Mode") }}</span></label>

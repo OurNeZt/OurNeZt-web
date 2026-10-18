@@ -1,4 +1,5 @@
 {{ define "partials/header" }}
+{{ $csrf := .CSRFField }}
 <!doctype html>
 <html lang="en">
 <head>
@@ -43,7 +44,7 @@
               </a>
             {{ end }}
           {{ end }}
-          <form method="post" action="/logout" class="inline"><button class="btn btn-outline btn-sm">Logout</button></form>
+          <form method="post" action="/logout" class="inline">{{ $csrf }}<button class="btn btn-outline btn-sm">Logout</button></form>
         </div>
 
         <details class="oz-mobile-menu md:hidden">
@@ -71,7 +72,7 @@
               {{ end }}
             {{ end }}
             <li>
-              <form method="post" action="/logout">
+              <form method="post" action="/logout">{{ $csrf }}
                 <button class="w-full text-left" type="submit">Logout</button>
               </form>
             </li>

@@ -1,17 +1,18 @@
 {{ define "core_unavailable" }}
+{{ $csrf := .CSRFField }}
 {{ template "partials/header" . }}
 <section class="card oz-panel max-w-xl mx-auto">
   <div class="card-body">
     <h1 class="card-title text-2xl">{{ .Title }}</h1>
     {{ if .Data.Logout }}
       <p>We could not confirm your logout. Please retry to securely end this session.</p>
-      <form method="post" action="/logout"><button class="btn btn-primary" type="submit">Retry logout</button></form>
+      <form method="post" action="/logout">{{ $csrf }}<button class="btn btn-primary" type="submit">Retry logout</button></form>
     {{ else }}
       <p>Please try again shortly.</p>
     {{ end }}
     {{ if .Data.Notes }}
       <p>Your unsaved notes are preserved below so you can copy them or try saving again.</p>
-      {{ template "partials/housing_notes" .Data.Notes }}
+      {{ template "partials/housing_notes" (dict "Data" .Data.Notes "CSRFField" $csrf) }}
     {{ end }}
     {{ if .Data.Answer }}
       <h2 class="font-semibold">Unsaved evaluation</h2>
