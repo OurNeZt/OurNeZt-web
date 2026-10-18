@@ -12,6 +12,7 @@ const coreTimeoutMessage = "OurNeZt took too long to respond. Please try again."
 const coreUnavailableMessage = "OurNeZt is temporarily unavailable. Please try again later."
 
 type coreFailureData struct {
+	Logout    bool
 	Notes     *housingDetailData
 	Answer    *pb.HousingAnswer
 	Criterion *pb.HousingCriterion
@@ -28,7 +29,7 @@ func (a *App) renderCoreFailure(c *gin.Context, code codes.Code) bool {
 	default:
 		return false
 	}
-	var drafts coreFailureData
+	drafts := coreFailureData{Logout: c.Request.Method == http.MethodPost && c.Request.URL.Path == "/logout"}
 	if notes, ok := c.Get("housing_notes_draft"); ok {
 		drafts.Notes = &housingDetailData{Housing: &pb.HousingOption{Id: c.Param("id")}, Notes: notes.(string), NotesError: message, NotesMaxLength: housingNotesMaxLength}
 	}

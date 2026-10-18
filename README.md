@@ -68,6 +68,7 @@
       <ul>
         <li><a href="#http-protection-regression-tests">HTTP Protection Regression Tests</a></li>
         <li><a href="#core-deadline-regression-tests">Core Deadline Regression Tests</a></li>
+        <li><a href="#session-revocation-regression-tests">Session Revocation Regression Tests</a></li>
         <li><a href="#reviewer-check-against-a-running-web-instance">Reviewer Check Against A Running Web Instance</a></li>
       </ul>
     </li>
@@ -97,6 +98,7 @@ This repository is designed to act as the main web client for OurNeZt. It uses G
 OurNeZt Web currently focuses on the user-facing experience for:
 
 - Login, session handling, and authenticated web access.
+- Server-side logout revocation and fresh login after password changes.
 - Admin-created user onboarding and first-time password flow.
 - Family and household dashboard views.
 - Family creation, joining, invite code, and member management workflows.
@@ -275,9 +277,16 @@ For hot-swappable maintenance copy, set `MAINTENANCE_NOTICE_FILE` to a JSON file
 ```
 
 ### Session Behaviour
+
 OurNeZt Web stores the session token in an HTTP-only browser cookie. For authenticated backend calls, the token is forwarded to OurNeZt Core as gRPC metadata: `x-session-token: <session-token>`
 
 If OurNeZt Core returns that a user must change their password, the web app redirects the user to: `/change-password`. This ensures bootstrap-created admin users and password-reset users update their password before continuing to other authenticated pages.
+
+Logout calls Core’s `RevokeCurrentSession` RPC with the browser token before clearing the cookie. Repeated logout remains safe even when the token has expired or was already revoked. If Core cannot confirm revocation, Web keeps the cookie, displays a safe error, and offers **Retry logout**. Logout uses the shared Core request deadline and does not perform a preliminary session validation call.
+
+After a successful password change through either `/change-password` or `/profile/password`, Core has revoked all sessions for that user. Web clears the cookie and redirects to login with a confirmation. Failed password changes keep the cookie. This also applies to the first-login password-change flow.
+
+Deploy the matching Core change before updating Web. The existing `revoked_at` database column supports this behavior; no new schema migration or Web environment setting is needed.
 
 ---
 
@@ -408,6 +417,16 @@ go test ./internal/config ./internal/core ./internal/web -run 'TestRPC|TestCore|
 
 The tests start a local gRPC server that deliberately stalls. They verify deadlines for every Core service, unavailable connections with wait-for-ready enabled, shared budgets across sequential HTTP calls, earlier caller deadlines, cancellation, session metadata, safe error messages, session cookie preservation, and unsaved housing draft recovery. They also check that an unavailable backend cannot render an empty family list as a successful page.
 
+### Session Revocation Regression Tests
+
+Run the logout and password-change checks without a separate Core deployment:
+
+```bash
+go test ./internal/web -run TestSession -count=1 -v
+```
+
+These verify revocation before cookie deletion, repeated logout, rejected token reuse, timeout and unavailable Core responses, retry behavior, first-login and normal password changes, and preservation of cookies after failures. Run the matching Core lifecycle and PostgreSQL tests to verify backend invalidation and transaction behavior.
+
 ### Reviewer Check Against A Running Web Instance
 
 Start Web as described above, then run this command in another terminal:
@@ -515,6 +534,7 @@ ghcr.io/OurNeZt/ournezt-web:latest
 - [x] Static asset handling
 - [x] Authentication pages
 - [x] Session middleware integration
+- [x] Server-side logout and password-change session revocation
 - [x] gRPC client integration with OurNeZt Core
 - [x] Family and household dashboard pages
 - [x] Person profile management pages
