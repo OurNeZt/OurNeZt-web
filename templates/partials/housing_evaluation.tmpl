@@ -10,6 +10,8 @@
 {{ end }}
 
 {{ define "partials/housing_evaluation" }}
+{{ $csrf := .CSRFField }}
+{{ with .Data }}
 <section id="evaluation" class="card bg-base-100 shadow mt-6"><div class="card-body gap-4">
   <div class="flex flex-wrap gap-3 items-center justify-between"><h2 class="card-title">Housing Evaluation</h2><a class="btn btn-sm" href="/housing/checklist?family_id={{ .FamilyID }}">Manage family checklist</a></div>
   {{ if .EvaluationError }}<div class="alert alert-error">Unable to load evaluation: {{ .EvaluationError }}</div>
@@ -18,7 +20,7 @@
   <p class="text-sm opacity-75">1 = poor fit, 5 = excellent fit. Complete requires a rating. Pending ratings contribute to the score while you continue reviewing. Not applicable clears the rating and keeps your notes.</p>
   <div class="grid gap-4 lg:grid-cols-2">
   {{ range .EvaluationRows }}
-    <form method="post" action="/housing/{{ $.Housing.Id }}/evaluation/{{ .Criterion.Id }}" class="card border border-base-300"><div class="card-body p-4 gap-3">
+    <form method="post" action="/housing/{{ $.Data.Housing.Id }}/evaluation/{{ .Criterion.Id }}" class="card border border-base-300">{{ $csrf }}<div class="card-body p-4 gap-3">
       <h3 class="font-semibold">{{ .Criterion.Name }}</h3>
       {{ if .Criterion.Description }}<p class="text-sm whitespace-pre-wrap">{{ .Criterion.Description }}</p>{{ end }}
       <p class="text-xs opacity-75">Weight: {{ if .Criterion.Weight }}{{ criterionWeight .Criterion }}{{ else }}1{{ end }}{{ if not .Answer.Rating }} · {{ if eq .Answer.State "not_applicable" }}Not applicable{{ else }}Unrated / pending{{ end }}{{ end }}</p>
@@ -44,6 +46,7 @@
   </div>
   {{ end }}
 </div></section>
+{{ end }}
 {{ end }}
 
 {{ define "partials/evaluation_comparison" }}

@@ -1,4 +1,5 @@
 {{ define "family_detail" }}
+{{ $csrf := .CSRFField }}
 {{ template "partials/header" . }}
 <section class="card bg-base-100 shadow">
   <div class="card-body">
@@ -8,7 +9,7 @@
       <a class="btn btn-sm" href="/dashboard?family_id={{ .Data.Family.Id }}">Dashboard</a>
       <a class="btn btn-sm" href="/people?family_id={{ .Data.Family.Id }}">People</a>
       <a class="btn btn-sm" href="/housing?family_id={{ .Data.Family.Id }}">Housing</a>
-      <form method="post" action="/families/{{ .Data.Family.Id }}/invite-code/regenerate" class="inline">
+      <form method="post" action="/families/{{ .Data.Family.Id }}/invite-code/regenerate" class="inline">{{ $csrf }}
         <button class="btn btn-sm btn-secondary" type="submit">Regenerate Invite Code</button>
       </form>
     </div>

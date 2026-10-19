@@ -154,6 +154,9 @@ func TestCoreDeadlinesAcrossBusinessRoutes(t *testing.T) {
 				t.Fatal(err)
 			}
 			req := httptest.NewRequest(tc.method, tc.path, strings.NewReader(tc.body))
+			if tc.method == http.MethodPost {
+				addCSRF(router, req)
+			}
 			if tc.body != "" {
 				req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 			}
@@ -226,6 +229,7 @@ func TestCoreSessionFailurePreservesCookie(t *testing.T) {
 			t.Fatal(err)
 		}
 		req := httptest.NewRequest("GET", "/families", nil)
+		addCSRF(router, req)
 		req.AddCookie(&http.Cookie{Name: "session", Value: "token"})
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
@@ -363,6 +367,7 @@ func TestCoreTimeoutPreservesUnsavedHousingDrafts(t *testing.T) {
 				t.Fatal(err)
 			}
 			req := httptest.NewRequest("POST", tc.path, strings.NewReader(tc.form.Encode()))
+			addCSRF(router, req)
 			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 			req.AddCookie(&http.Cookie{Name: "session", Value: "token"})
 			w := httptest.NewRecorder()

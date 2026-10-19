@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/OurNeZt/ournezt-web/internal/checkclient"
 	"github.com/OurNeZt/ournezt-web/internal/config"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -35,9 +36,10 @@ func TestLoginFailuresHaveIdenticalResponses(t *testing.T) {
 			if page.Code != http.StatusOK || !strings.Contains(page.Body.String(), "Invalid email or password.") || strings.Contains(page.Body.String(), "private") {
 				t.Fatalf("login page exposed an unsafe message: %d %s", page.Code, page.Body.String())
 			}
+			body := checkclient.NormalizeCSRF(page.Body.String())
 			if baseline == "" {
-				baseline = page.Body.String()
-			} else if page.Body.String() != baseline {
+				baseline = body
+			} else if body != baseline {
 				t.Fatal("login pages differ by backend failure state")
 			}
 		})

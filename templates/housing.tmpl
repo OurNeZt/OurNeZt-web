@@ -1,4 +1,5 @@
 {{ define "housing" }}
+{{ $csrf := .CSRFField }}
 {{ template "partials/header" . }}
 <section class="card bg-base-100 shadow">
   <div class="card-body gap-5">
@@ -40,7 +41,7 @@
             <h2 class="card-title text-base">Housing Groups</h2>
             <p class="text-sm opacity-75">Create custom buckets like BTO launches, resale shortlists, or scenario rounds.</p>
           </div>
-          <form method="post" action="/housing/groups" class="flex w-full flex-col gap-2 sm:flex-row lg:w-auto">
+          <form method="post" action="/housing/groups" class="flex w-full flex-col gap-2 sm:flex-row lg:w-auto">{{ $csrf }}
             <input type="hidden" name="family_id" value="{{ .Data.FamilyID }}">
             <input class="input input-bordered sm:min-w-[16rem]" name="name" placeholder="e.g. June BTO 2026" required>
             <button class="btn btn-primary" type="submit">Create Group</button>
@@ -81,18 +82,18 @@
             <div class="alert oz-alert-soft text-sm xl:max-w-md">Ungrouped options stay fully usable. Assign them to a group whenever you want a cleaner shortlist.</div>
             {{ else }}
             <div class="grid gap-2 xl:min-w-[26rem]">
-              <form method="post" action="/housing/groups/{{ .GroupID }}" class="flex flex-col gap-2 sm:flex-row">
+              <form method="post" action="/housing/groups/{{ .GroupID }}" class="flex flex-col gap-2 sm:flex-row">{{ $csrf }}
                 <input type="hidden" name="family_id" value="{{ $.Data.FamilyID }}">
                 <input class="input input-bordered flex-1" name="name" value="{{ .GroupName }}" required>
                 <button class="btn btn-sm" type="submit">Rename</button>
               </form>
               <div class="flex flex-wrap gap-2">
-                <form method="post" action="/housing/groups/{{ .GroupID }}/visibility" class="m-0">
+                <form method="post" action="/housing/groups/{{ .GroupID }}/visibility" class="m-0">{{ $csrf }}
                   <input type="hidden" name="family_id" value="{{ $.Data.FamilyID }}">
                   <input type="hidden" name="visible_on_dashboard" value="{{ if .AllVisible }}false{{ else }}true{{ end }}">
                   <button class="btn btn-sm" type="submit">{{ if .AllVisible }}Hide Group{{ else }}Show Group{{ end }}</button>
                 </form>
-                <form method="post" action="/housing/groups/{{ .GroupID }}/delete" class="m-0">
+                <form method="post" action="/housing/groups/{{ .GroupID }}/delete" class="m-0">{{ $csrf }}
                   <input type="hidden" name="family_id" value="{{ $.Data.FamilyID }}">
                   <button class="btn btn-sm btn-error" type="submit">Delete Group</button>
                 </form>
@@ -131,7 +132,7 @@
                 </div>
 
                 <div class="grid gap-2 xl:grid-cols-[minmax(0,1fr)_auto]">
-                  <form method="post" action="/housing/{{ $option.Id }}/group" class="flex flex-col gap-2 sm:flex-row oz-housing-group-form" data-current-group-id="{{ $option.GetHousingGroupId }}">
+                  <form method="post" action="/housing/{{ $option.Id }}/group" class="flex flex-col gap-2 sm:flex-row oz-housing-group-form" data-current-group-id="{{ $option.GetHousingGroupId }}">{{ $csrf }}
                     <input type="hidden" name="family_id" value="{{ $.Data.FamilyID }}">
                     <select class="select select-bordered flex-1" name="housing_group_id">
                       <option value="">Ungrouped</option>
@@ -141,7 +142,7 @@
                     </select>
                     <button class="btn btn-sm" type="submit" disabled>Move</button>
                   </form>
-                  <form method="post" action="/housing/{{ $option.Id }}/visibility" class="m-0">
+                  <form method="post" action="/housing/{{ $option.Id }}/visibility" class="m-0">{{ $csrf }}
                     <input type="hidden" name="family_id" value="{{ $.Data.FamilyID }}">
                     <input type="hidden" name="visible_on_dashboard" value="{{ if $option.GetVisibleOnDashboard }}false{{ else }}true{{ end }}">
                     <button class="btn btn-sm {{ if $option.GetVisibleOnDashboard }}btn-outline{{ else }}btn-primary{{ end }}" type="submit">
@@ -153,7 +154,7 @@
                 <div class="flex flex-wrap gap-2">
                   <a class="btn btn-xs" href="/housing/{{ $option.Id }}?family_id={{ $.Data.FamilyID }}">View</a>
                   <a class="btn btn-xs" href="/housing/{{ $option.Id }}/edit?family_id={{ $.Data.FamilyID }}">Edit</a>
-                  <form method="post" action="/housing/{{ $option.Id }}/delete" class="m-0">
+                  <form method="post" action="/housing/{{ $option.Id }}/delete" class="m-0">{{ $csrf }}
                     <input type="hidden" name="family_id" value="{{ $.Data.FamilyID }}">
                     <button class="btn btn-xs btn-error" type="submit">Delete</button>
                   </form>

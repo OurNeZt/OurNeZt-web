@@ -5,6 +5,7 @@ import (
 
 	pb "github.com/OurNeZt/ournezt-web/internal/gen/proto/ournezt/v1"
 	"github.com/gin-gonic/gin"
+	"github.com/gorilla/csrf"
 	"google.golang.org/grpc/codes"
 )
 
@@ -42,7 +43,8 @@ func (a *App) renderCoreFailure(c *gin.Context, code codes.Code) bool {
 	c.Header("Cache-Control", "no-store")
 	c.Abort()
 	c.HTML(statusCode, "core_unavailable", ViewData{
-		Title: title, User: userFromContext(c), Error: message, MaintenanceNotice: a.maintenanceNotice(), Data: drafts,
+		CSRFField: csrf.TemplateField(c.Request),
+		Title:     title, User: userFromContext(c), Error: message, MaintenanceNotice: a.maintenanceNotice(), Data: drafts,
 	})
 	return true
 }

@@ -1,4 +1,5 @@
 {{ define "profile" }}
+{{ $csrf := .CSRFField }}
 {{ template "partials/header" . }}
 <section class="card bg-base-100 shadow">
   <div class="card-body">
@@ -29,7 +30,7 @@
           <div class="font-mono text-xs">{{ .Data.User.ID }}</div>
         </div>
       </div>
-      <form method="post" action="/profile/account" class="mt-4 space-y-3">
+      <form method="post" action="/profile/account" class="mt-4 space-y-3">{{ $csrf }}
         <label class="oz-field">
           <span>Email</span>
           <input class="input input-bordered w-full" type="email" name="email" value="{{ .Data.User.Email }}" required>
@@ -46,7 +47,7 @@
   <section class="card bg-base-100 shadow">
     <div class="card-body">
       <h2 class="card-title">Change Password</h2>
-      <form method="post" action="/profile/password" class="space-y-3">
+      <form method="post" action="/profile/password" class="space-y-3">{{ $csrf }}
         <label class="oz-field">
           <span>Current password</span>
           <input class="input input-bordered w-full" name="current_password" type="password" autocomplete="current-password" required>

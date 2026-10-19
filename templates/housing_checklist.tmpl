@@ -1,4 +1,5 @@
 {{ define "housing_checklist" }}
+{{ $csrf := .CSRFField }}
 {{ template "partials/header" . }}
 <section class="card bg-base-100 shadow"><div class="card-body gap-4">
   <h1 class="card-title">Family Housing Checklist</h1>
@@ -6,16 +7,16 @@
   <a class="btn btn-sm self-start" href="/housing?family_id={{ .Data.FamilyID }}">Back to Housing</a>
   <p class="text-sm">Rate each criterion from 1 (poor fit) to 5 (excellent fit). Leave weight blank for equal weighting (1). Higher weights give a criterion more influence.</p>
   <section class="card bg-base-200"><div class="card-body p-4"><h2 class="card-title text-base">Add criterion</h2>
-  {{ if not .Data.Draft.Id }}{{ template "housing_criterion_form" (dict "Criterion" .Data.Draft "FamilyID" .Data.FamilyID) }}
+  {{ if not .Data.Draft.Id }}{{ template "housing_criterion_form" (dict "Criterion" .Data.Draft "FamilyID" .Data.FamilyID "CSRFField" $csrf) }}
   {{ else }}<a class="link" href="/housing/checklist?family_id={{ .Data.FamilyID }}">Add another criterion</a>{{ end }}
   </div></section>
   {{ range .Data.Criteria }}
   <section class="card border border-base-300"><div class="card-body p-4 gap-3">
     <h2 class="font-semibold">{{ .Name }}</h2>
-    {{ template "housing_criterion_form" (dict "Criterion" . "SavedCriterion" (index $.Data.SavedCriteria .Id) "FamilyID" $.Data.FamilyID) }}
+    {{ template "housing_criterion_form" (dict "Criterion" . "SavedCriterion" (index $.Data.SavedCriteria .Id) "FamilyID" $.Data.FamilyID "CSRFField" $csrf) }}
     <details><summary class="cursor-pointer text-sm">Delete criterion</summary>
       <p class="text-sm my-2">This removes the criterion from every current checklist and score. Previous answers are retained as hidden history. Housing options are kept.</p>
-      <form method="post" action="/housing/checklist/{{ .Id }}/delete"><input type="hidden" name="family_id" value="{{ $.Data.FamilyID }}"><button class="btn btn-error btn-sm oz-criterion-delete" type="submit">Delete {{ .Name }}</button></form>
+      <form method="post" action="/housing/checklist/{{ .Id }}/delete">{{ $csrf }}<input type="hidden" name="family_id" value="{{ $.Data.FamilyID }}"><button class="btn btn-error btn-sm oz-criterion-delete" type="submit">Delete {{ .Name }}</button></form>
     </details>
   </div></section>
   {{ else }}<div class="alert oz-alert-soft">No criteria yet. Start with location, transport access, layout, or renovation needs.</div>{{ end }}
@@ -57,8 +58,9 @@
 {{ end }}
 
 {{ define "housing_criterion_form" }}
+{{ $csrf := .CSRFField }}
 {{ $saved := or .SavedCriterion .Criterion }}
-<form method="post" action="/housing/checklist{{ if .Criterion.Id }}/{{ .Criterion.Id }}{{ end }}" class="grid gap-3"{{ if .Criterion.Id }} data-saved-criterion data-saved-name="{{ $saved.Name }}" data-saved-description="{{ $saved.Description }}" data-saved-weight="{{ criterionWeight $saved }}"{{ end }}>
+<form method="post" action="/housing/checklist{{ if .Criterion.Id }}/{{ .Criterion.Id }}{{ end }}" class="grid gap-3"{{ if .Criterion.Id }} data-saved-criterion data-saved-name="{{ $saved.Name }}" data-saved-description="{{ $saved.Description }}" data-saved-weight="{{ criterionWeight $saved }}"{{ end }}>{{ $csrf }}
   <input type="hidden" name="family_id" value="{{ .FamilyID }}">
   <input type="hidden" name="display_order" value="{{ checklistPosition .Criterion.DisplayOrder }}">
   <label class="oz-field"><span>Name</span><input class="input input-bordered w-full" name="name" value="{{ .Criterion.Name }}" maxlength="120" required></label>

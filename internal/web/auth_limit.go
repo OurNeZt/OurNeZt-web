@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gorilla/csrf"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc/status"
 )
@@ -75,14 +76,14 @@ func rejectAuthTraffic(c *gin.Context, retry time.Duration) {
 	c.Header("Retry-After", strconv.FormatInt(seconds, 10))
 	c.Header("Cache-Control", "no-store")
 	c.Abort()
-	data := ViewData{Title: "Please try again later", User: userFromContext(c), Error: authRetryMessage}
-	if c.Request.URL.Path == "/login" {
+	data := ViewData{Title: "Please try again later", User: userFromContext(c), Error: authRetryMessage, CSRFField: csrf.TemplateField(c.Request)}
+	if c.Request.URL.Path == "/login" && csrf.Token(c.Request) != "" {
 		data.Title, data.Data = "Login", loginPayload{}
 		c.HTML(http.StatusTooManyRequests, "login", data)
 		return
 	}
 	returnURL := "/profile"
-	if c.Request.URL.Path == "/admin/users" || c.Request.URL.Path == "/change-password" {
+	if c.Request.URL.Path == "/login" || c.Request.URL.Path == "/admin/users" || c.Request.URL.Path == "/change-password" {
 		returnURL = c.Request.URL.Path
 	}
 	data.Data = struct{ ReturnURL string }{ReturnURL: returnURL}

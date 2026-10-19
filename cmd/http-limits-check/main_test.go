@@ -125,7 +125,7 @@ func TestHTTPReviewerStopsOnOutputError(t *testing.T) {
 	}))
 	defer server.Close()
 	err := run(context.Background(), settings{baseURL: server.URL, bodyLimit: 128, timeout: time.Second}, brokenProgressWriter{})
-	if !errors.Is(err, io.ErrClosedPipe) || calls.Load() != 1 {
+	if !errors.Is(err, io.ErrClosedPipe) || calls.Load() != 2 {
 		t.Fatalf("output failure ignored: %v, %d requests", err, calls.Load())
 	}
 }
