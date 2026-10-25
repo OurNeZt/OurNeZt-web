@@ -291,6 +291,22 @@ Deploy the matching Core change before updating Web. The existing `revoked_at` d
 
 ---
 
+### New Password Whitespace
+
+User creation and both password-change forms reject spaces anywhere in a new password, including leading/trailing spaces, tabs, line breaks, and Unicode whitespace. They show `new passwords must not contain spaces or other whitespace` before submitting a credential mutation to Core. The forms also describe the 15-character minimum. Core remains responsible for the full length and common-password policy; deploy the matching Core password-policy change as well.
+
+Web does not trim password fields. Login and current-password verification preserve existing passwords exactly, including whitespace, so an existing user can upgrade to a compliant password. Confirmation must match the new password exactly. Rejected changes keep the current session and first-login state intact; successful changes retain the existing all-session revocation behavior.
+
+Run the HTTP regression checks without a running Core instance or database:
+
+```bash
+go test ./internal/web -run TestPasswordPolicy -count=1 -v
+```
+
+For manual checks, use disposable accounts and try `quiet otter bay`, ` quiet-otter-bay`, and `quiet-otter-bay ` in `/admin/users`, the first-login `/change-password` flow, and My Profile's password form. Each must fail with a whitespace error, without creating an account, changing credentials, or ending the session. `quiet-otter-bay` should succeed when it satisfies Core's other checks. Existing whitespace-containing passwords must still reach Core unchanged during login and as the current password when upgrading.
+
+---
+
 ## Authentication Protections
 
 ### CSRF Protection
