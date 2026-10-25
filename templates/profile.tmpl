@@ -54,11 +54,12 @@
         </label>
         <label class="oz-field">
           <span>New password</span>
-          <input class="input input-bordered w-full" name="new_password" type="password" autocomplete="new-password" required>
+          <input class="input input-bordered w-full" name="new_password" type="password" autocomplete="new-password" data-password-no-whitespace required>
+          <span class="text-sm opacity-75">Use at least 15 characters with no spaces or other whitespace.</span>
         </label>
         <label class="oz-field">
           <span>Confirm new password</span>
-          <input class="input input-bordered w-full" name="confirm_new_password" type="password" autocomplete="new-password" required>
+          <input class="input input-bordered w-full" name="confirm_new_password" type="password" autocomplete="new-password" data-password-no-whitespace required>
         </label>
         <button class="btn btn-primary" type="submit">Update Password</button>
       </form>
@@ -93,5 +94,6 @@
     {{ end }}
   </div>
 </section>
+<script src="/static/js/password-policy.js" defer></script>
 {{ template "partials/footer" . }}
 {{ end }}

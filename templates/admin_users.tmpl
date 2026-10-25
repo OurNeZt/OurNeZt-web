@@ -36,7 +36,8 @@
       <form method="post" action="/admin/users" class="space-y-2">{{ $csrf }}
         <input class="input input-bordered w-full" name="email" placeholder="Email" required>
         <input class="input input-bordered w-full" name="display_name" placeholder="Display name" required>
-        <input class="input input-bordered w-full" name="password" placeholder="Temporary password" required>
+        <input class="input input-bordered w-full" name="password" placeholder="Temporary password" data-password-no-whitespace required>
+        <p class="text-sm opacity-75">Use at least 15 characters with no spaces or other whitespace.</p>
         <select class="select select-bordered w-full" name="role">
           <option value="user">user</option>
           <option value="admin">admin</option>
@@ -187,5 +188,6 @@
     renderPage();
   })();
 </script>
+<script src="/static/js/password-policy.js" defer></script>
 {{ template "partials/footer" . }}
 {{ end }}
