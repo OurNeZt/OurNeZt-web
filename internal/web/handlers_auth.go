@@ -415,6 +415,8 @@ func (a *App) changePasswordFromPost(c *gin.Context) error {
 			return &authlimit.LimitError{RetryAfter: authRetryDelay(err)}
 		}
 		switch grpcCode(err) {
+		case codes.InvalidArgument:
+			return passwordValidationError(err)
 		case codes.Unauthenticated:
 			return errors.New("current password is incorrect or your session has expired")
 		case codes.DeadlineExceeded, codes.Unavailable, codes.Canceled:
