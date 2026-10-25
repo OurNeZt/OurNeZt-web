@@ -293,7 +293,9 @@ Deploy the matching Core change before updating Web. The existing `revoked_at` d
 
 ### New Password Whitespace
 
-User creation and both password-change forms reject spaces anywhere in a new password, including leading/trailing spaces, tabs, line breaks, and Unicode whitespace. They show `new passwords must not contain spaces or other whitespace` before submitting a credential mutation to Core. The forms also describe the 15-character minimum. Core remains responsible for the full length and common-password policy; deploy the matching Core password-policy change as well.
+User creation and both password-change forms prevent whitespace while entering a temporary, new, or confirmation password. Pressing Space or pasting/dropping text containing whitespace leaves the existing field unchanged and displays an inline message. This includes leading/trailing spaces, tabs, line breaks, and Unicode whitespace. Autofill or composition that inserts whitespace marks the field invalid until corrected. The forms also describe the 15-character minimum.
+
+Server validation remains active if JavaScript is unavailable or bypassed. Web shows `new passwords must not contain spaces or other whitespace` before submitting a whitespace-containing credential mutation to Core. Core policy errors for minimum/maximum length, common passwords, and whitespace are displayed as specific validation messages instead of a generic retry error. Unknown validation details are not exposed. Core remains responsible for the full policy; deploy the matching Core password-policy change as well.
 
 Web does not trim password fields. Login and current-password verification preserve existing passwords exactly, including whitespace, so an existing user can upgrade to a compliant password. Confirmation must match the new password exactly. Rejected changes keep the current session and first-login state intact; successful changes retain the existing all-session revocation behavior.
 
@@ -303,7 +305,13 @@ Run the HTTP regression checks without a running Core instance or database:
 go test ./internal/web -run TestPasswordPolicy -count=1 -v
 ```
 
-For manual checks, use disposable accounts and try `quiet otter bay`, ` quiet-otter-bay`, and `quiet-otter-bay ` in `/admin/users`, the first-login `/change-password` flow, and My Profile's password form. Each must fail with a whitespace error, without creating an account, changing credentials, or ending the session. `quiet-otter-bay` should succeed when it satisfies Core's other checks. Existing whitespace-containing passwords must still reach Core unchanged during login and as the current password when upgrading.
+For manual checks, use disposable accounts in `/admin/users`, the first-login `/change-password` flow, and My Profile's password form:
+
+1. Type `quiet`, then press Space. The field must remain `quiet` and display inline feedback. Check the start, middle, and end of the field, including confirmation fields.
+2. Paste text containing a space or Unicode nonbreaking space. The paste must be blocked with an inline message while preserving the existing text. Tab must still move focus normally.
+3. Enter `quiet-otter-bay` without whitespace. The inline message must clear, and submission should succeed when Core's other checks pass.
+4. With JavaScript disabled or a direct form request, submit whitespace and verify the specific server message. Also try a short or common password: Core's validation reason must appear instead of `unable to change your password; please try again later`.
+5. Confirm rejected changes do not create an account, change credentials, or end the session. Existing whitespace-containing passwords must still reach Core unchanged during login and as the current password when upgrading.
 
 ---
 
