@@ -393,11 +393,14 @@ func (a *App) loadProfileFamiliesAndSelfProfiles(c *gin.Context, user *CurrentUs
 }
 
 func (a *App) changePasswordFromPost(c *gin.Context) error {
-	currentPassword := strings.TrimSpace(c.PostForm("current_password"))
-	newPassword := strings.TrimSpace(c.PostForm("new_password"))
-	confirmPassword := strings.TrimSpace(c.PostForm("confirm_new_password"))
+	currentPassword := c.PostForm("current_password")
+	newPassword := c.PostForm("new_password")
+	confirmPassword := c.PostForm("confirm_new_password")
 	if currentPassword == "" || newPassword == "" || confirmPassword == "" {
 		return errors.New("all password fields are required")
+	}
+	if err := validateNewPasswordWhitespace(newPassword); err != nil {
+		return err
 	}
 	if newPassword != confirmPassword {
 		return errors.New("new password confirmation does not match")
