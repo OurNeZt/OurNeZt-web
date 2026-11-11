@@ -134,7 +134,7 @@ func TestSecurityHeadersAuthorizePageScripts(t *testing.T) {
 		t.Run(route.Path, func(t *testing.T) {
 			w := httptest.NewRecorder()
 			router.ServeHTTP(w, httptest.NewRequest(http.MethodGet, route.Path, nil))
-			if w.Code != http.StatusOK && !(route.Path == "/core-error" && w.Code == http.StatusServiceUnavailable) {
+			if w.Code != http.StatusOK && (route.Path != "/core-error" || w.Code != http.StatusServiceUnavailable) {
 				t.Fatalf("unexpected fixture status: %d", w.Code)
 			}
 			nonce := assertPageSecurity(t, w)

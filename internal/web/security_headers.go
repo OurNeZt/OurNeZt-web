@@ -30,7 +30,7 @@ func securityHeaders() gin.HandlerFunc {
 		c.Header("X-Content-Type-Options", "nosniff")
 		c.Header("X-Frame-Options", "DENY")
 		// Never cache HTML containing a per-response nonce, including early errors.
-		if !((c.Request.Method == http.MethodGet || c.Request.Method == http.MethodHead) && strings.HasPrefix(c.Request.URL.Path, "/static/")) {
+		if (c.Request.Method != http.MethodGet && c.Request.Method != http.MethodHead) || !strings.HasPrefix(c.Request.URL.Path, "/static/") {
 			c.Header("Cache-Control", "no-store")
 		}
 		c.Next()
