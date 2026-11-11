@@ -22,9 +22,9 @@ import (
 	"google.golang.org/grpc/codes"
 )
 
-func assertPageSecurity(t *testing.T, w *httptest.ResponseRecorder) string {
+func assertSecurityHeaders(t *testing.T, headers http.Header) string {
 	t.Helper()
-	policy := w.Header().Get("Content-Security-Policy")
+	policy := headers.Get("Content-Security-Policy")
 	match := regexp.MustCompile(`script-src 'nonce-([^']+)'`).FindStringSubmatch(policy)
 	if len(match) != 2 {
 		t.Fatalf("missing nonce-only script policy: %s", policy)
@@ -42,9 +42,21 @@ func assertPageSecurity(t *testing.T, w *httptest.ResponseRecorder) string {
 	if strings.Contains(policy, "unsafe-") || strings.Contains(policy, "https:") || strings.Contains(policy, "*") {
 		t.Fatalf("overly permissive policy: %s", policy)
 	}
-	if w.Header().Get("X-Content-Type-Options") != "nosniff" || w.Header().Get("X-Frame-Options") != "DENY" {
+	if headers.Get("X-Content-Type-Options") != "nosniff" || headers.Get("X-Frame-Options") != "DENY" {
 		t.Fatal("missing companion security headers")
 	}
+	if headers.Get("Referrer-Policy") != "strict-origin-when-cross-origin" {
+		t.Fatal("missing restrictive referrer policy")
+	}
+	if headers.Get("Permissions-Policy") != "camera=(), microphone=(), geolocation=(), payment=(), usb=()" {
+		t.Fatal("missing browser feature restrictions")
+	}
+	return nonce
+}
+
+func assertPageSecurity(t *testing.T, w *httptest.ResponseRecorder) string {
+	t.Helper()
+	nonce := assertSecurityHeaders(t, w.Header())
 	if strings.HasPrefix(w.Header().Get("Content-Type"), "text/html") {
 		if w.Header().Get("Cache-Control") != "no-store" {
 			t.Fatal("nonce-bearing HTML can be cached")
@@ -165,9 +177,15 @@ func TestSecurityHeadersCoverRouterAndEarlyRejections(t *testing.T) {
 		{http.MethodPost, "/login", 429},
 		{http.MethodGet, "/static/vendor/ui.css", 200},
 		{http.MethodGet, "/static/vendor/chart.umd.js", 200},
+		{http.MethodHead, "/static/vendor/ui.css", 200},
+		{http.MethodPost, "/families", 413},
 	} {
 		w := httptest.NewRecorder()
-		router.ServeHTTP(w, httptest.NewRequest(tc.method, tc.path, nil))
+		req := httptest.NewRequest(tc.method, tc.path, nil)
+		if tc.status == http.StatusRequestEntityTooLarge {
+			req.ContentLength = config.DefaultMaxRequestBodyBytes + 1
+		}
+		router.ServeHTTP(w, req)
 		if w.Code != tc.status {
 			t.Fatalf("%s %s: got %d, want %d", tc.method, tc.path, w.Code, tc.status)
 		}
@@ -175,7 +193,83 @@ func TestSecurityHeadersCoverRouterAndEarlyRejections(t *testing.T) {
 		if seen[nonce] {
 			t.Fatal("CSP nonce reused")
 		}
+		if w.Header().Get("Strict-Transport-Security") != "" {
+			t.Fatal("local HTTP response must omit HSTS")
+		}
 		seen[nonce] = true
+	}
+}
+
+func TestSecurityHeadersHSTSUsesActualTLS(t *testing.T) {
+	t.Chdir(filepath.Join("..", ".."))
+	for _, useTLS := range []bool{false, true} {
+		name := "HTTP"
+		if useTLS {
+			name = "HTTPS"
+		}
+		t.Run(name, func(t *testing.T) {
+			// Production, secure cookies, and trusted proxy configuration must
+			// not enable HSTS on an unencrypted connection to the application.
+			router, err := NewRouter(config.Config{
+				AppEnv: "production", CookieSecure: true,
+				CSRFAuthKey:    strings.Repeat("ab", 32),
+				TrustedProxies: []string{"127.0.0.1", "::1"},
+				AuthLimits:     authlimit.Config{IPLimit: 1},
+			}, &core.Clients{})
+			if err != nil {
+				t.Fatal(err)
+			}
+			server := httptest.NewUnstartedServer(router)
+			if useTLS {
+				server.StartTLS()
+			} else {
+				server.Start()
+			}
+			defer server.Close()
+			client := server.Client()
+			client.Timeout = 3 * time.Second
+			client.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
+			for _, tc := range []struct {
+				method, path string
+				status       int
+			}{
+				{http.MethodGet, "/login", http.StatusOK},
+				{http.MethodGet, "/dashboard", http.StatusFound},
+				{http.MethodGet, "/missing", http.StatusNotFound},
+				{http.MethodGet, "/static/vendor/ui.css", http.StatusOK},
+				{http.MethodPost, "/login", http.StatusForbidden},
+				{http.MethodPost, "/login", http.StatusTooManyRequests},
+			} {
+				req, err := http.NewRequest(tc.method, server.URL+tc.path, nil)
+				if err != nil {
+					t.Fatal(err)
+				}
+				// Claim the opposite transport, even from a trusted proxy. HSTS
+				// must still follow the actual connection, not either header.
+				forwardedScheme := "https"
+				if useTLS {
+					forwardedScheme = "http"
+				}
+				req.Header.Set("X-Forwarded-Proto", forwardedScheme)
+				req.Header.Set("Forwarded", "proto="+forwardedScheme)
+				response, err := client.Do(req)
+				if err != nil {
+					t.Fatal(err)
+				}
+				_ = response.Body.Close()
+				if response.StatusCode != tc.status {
+					t.Fatalf("%s %s: got %d, want %d", tc.method, tc.path, response.StatusCode, tc.status)
+				}
+				wantHSTS := ""
+				if useTLS {
+					wantHSTS = "max-age=31536000"
+				}
+				if got := response.Header.Get("Strict-Transport-Security"); got != wantHSTS {
+					t.Errorf("%s %s: HSTS = %q, want %q", tc.method, tc.path, got, wantHSTS)
+				}
+				assertSecurityHeaders(t, response.Header)
+			}
+		})
 	}
 }
 
