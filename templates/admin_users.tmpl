@@ -50,7 +50,7 @@
     <div class="card-body">
       <h2 class="card-title">Disable User</h2>
       <p class="text-sm opacity-70">Paste the user ID to disable an account.</p>
-      <form method="post" action="/admin/users/placeholder/disable" onsubmit="this.action='/admin/users/' + this.user_id.value + '/disable'" class="space-y-2">{{ $csrf }}
+      <form id="disableUserForm" method="post" action="/admin/users/placeholder/disable" class="space-y-2">{{ $csrf }}
         <input class="input input-bordered w-full" name="user_id" placeholder="User ID" required>
         <button class="btn btn-warning" type="submit">Disable user</button>
       </form>
@@ -140,8 +140,13 @@
     </div>
   </div>
 </section>
-<script>
+<script nonce="{{ $.CSPNonce }}">
   (() => {
+    const disableForm = document.getElementById("disableUserForm");
+    disableForm.addEventListener("submit", () => {
+      disableForm.action = "/admin/users/" + encodeURIComponent(disableForm.elements.user_id.value) + "/disable";
+    });
+
     const rows = Array.from(document.querySelectorAll("[data-admin-user-row]"));
     const rowsPerPageSelect = document.getElementById("adminUserRowsPerPage");
     const previousButton = document.getElementById("adminUserPreviousPage");
@@ -188,6 +193,6 @@
     renderPage();
   })();
 </script>
-<script src="/static/js/password-policy.js" defer></script>
+<script nonce="{{ $.CSPNonce }}" src="/static/js/password-policy.js" defer></script>
 {{ template "partials/footer" . }}
 {{ end }}

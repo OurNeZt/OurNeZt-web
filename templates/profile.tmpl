@@ -94,6 +94,6 @@
     {{ end }}
   </div>
 </section>
-<script src="/static/js/password-policy.js" defer></script>
+<script nonce="{{ $.CSPNonce }}" src="/static/js/password-policy.js" defer></script>
 {{ template "partials/footer" . }}
 {{ end }}

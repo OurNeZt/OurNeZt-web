@@ -104,7 +104,7 @@ func run(ctx context.Context, cfg settings, out io.Writer) error {
 		if pageResponse.StatusCode != http.StatusOK || !strings.Contains(pageResponse.Header.Get("Content-Type"), "text/html") || !strings.Contains(page, "Invalid email or password.") || len(pageResponse.Header.Values("Set-Cookie")) != 0 {
 			return fmt.Errorf("%s: expected an HTML login page with the generic message and no Set-Cookie", probe.name)
 		}
-		page = checkclient.NormalizeCSRF(page)
+		page = checkclient.NormalizeLoginPage(page)
 		if i == 0 {
 			baselinePost, baselinePage = post, page
 		} else if post != baselinePost || page != baselinePage {

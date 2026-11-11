@@ -31,6 +31,7 @@ func (a *App) render(c *gin.Context, templateName, title string, payload any) {
 	}
 
 	c.HTML(http.StatusOK, templateName, ViewData{
+		CSPNonce:          c.GetString(cspNonceKey),
 		CSRFField:         csrf.TemplateField(c.Request),
 		Title:             title,
 		User:              user,

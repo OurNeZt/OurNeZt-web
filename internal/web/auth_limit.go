@@ -76,7 +76,7 @@ func rejectAuthTraffic(c *gin.Context, retry time.Duration) {
 	c.Header("Retry-After", strconv.FormatInt(seconds, 10))
 	c.Header("Cache-Control", "no-store")
 	c.Abort()
-	data := ViewData{Title: "Please try again later", User: userFromContext(c), Error: authRetryMessage, CSRFField: csrf.TemplateField(c.Request)}
+	data := ViewData{Title: "Please try again later", User: userFromContext(c), Error: authRetryMessage, CSRFField: csrf.TemplateField(c.Request), CSPNonce: c.GetString(cspNonceKey)}
 	if c.Request.URL.Path == "/login" && csrf.Token(c.Request) != "" {
 		data.Title, data.Data = "Login", loginPayload{}
 		c.HTML(http.StatusTooManyRequests, "login", data)

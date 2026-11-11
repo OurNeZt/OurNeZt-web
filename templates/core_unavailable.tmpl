@@ -12,7 +12,7 @@
     {{ end }}
     {{ if .Data.Notes }}
       <p>Your unsaved notes are preserved below so you can copy them or try saving again.</p>
-      {{ template "partials/housing_notes" (dict "Data" .Data.Notes "CSRFField" $csrf) }}
+      {{ template "partials/housing_notes" (dict "Data" .Data.Notes "CSRFField" $csrf "CSPNonce" $.CSPNonce) }}
     {{ end }}
     {{ if .Data.Answer }}
       <h2 class="font-semibold">Unsaved evaluation</h2>

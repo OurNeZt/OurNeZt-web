@@ -87,8 +87,8 @@
   <a class="btn btn-sm" href="/housing?family_id={{ .Data.FamilyID }}">Manage Housing</a>
   <a class="btn btn-sm" href="/housing/compare?family_id={{ .Data.FamilyID }}">Compare Housing</a>
 </div>
-<script src="/static/vendor/chart.umd.js"></script>
-<script>
+<script nonce="{{ $.CSPNonce }}" src="/static/vendor/chart.umd.js"></script>
+<script nonce="{{ $.CSPNonce }}">
   (() => {
     if (!window.Chart) return;
 

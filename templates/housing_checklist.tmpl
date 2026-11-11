@@ -21,7 +21,7 @@
   </div></section>
   {{ else }}<div class="alert oz-alert-soft">No criteria yet. Start with location, transport access, layout, or renovation needs.</div>{{ end }}
 </div></section>
-<script>
+<script nonce="{{ $.CSPNonce }}">
   (() => {
     document.querySelectorAll("form[data-saved-criterion]").forEach((form) => {
       const button = form.querySelector('button[type="submit"]');

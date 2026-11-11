@@ -45,7 +45,7 @@
   </aside>
   {{ end }}
 
-  <script>
+  <script nonce="{{ $.CSPNonce }}">
     (() => {
       const mobileMenu = document.querySelector(".oz-mobile-menu");
       let mobileMenuForcedOpenByTour = false;
