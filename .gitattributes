@@ -1,0 +1,2 @@
+# Generated dependency files and checksums must retain identical bytes on all OSes.
+static/vendor/** -text
