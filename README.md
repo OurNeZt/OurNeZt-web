@@ -59,6 +59,7 @@
         <li><a href="#configuration">Configuration</a></li>
       </ul>
     </li>
+    <li><a href="#production-transport-security">Production Transport Security</a></li>
     <li><a href="#authentication-protections">Authentication Protections</a></li>
     <li><a href="#http-request-protections">HTTP Request Protections</a></li>
     <li><a href="#core-request-deadlines">Core Request Deadlines</a></li>
@@ -252,7 +253,9 @@ See [.env.example](.env.example) for common settings. The HTTP timeout and body 
 | `REQUEST_TIMEOUT` | Shared Core RPC budget per HTTP request and maximum duration of an individual Core RPC; defaults to `5s`. | `5s` |
 | `SHUTDOWN_TIMEOUT` | Graceful shutdown timeout; defaults to `10s`. | `10s` |
 | `WEB_TLS_CERT_FILE` / `WEB_TLS_KEY_FILE` | Certificate and private key for optional HTTPS on the Web listener. Configure both. | `/etc/ournezt/tls/tls.crt` / `/etc/ournezt/tls/tls.key` |
-| `CORE_GRPC_USE_TLS` | Enable TLS for Web-to-Core gRPC; defaults to `false`. | `true` |
+| `CORE_GRPC_USE_TLS` | Enable verified TLS for Web-to-Core gRPC; defaults to `false`. Required in production unless the trusted plaintext opt-in is enabled. | `true` |
+| `CORE_ALLOW_INSECURE` | Explicitly permit a trusted plaintext Core connection; defaults to `false`. Does not bypass certificate verification or invalid TLS settings. | `false` |
+| `CORE_GRPC_TLS_INSECURE_SKIP_VERIFY` | Development-only certificate-verification bypass. Forbidden in production. | `false` |
 | `CORE_GRPC_TLS_CA_FILE` | Optional CA certificate file for the Core connection. | `/etc/ournezt/tls/ca.crt` |
 | `CORE_GRPC_TLS_SERVER_NAME` | Optional server name for Core TLS verification. | `ournezt-core` |
 | `MAINTENANCE_NOTICE_FILE` | Optional JSON file path for a dynamically loaded maintenance notice. File values override env values and are read on each page render. | `/etc/ournezt/maintenance-notice/notice.json` |
@@ -290,6 +293,56 @@ After a successful password change through either `/change-password` or `/profil
 Deploy the matching Core change before updating Web. The existing `revoked_at` database column supports this behavior; no new schema migration or Web environment setting is needed.
 
 ---
+
+## Production Transport Security
+
+With `APP_ENV=production`, Web refuses startup when `CORE_GRPC_USE_TLS=false` unless `CORE_ALLOW_INSECURE=true` explicitly permits a trusted plaintext hop. Production detection trims surrounding whitespace and ignores case. Local development retains the plaintext default.
+
+For verified TLS, configure:
+
+```bash
+export APP_ENV=production
+export CORE_GRPC_USE_TLS=true
+export CORE_ALLOW_INSECURE=false
+export CORE_GRPC_TLS_CA_FILE=/etc/ournezt/core-ca.crt
+export CORE_GRPC_TLS_SERVER_NAME=core.internal
+```
+
+The Core/proxy certificate must be signed by a trusted CA and contain the expected DNS name. Leave the CA file empty to use the system trust store; leave the server-name override empty to verify the dial target's name. TLS uses a minimum of TLS 1.2. `CORE_GRPC_TLS_INSECURE_SKIP_VERIFY=true` is forbidden in production, including when the plaintext opt-in is set. TLS certificate verification follows the [Go TLS configuration](https://pkg.go.dev/crypto/tls#Config).
+
+Unreadable or invalid CA files and malformed transport booleans fail startup. Supplying a CA file, server-name override, or verification-bypass setting with TLS disabled also fails, so those settings cannot be silently ignored. The client never retries a failed TLS connection as plaintext. gRPC establishes connections lazily: local policy and CA material are checked at startup, while remote certificate/hostname/transport errors fail the RPC when it connects.
+
+### Production Transport Models
+
+| Model | Web settings | Core settings |
+| --- | --- | --- |
+| TLS directly to Core | `CORE_GRPC_USE_TLS=true`; trusted CA and matching certificate name | Both gRPC TLS files; no plaintext opt-in needed |
+| TLS-terminating gRPC proxy | Verified TLS to the proxy's gRPC endpoint | `GRPC_ALLOW_INSECURE=true` for the restricted proxy-to-Core backend |
+| Explicit trusted internal plaintext hop | `CORE_GRPC_USE_TLS=false`, `CORE_ALLOW_INSECURE=true` | No TLS files; `GRPC_ALLOW_INSECURE=true` |
+
+For an explicitly allowed plaintext connection, Web logs a `WARN` naming `CORE_ALLOW_INSECURE` and stating that bearer session tokens are unencrypted. Restrict this connection to the trusted network or proxy backend. `WEB_TRUSTED_PROXIES` configures HTTP header trust and does not permit plaintext Core transport. Browser-facing HTTPS also does not encrypt this hop automatically.
+
+Before upgrading production Helm/Compose deployments, ensure their manifests emit these settings for both processes. Existing production plaintext deployments must configure TLS or set the corresponding explicit opt-ins. There is no database migration or automatic fallback.
+
+### Transport Reviewer Checks
+
+No database, external service, or manually generated certificates are required:
+
+```bash
+go test ./internal/config ./internal/core ./cmd/web -run TestTransport -count=1 -v
+```
+
+The tests exercise real startup subprocesses and loopback gRPC servers with generated certificates. They verify startup rejection, invalid TLS settings, warning logs, successful verified TLS, unknown CA and hostname rejection, no downgrade to plaintext, and session metadata reaching handlers only over the selected permitted transport.
+
+Manual checks with a disposable deployment:
+
+1. Start Web with `APP_ENV=production`, `CORE_GRPC_USE_TLS=false`, and `CORE_ALLOW_INSECURE=false`. Expect a nonzero exit with a clear TLS configuration error before HTTP startup.
+2. Enable TLS and configure Core's trusted CA/certificate name. Normal login should work. Using an untrusted CA, wrong certificate name, or plaintext Core endpoint must fail RPCs without sending session metadata to a plaintext handler.
+3. Set `CORE_GRPC_TLS_INSECURE_SKIP_VERIFY=true` in production. Startup must fail, even with `CORE_ALLOW_INSECURE=true`.
+4. Test a deliberately trusted plaintext hop by removing the CA and server-name settings, setting `CORE_GRPC_USE_TLS=false` and `CORE_ALLOW_INSECURE=true`, and separately enabling Core's opt-in. Verify a `WARN` on both applications. Other production requirements, including the persistent CSRF secret, still apply.
+
+---
+
 
 ### New Password Whitespace
 
@@ -560,7 +613,7 @@ Build the image locally:
 docker build -t ournezt-web:local .
 ```
 
-Run the container with the persistent CSRF secret configured (see [CSRF Protection](#csrf-protection)):
+Run the container with the persistent CSRF secret configured (see [CSRF Protection](#csrf-protection)) and a trusted Core CA at `./tls/core-ca.crt`. This example expects the Core certificate to contain `core.internal`:
 
 ```bash
 docker run --rm \
@@ -568,6 +621,10 @@ docker run --rm \
   -e APP_ENV="production" \
   -e WEB_ADDR=":8080" \
   -e CORE_GRPC_ADDR="host.docker.internal:50051" \
+  --mount type=bind,source="$(pwd)/tls/core-ca.crt",target=/etc/ournezt/core-ca.crt,readonly \
+  -e CORE_GRPC_USE_TLS="true" \
+  -e CORE_GRPC_TLS_CA_FILE="/etc/ournezt/core-ca.crt" \
+  -e CORE_GRPC_TLS_SERVER_NAME="core.internal" \
   -e SESSION_COOKIE_NAME="ournezt_session" \
   -e SESSION_COOKIE_MAX_AGE="12h" \
   -e SESSION_COOKIE_SECURE="true" \

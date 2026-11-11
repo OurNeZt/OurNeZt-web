@@ -21,7 +21,7 @@ func main() {
 	cfg := config.Load()
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: cfg.LogLevel()}))
 
-	clients, err := core.NewClients(ctx, cfg)
+	clients, err := core.NewClients(ctx, cfg, logger)
 	if err != nil {
 		logger.Error("dial core grpc", "addr", cfg.CoreGRPCAddr, "tls", cfg.CoreGRPCUseTLS, "error", err)
 		os.Exit(1)

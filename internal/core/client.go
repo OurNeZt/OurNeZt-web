@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"log/slog"
 	"os"
 	"strings"
 
@@ -26,7 +27,14 @@ type Clients struct {
 	Dashboard ourneztv1.DashboardServiceClient
 }
 
-func NewClients(ctx context.Context, cfg config.Config) (*Clients, error) {
+func NewClients(ctx context.Context, cfg config.Config, loggers ...*slog.Logger) (*Clients, error) {
+	if err := cfg.ValidateCoreTransport(); err != nil {
+		return nil, err
+	}
+	logger := slog.Default()
+	if len(loggers) > 0 && loggers[0] != nil {
+		logger = loggers[0]
+	}
 	var transportCreds credentials.TransportCredentials
 	if cfg.CoreGRPCUseTLS {
 		tlsConfig := &tls.Config{
@@ -50,8 +58,14 @@ func NewClients(ctx context.Context, cfg config.Config) (*Clients, error) {
 		}
 
 		transportCreds = credentials.NewTLS(tlsConfig)
+		if cfg.CoreGRPCInsecure {
+			logger.Warn("Core TLS certificate verification explicitly disabled for development; server identity is not verified", "setting", "CORE_GRPC_TLS_INSECURE_SKIP_VERIFY", "env", cfg.AppEnv)
+		}
 	} else {
 		transportCreds = insecure.NewCredentials()
+		if cfg.CoreAllowInsecure {
+			logger.Warn("plaintext Core gRPC explicitly enabled; bearer session tokens are unencrypted; use only a trusted internal network or TLS-terminating proxy", "setting", "CORE_ALLOW_INSECURE", "env", cfg.AppEnv)
+		}
 	}
 
 	conn, err := grpc.NewClient(cfg.CoreGRPCAddr, grpc.WithTransportCredentials(transportCreds), grpc.WithUnaryInterceptor(rpcDeadline(cfg.RequestTimeout)))

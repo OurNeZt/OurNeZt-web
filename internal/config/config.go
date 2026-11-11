@@ -20,6 +20,8 @@ const (
 )
 
 type Config struct {
+	transportError      error
+	CoreAllowInsecure   bool
 	AppEnv              string
 	WebAddr             string
 	WebTLSCertFile      string
@@ -57,6 +59,8 @@ type MaintenanceNoticeConfig struct {
 
 func Load() Config {
 	return Config{
+		transportError:      transportBooleanError("CORE_GRPC_USE_TLS", "CORE_ALLOW_INSECURE", "CORE_GRPC_TLS_INSECURE_SKIP_VERIFY"),
+		CoreAllowInsecure:   envBool("CORE_ALLOW_INSECURE", false),
 		AppEnv:              env("APP_ENV", "development"),
 		WebAddr:             env("WEB_ADDR", ":8080"),
 		WebTLSCertFile:      env("WEB_TLS_CERT_FILE", ""),
