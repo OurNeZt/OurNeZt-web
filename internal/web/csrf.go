@@ -33,7 +33,7 @@ func (a *App) csrfProtection() (gin.HandlerFunc, error) {
 	secure := production || a.cfg.CookieSecure
 	deny := func(c *gin.Context) {
 		c.Abort()
-		c.HTML(http.StatusForbidden, "csrf_error", ViewData{Title: "Please reload the form"})
+		c.HTML(http.StatusForbidden, "csrf_error", ViewData{Title: "Please reload the form", CSPNonce: c.GetString(cspNonceKey)})
 	}
 	cookieName := "ournezt_csrf"
 	if secure {

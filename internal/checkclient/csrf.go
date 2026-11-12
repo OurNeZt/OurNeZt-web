@@ -77,9 +77,11 @@ func CSRFToken(page string) string {
 }
 
 var csrfInput = regexp.MustCompile(`<input type="hidden" name="csrf_token" value="[^"]*">`)
+var scriptNonce = regexp.MustCompile(`(<script\s+nonce=")[^"]*(")`)
 
-// NormalizeCSRF removes only the per-request masked token when comparing login
-// failure pages. All other response bytes still have to match.
-func NormalizeCSRF(page string) string {
-	return csrfInput.ReplaceAllString(page, `<input type="hidden" name="csrf_token" value="[csrf]">`)
+// NormalizeLoginPage removes per-response CSRF tokens and script nonces when
+// comparing login failure pages. All other response bytes still have to match.
+func NormalizeLoginPage(page string) string {
+	page = csrfInput.ReplaceAllString(page, `<input type="hidden" name="csrf_token" value="[csrf]">`)
+	return scriptNonce.ReplaceAllString(page, `${1}[nonce]${2}`)
 }

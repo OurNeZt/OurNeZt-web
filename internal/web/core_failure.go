@@ -43,6 +43,7 @@ func (a *App) renderCoreFailure(c *gin.Context, code codes.Code) bool {
 	c.Header("Cache-Control", "no-store")
 	c.Abort()
 	c.HTML(statusCode, "core_unavailable", ViewData{
+		CSPNonce:  c.GetString(cspNonceKey),
 		CSRFField: csrf.TemplateField(c.Request),
 		Title:     title, User: userFromContext(c), Error: message, MaintenanceNotice: a.maintenanceNotice(), Data: drafts,
 	})

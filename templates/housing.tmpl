@@ -174,7 +174,7 @@
     {{ end }}
   </div>
 </section>
-<script>
+<script nonce="{{ $.CSPNonce }}">
   (() => {
     const forms = document.querySelectorAll(".oz-housing-group-form");
     if (!forms.length) return;

@@ -516,6 +516,42 @@ open http://localhost:8080
 
 ---
 
+## Frontend Assets and Content Security Policy
+
+Tailwind CSS and DaisyUI are compiled into `static/vendor/ui.css`. Chart.js is
+served from `static/vendor/chart.umd.js`. All browser assets are self-hosted;
+pages do not fetch executable code or styles from a CDN. The generated files,
+upstream MIT licenses, and SHA-256 checksums are committed, so Go development
+and the existing Docker build do not need Node.js or a CDN at runtime.
+
+After changing templates, JavaScript classes, or frontend dependencies, rebuild
+with Node.js 22 and npm:
+
+```bash
+npm ci --ignore-scripts --no-audit --no-fund
+npm run build:assets
+```
+
+Commit `package.json`, `package-lock.json`, and the updated `static/vendor/`
+files together. Dependency versions are exact and npm verifies downloads against
+the lockfile integrity hashes. Review dependency upgrades and regenerate assets
+with this command; do not edit generated files directly. CI rebuilds from the
+lockfile and rejects stale assets. The build uses the
+[Tailwind CLI](https://tailwindcss.com/docs/installation/tailwind-cli) and
+[DaisyUI plugin](https://daisyui.com/docs/install/cli/).
+
+Every response includes an enforced Content Security Policy. Scripts require a
+fresh cryptographically random nonce, including self-hosted script elements.
+New script tags in Go templates must include `nonce="{{ $.CSPNonce }}"`; pass
+`CSPNonce` through any `dict` used to render a partial containing scripts.
+Inline event handlers, inline style attributes, `eval`, third-party styles,
+frames, and objects are blocked. Styles belong in self-hosted stylesheets;
+event handlers belong in authorized scripts using `addEventListener`.
+Images allow same-origin and `data:` sources for DaisyUI icons. Forms and
+browser connections are limited to the same origin. HTML responses use
+`Cache-Control: no-store` to prevent nonce reuse through response caching.
+These nonce rules follow the [CSP guide](https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CSP).
+
 ## Testing
 
 Run all tests:
@@ -688,7 +724,7 @@ ghcr.io/OurNeZt/ournezt-web:latest
 
 - [x] Web application foundation
 - [x] Gin server setup
-- [x] Tailwind CSS and DaisyUI CDN integration
+- [x] Self-hosted Tailwind CSS, DaisyUI, and Chart.js with an enforced Content Security Policy
 - [x] HTML template structure
 - [x] Static asset handling
 - [x] Authentication pages
