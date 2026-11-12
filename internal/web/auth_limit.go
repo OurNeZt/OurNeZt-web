@@ -1,7 +1,6 @@
 package web
 
 import (
-	"context"
 	"net/http"
 	"net/netip"
 	"strconv"
@@ -9,6 +8,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gorilla/csrf"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc/status"
 )
@@ -19,13 +19,7 @@ const authRetryMessage = "Too many authentication attempts. Please try again lat
 // authentication routes share an IP budget and an in-flight RPC budget.
 func (a *App) authTrafficLimit() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if c.Request.Method != http.MethodPost {
-			c.Next()
-			return
-		}
-		switch c.Request.URL.Path {
-		case "/login", "/change-password", "/profile/password", "/admin/users":
-		default:
+		if !isAuthSubmission(c.Request) {
 			c.Next()
 			return
 		}
@@ -43,19 +37,6 @@ func (a *App) authTrafficLimit() gin.HandlerFunc {
 			return
 		}
 		defer release()
-		// Limit these small forms before parsing attacker-controlled account keys.
-		c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 16*1024)
-		if err := c.Request.ParseForm(); err != nil {
-			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Invalid authentication request."})
-			return
-		}
-		timeout := a.cfg.RequestTimeout
-		if timeout <= 0 {
-			timeout = 5 * time.Second
-		}
-		ctx, cancel := context.WithTimeout(c.Request.Context(), timeout)
-		defer cancel()
-		c.Request = c.Request.WithContext(ctx)
 		c.Next()
 	}
 }
@@ -95,14 +76,14 @@ func rejectAuthTraffic(c *gin.Context, retry time.Duration) {
 	c.Header("Retry-After", strconv.FormatInt(seconds, 10))
 	c.Header("Cache-Control", "no-store")
 	c.Abort()
-	data := ViewData{Title: "Please try again later", User: userFromContext(c), Error: authRetryMessage}
-	if c.Request.URL.Path == "/login" {
+	data := ViewData{Title: "Please try again later", User: userFromContext(c), Error: authRetryMessage, CSRFField: csrf.TemplateField(c.Request), CSPNonce: c.GetString(cspNonceKey)}
+	if c.Request.URL.Path == "/login" && csrf.Token(c.Request) != "" {
 		data.Title, data.Data = "Login", loginPayload{}
 		c.HTML(http.StatusTooManyRequests, "login", data)
 		return
 	}
 	returnURL := "/profile"
-	if c.Request.URL.Path == "/admin/users" || c.Request.URL.Path == "/change-password" {
+	if c.Request.URL.Path == "/login" || c.Request.URL.Path == "/admin/users" || c.Request.URL.Path == "/change-password" {
 		returnURL = c.Request.URL.Path
 	}
 	data.Data = struct{ ReturnURL string }{ReturnURL: returnURL}

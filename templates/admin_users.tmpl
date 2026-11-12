@@ -1,4 +1,5 @@
 {{ define "admin_users" }}
+{{ $csrf := .CSRFField }}
 {{ template "partials/header" . }}
 <section class="card bg-base-100 shadow mb-6">
   <div class="card-body">
@@ -32,10 +33,11 @@
   <section class="card bg-base-100 shadow">
     <div class="card-body">
       <h2 class="card-title">Create User</h2>
-      <form method="post" action="/admin/users" class="space-y-2">
+      <form method="post" action="/admin/users" class="space-y-2">{{ $csrf }}
         <input class="input input-bordered w-full" name="email" placeholder="Email" required>
         <input class="input input-bordered w-full" name="display_name" placeholder="Display name" required>
-        <input class="input input-bordered w-full" name="password" placeholder="Temporary password" required>
+        <input class="input input-bordered w-full" name="password" placeholder="Temporary password" data-password-no-whitespace required>
+        <p class="text-sm opacity-75">Use at least 15 characters with no spaces or other whitespace.</p>
         <select class="select select-bordered w-full" name="role">
           <option value="user">user</option>
           <option value="admin">admin</option>
@@ -48,7 +50,7 @@
     <div class="card-body">
       <h2 class="card-title">Disable User</h2>
       <p class="text-sm opacity-70">Paste the user ID to disable an account.</p>
-      <form method="post" action="/admin/users/placeholder/disable" onsubmit="this.action='/admin/users/' + this.user_id.value + '/disable'" class="space-y-2">
+      <form id="disableUserForm" method="post" action="/admin/users/placeholder/disable" class="space-y-2">{{ $csrf }}
         <input class="input input-bordered w-full" name="user_id" placeholder="User ID" required>
         <button class="btn btn-warning" type="submit">Disable user</button>
       </form>
@@ -105,7 +107,7 @@
               {{ else if eq $user.Id $.Data.CurrentUserID }}
               <span class="text-xs opacity-60">Current admin</span>
               {{ else }}
-              <form method="post" action="/admin/users/{{ $user.Id }}/disable" class="inline">
+              <form method="post" action="/admin/users/{{ $user.Id }}/disable" class="inline">{{ $csrf }}
                 <button class="btn btn-xs btn-warning" type="submit">Disable</button>
               </form>
               {{ end }}
@@ -138,8 +140,13 @@
     </div>
   </div>
 </section>
-<script>
+<script nonce="{{ $.CSPNonce }}">
   (() => {
+    const disableForm = document.getElementById("disableUserForm");
+    disableForm.addEventListener("submit", () => {
+      disableForm.action = "/admin/users/" + encodeURIComponent(disableForm.elements.user_id.value) + "/disable";
+    });
+
     const rows = Array.from(document.querySelectorAll("[data-admin-user-row]"));
     const rowsPerPageSelect = document.getElementById("adminUserRowsPerPage");
     const previousButton = document.getElementById("adminUserPreviousPage");
@@ -186,5 +193,6 @@
     renderPage();
   })();
 </script>
+<script nonce="{{ $.CSPNonce }}" src="/static/js/password-policy.js" defer></script>
 {{ template "partials/footer" . }}
 {{ end }}

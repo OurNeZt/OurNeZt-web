@@ -79,7 +79,11 @@ func TestHousingNotesEditor(t *testing.T) {
 	for _, code := range []codes.Code{codes.PermissionDenied, codes.Unavailable} {
 		client.saveErr = status.Error(code, "Cannot save right now")
 		w = post("Keep my draft <script>\nNext action")
-		if !strings.Contains(w.Body.String(), "Keep my draft &lt;script&gt;\nNext action") || !strings.Contains(w.Body.String(), "Cannot save right now") {
+		expectedMessage := "Cannot save right now"
+		if code == codes.Unavailable {
+			expectedMessage = coreUnavailableMessage
+		}
+		if !strings.Contains(w.Body.String(), "Keep my draft &lt;script&gt;\nNext action") || !strings.Contains(w.Body.String(), expectedMessage) {
 			t.Fatal("failed save lost draft or error")
 		}
 	}

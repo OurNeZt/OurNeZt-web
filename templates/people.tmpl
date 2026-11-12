@@ -1,4 +1,5 @@
 {{ define "people" }}
+{{ $csrf := .CSRFField }}
 {{ template "partials/header" . }}
 <section class="card bg-base-100 shadow">
   <div class="card-body">
@@ -39,7 +40,7 @@
               {{ else }}
               <div class="flex flex-wrap gap-1">
                 <a class="btn btn-xs" href="/people/{{ .Person.Id }}/edit?family_id={{ $.Data.FamilyID }}">Edit</a>
-                <form method="post" action="/people/{{ .Person.Id }}/delete" class="m-0">
+                <form method="post" action="/people/{{ .Person.Id }}/delete" class="m-0">{{ $csrf }}
                   <input type="hidden" name="family_id" value="{{ $.Data.FamilyID }}">
                   <button class="btn btn-xs btn-error" type="submit">Delete</button>
                 </form>

@@ -80,8 +80,14 @@ func (a *App) housingChecklist(c *gin.Context) {
 	a.renderHousingChecklist(c, strings.TrimSpace(c.Query("family_id")), nil, "")
 }
 func (a *App) renderHousingChecklist(c *gin.Context, familyID string, draft *pb.HousingCriterion, message string) {
+	if draft != nil {
+		c.Set("housing_criterion_draft", draft)
+	}
 	resp, err := a.clients.Housing.ListHousingCriteria(a.grpcContext(c), &pb.ListHousingCriteriaRequest{FamilyId: familyID})
 	if err != nil {
+		if a.renderCoreFailure(c, grpcCode(err)) {
+			return
+		}
 		c.Redirect(http.StatusFound, "/housing?family_id="+urlQuerySafe(familyID)+"&error="+urlQuerySafe(grpcMessage(err)))
 		return
 	}

@@ -53,6 +53,11 @@ func (a *App) adminUsers(c *gin.Context) {
 }
 
 func (a *App) adminCreateUser(c *gin.Context) {
+	password := c.PostForm("password")
+	if err := validateNewPasswordWhitespace(password); err != nil {
+		c.Redirect(http.StatusFound, "/admin/users?error="+urlQuerySafe(err.Error()))
+		return
+	}
 	role := strings.TrimSpace(c.PostForm("role"))
 	if role == "" {
 		role = "user"
@@ -61,7 +66,7 @@ func (a *App) adminCreateUser(c *gin.Context) {
 	_, err := a.clients.Auth.CreateUser(a.grpcContext(c), &ourneztv1.CreateUserRequest{
 		Email:       strings.TrimSpace(c.PostForm("email")),
 		DisplayName: strings.TrimSpace(c.PostForm("display_name")),
-		Password:    c.PostForm("password"),
+		Password:    password,
 		Role:        role,
 	})
 	if err != nil {

@@ -1,0 +1,13 @@
+{
+  "name": "ournezt-web-assets",
+  "private": true,
+  "scripts": {
+    "build:assets": "tailwindcss -i ./assets/frontend.css -o ./static/vendor/ui.css --minify && node scripts/build-assets.mjs"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "4.3.5",
+    "chart.js": "4.4.3",
+    "daisyui": "5.7.50",
+    "tailwindcss": "4.3.5"
+  }
+}

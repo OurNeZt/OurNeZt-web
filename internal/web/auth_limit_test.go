@@ -78,6 +78,7 @@ func postAuth(r *gin.Engine, path, ip, forwarded string, values url.Values, cook
 	if cookie {
 		req.AddCookie(&http.Cookie{Name: "session", Value: "token"})
 	}
+	addCSRF(r, req)
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 	return w
@@ -155,7 +156,7 @@ func TestAuthenticationRouteLimits(t *testing.T) {
 		client := &limitedAuthClient{}
 		r := authTestRouter(t, config.Config{}, client)
 		w := postAuth(r, "/login", "192.0.2.1", "", url.Values{"email": {"a@example.com"}, "password": {strings.Repeat("x", 20000)}}, false)
-		if w.Code != http.StatusBadRequest || client.logins.Load() != 0 {
+		if w.Code != http.StatusRequestEntityTooLarge || client.logins.Load() != 0 {
 			t.Fatal("oversized form reached Core")
 		}
 	})

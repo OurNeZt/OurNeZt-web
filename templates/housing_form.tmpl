@@ -1,41 +1,12 @@
 {{ define "housing_form" }}
+{{ $csrf := .CSRFField }}
 {{ template "partials/header" . }}
-<style>
-  .oz-animated-field {
-    max-height: 12rem;
-    opacity: 1;
-    overflow: visible;
-    transition:
-      max-height 220ms ease,
-      opacity 160ms ease,
-      transform 160ms ease,
-      margin 220ms ease;
-  }
-
-  .oz-animated-field.oz-field-hidden {
-    max-height: 0;
-    opacity: 0;
-    overflow: hidden;
-    pointer-events: none;
-    transform: translateY(-0.25rem);
-  }
-
-  .oz-animated-field.oz-field-gone {
-    display: none !important;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .oz-animated-field {
-      transition: none;
-    }
-  }
-</style>
 <section class="card bg-base-100 shadow max-w-5xl mx-auto w-full">
   <div class="card-body">
     <h1 class="card-title">{{ if .Data.IsEdit }}Edit Housing{{ else }}Add Housing{{ end }}</h1>
     <p class="text-sm opacity-75">All money inputs are in dollars. Example: 1250.50 means $1,250.50.</p>
     <p class="text-xs opacity-70"><span class="text-error font-semibold">*</span> Required fields. Grant amount and buyer stamp duty are calculated automatically.</p>
-    <form method="post" action="{{ if .Data.IsEdit }}/housing/{{ .Data.Housing.Id }}{{ else }}/housing{{ end }}" class="grid grid-cols-1 md:grid-cols-2 gap-3 oz-form-grid">
+    <form method="post" action="{{ if .Data.IsEdit }}/housing/{{ .Data.Housing.Id }}{{ else }}/housing{{ end }}" class="grid grid-cols-1 md:grid-cols-2 gap-3 oz-form-grid">{{ $csrf }}
       <input type="hidden" name="family_id" value="{{ .Data.FamilyID }}">
       <div class="oz-field" id="assessment_mode_field">
         <label class="oz-field-label" for="assessment_mode"><span class="inline-flex items-center gap-1">Assessment Mode<span class="text-error" aria-label="required" title="Required">*</span>{{ template "partials/help_tooltip" (dict "Key" "assessment_mode" "Label" "Assessment Mode") }}</span></label>
@@ -175,7 +146,7 @@
     </form>
   </div>
 </section>
-<script>
+<script nonce="{{ $.CSPNonce }}">
   (() => {
     const assessmentMode = document.getElementById("assessment_mode");
     const assessmentModeField = document.getElementById("assessment_mode_field");

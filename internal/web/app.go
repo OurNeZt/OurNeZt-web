@@ -28,6 +28,8 @@ type CurrentUser struct {
 }
 
 type ViewData struct {
+	CSPNonce          string
+	CSRFField         template.HTML
 	Title             string
 	User              *CurrentUser
 	Error             string
@@ -41,6 +43,10 @@ const tokenContextKey = "session_token"
 
 func NewRouter(cfg config.Config, clients *core.Clients) (*gin.Engine, error) {
 	app := &App{cfg: cfg, clients: clients, authLimits: authlimit.New(cfg.AuthLimits)}
+	csrfMiddleware, err := app.csrfProtection()
+	if err != nil {
+		return nil, err
+	}
 
 	if cfg.AppEnv == "production" {
 		gin.SetMode(gin.ReleaseMode)
@@ -51,7 +57,11 @@ func NewRouter(cfg config.Config, clients *core.Clients) (*gin.Engine, error) {
 		return nil, fmt.Errorf("configure trusted proxies: %w", err)
 	}
 	r.Use(gin.Logger(), gin.Recovery())
+	r.Use(securityHeaders())
 	r.Use(app.authTrafficLimit())
+	r.Use(app.requestBodyLimit())
+	r.Use(csrfMiddleware)
+	r.Use(app.coreRequestDeadline())
 	r.Use(app.sessionLoader())
 
 	tpl, err := parseTemplates("templates")

@@ -1014,3 +1014,34 @@ body {
     transform: translateY(0);
   }
 }
+
+/* Housing form field transitions. */
+
+  .oz-animated-field {
+    max-height: 12rem;
+    opacity: 1;
+    overflow: visible;
+    transition:
+      max-height 220ms ease,
+      opacity 160ms ease,
+      transform 160ms ease,
+      margin 220ms ease;
+  }
+
+  .oz-animated-field.oz-field-hidden {
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    pointer-events: none;
+    transform: translateY(-0.25rem);
+  }
+
+  .oz-animated-field.oz-field-gone {
+    display: none !important;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .oz-animated-field {
+      transition: none;
+    }
+  }

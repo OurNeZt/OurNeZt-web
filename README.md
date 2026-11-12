@@ -59,8 +59,20 @@
         <li><a href="#configuration">Configuration</a></li>
       </ul>
     </li>
+    <li><a href="#production-transport-security">Production Transport Security</a></li>
+    <li><a href="#authentication-protections">Authentication Protections</a></li>
+    <li><a href="#http-request-protections">HTTP Request Protections</a></li>
+    <li><a href="#core-request-deadlines">Core Request Deadlines</a></li>
     <li><a href="#running-the-web-app">Running The Web App</a></li>
-    <li><a href="#testing">Testing</a></li>
+    <li>
+      <a href="#testing">Testing</a>
+      <ul>
+        <li><a href="#http-protection-regression-tests">HTTP Protection Regression Tests</a></li>
+        <li><a href="#core-deadline-regression-tests">Core Deadline Regression Tests</a></li>
+        <li><a href="#session-revocation-regression-tests">Session Revocation Regression Tests</a></li>
+        <li><a href="#reviewer-check-against-a-running-web-instance">Reviewer Check Against A Running Web Instance</a></li>
+      </ul>
+    </li>
     <li><a href="#docker">Docker</a></li>
     <li><a href="#release-flow">Release Flow</a></li>
     <li><a href="#roadmap">Roadmap</a></li>
@@ -87,13 +99,20 @@ This repository is designed to act as the main web client for OurNeZt. It uses G
 OurNeZt Web currently focuses on the user-facing experience for:
 
 - Login, session handling, and authenticated web access.
+- Server-side logout revocation and fresh login after password changes.
 - Admin-created user onboarding and first-time password flow.
 - Family and household dashboard views.
 - Family creation, joining, invite code, and member management workflows.
 - Person profile forms for household members.
 - Income, CPF, cash savings, expenses, and surplus display.
 - Housing option forms for BTO, resale, EC, private, and other housing types.
-- Housing affordability dashboard views powered by backend calculations.
+- Housing groups with individual and group-level dashboard visibility controls.
+- Family-scoped housing checklists, weighted criteria, ratings, and evaluation summaries.
+- Housing notes for viewing observations and planning context.
+- Housing affordability dashboards, comparisons, charts, and timelines powered by backend calculations.
+- Authentication throttling by client IP and normalized account identity.
+- Bounded request bodies, multipart forms, and HTTP connection timeouts.
+- Consistent Core RPC deadlines and safe timeout or service unavailable messages.
 - Responsive web pages styled with DaisyUI and Tailwind CSS.
 
 The web app is built as a lightweight server-rendered Go application. It should remain focused on routing, templates, page rendering, user interaction, and calling the backend Core service instead of duplicating finance or housing business logic.
@@ -131,7 +150,7 @@ At the centre of the web architecture is the **OurNeZt Web Server**, which acts 
 The web application is split into focused areas:
 
 - **Web Router** handles HTTP routes, page navigation, redirects, and route grouping.
-- **Middleware Layer** handles request logging, session checks, authentication guards, and common request context.
+- **Middleware Layer** handles request logging, authentication throttling, bounded request body validation, session checks, and authentication guards.
 - **Template Layer** renders HTML pages, layouts, partials, forms, and reusable UI components.
 - **Static Asset Layer** serves compiled CSS, JavaScript, images, and application assets.
 - **gRPC Client Layer** communicates with OurNeZt Core for authentication, family, person, finance, housing, and dashboard data.
@@ -142,6 +161,7 @@ The expected flow is:
 ```text
 Browser
   -> OurNeZt Web HTTP/Gin Server
+  -> Authentication traffic limits and request body validation
   -> Auth/session middleware
   -> Page handler
   -> OurNeZt Core gRPC API
@@ -217,7 +237,10 @@ export REQUEST_TIMEOUT=5s
 export MAINTENANCE_NOTICE_ENABLED=false
 ```
 
+See [.env.example](.env.example) for common settings. The HTTP timeout and body size defaults are documented in [HTTP Request Protections](#http-request-protections).
+
 ### Environment Variables
+
 | Variables | Description | Example |
 | --- | --- | --- |
 | `APP_ENV` | Application environment. Usually `development` or `production`. | `development` |
@@ -226,7 +249,15 @@ export MAINTENANCE_NOTICE_ENABLED=false
 | `SESSION_COOKIE_NAME` | Name of the browser session cookie. | `ournezt_session` |
 | `SESSION_COOKIE_MAX_AGE` | Session cookie lifetime. | `12h` |
 | `SESSION_COOKIE_SECURE` | Whether the session cookie requires HTTPS. Set to `true` in production. | `false` |
-| `REQUEST_TIMEOUT` | Timeout used when making requests to OurNeZt Core. | `5s` |
+| `CSRF_AUTH_KEY` | Secret for signing CSRF cookies: 32 random bytes encoded as 64 hex characters. Required in production; persist and share across Web replicas. | Generate with `openssl rand -hex 32` |
+| `REQUEST_TIMEOUT` | Shared Core RPC budget per HTTP request and maximum duration of an individual Core RPC; defaults to `5s`. | `5s` |
+| `SHUTDOWN_TIMEOUT` | Graceful shutdown timeout; defaults to `10s`. | `10s` |
+| `WEB_TLS_CERT_FILE` / `WEB_TLS_KEY_FILE` | Certificate and private key for optional HTTPS on the Web listener. Configure both. | `/etc/ournezt/tls/tls.crt` / `/etc/ournezt/tls/tls.key` |
+| `CORE_GRPC_USE_TLS` | Enable verified TLS for Web-to-Core gRPC; defaults to `false`. Required in production unless the trusted plaintext opt-in is enabled. | `true` |
+| `CORE_ALLOW_INSECURE` | Explicitly permit a trusted plaintext Core connection; defaults to `false`. Does not bypass certificate verification or invalid TLS settings. | `false` |
+| `CORE_GRPC_TLS_INSECURE_SKIP_VERIFY` | Development-only certificate-verification bypass. Forbidden in production. | `false` |
+| `CORE_GRPC_TLS_CA_FILE` | Optional CA certificate file for the Core connection. | `/etc/ournezt/tls/ca.crt` |
+| `CORE_GRPC_TLS_SERVER_NAME` | Optional server name for Core TLS verification. | `ournezt-core` |
 | `MAINTENANCE_NOTICE_FILE` | Optional JSON file path for a dynamically loaded maintenance notice. File values override env values and are read on each page render. | `/etc/ournezt/maintenance-notice/notice.json` |
 | `MAINTENANCE_NOTICE_ENABLED` | Shows or hides the maintenance banner when no notice file is configured. | `true` |
 | `MAINTENANCE_NOTICE_LEVEL` | Banner style. Supported values: `info`, `success`, `warning`, `error`. | `warning` |
@@ -250,9 +281,218 @@ For hot-swappable maintenance copy, set `MAINTENANCE_NOTICE_FILE` to a JSON file
 ```
 
 ### Session Behaviour
+
 OurNeZt Web stores the session token in an HTTP-only browser cookie. For authenticated backend calls, the token is forwarded to OurNeZt Core as gRPC metadata: `x-session-token: <session-token>`
 
 If OurNeZt Core returns that a user must change their password, the web app redirects the user to: `/change-password`. This ensures bootstrap-created admin users and password-reset users update their password before continuing to other authenticated pages.
+
+Logout calls Core’s `RevokeCurrentSession` RPC with the browser token before clearing the cookie. Repeated logout remains safe even when the token has expired or was already revoked. If Core cannot confirm revocation, Web keeps the cookie, displays a safe error, and offers **Retry logout**. Logout uses the shared Core request deadline and does not perform a preliminary session validation call.
+
+After a successful password change through either `/change-password` or `/profile/password`, Core has revoked all sessions for that user. Web clears the cookie and redirects to login with a confirmation. Failed password changes keep the cookie. This also applies to the first-login password-change flow.
+
+Deploy the matching Core change before updating Web. The existing `revoked_at` database column supports this behavior; no new schema migration or Web environment setting is needed.
+
+---
+
+## Production Transport Security
+
+With `APP_ENV=production`, Web refuses startup when `CORE_GRPC_USE_TLS=false` unless `CORE_ALLOW_INSECURE=true` explicitly permits a trusted plaintext hop. Production detection trims surrounding whitespace and ignores case. Local development retains the plaintext default.
+
+For verified TLS, configure:
+
+```bash
+export APP_ENV=production
+export CORE_GRPC_USE_TLS=true
+export CORE_ALLOW_INSECURE=false
+export CORE_GRPC_TLS_CA_FILE=/etc/ournezt/core-ca.crt
+export CORE_GRPC_TLS_SERVER_NAME=core.internal
+```
+
+The Core/proxy certificate must be signed by a trusted CA and contain the expected DNS name. Leave the CA file empty to use the system trust store; leave the server-name override empty to verify the dial target's name. TLS uses a minimum of TLS 1.2. `CORE_GRPC_TLS_INSECURE_SKIP_VERIFY=true` is forbidden in production, including when the plaintext opt-in is set. TLS certificate verification follows the [Go TLS configuration](https://pkg.go.dev/crypto/tls#Config).
+
+Unreadable or invalid CA files and malformed transport booleans fail startup. Supplying a CA file, server-name override, or verification-bypass setting with TLS disabled also fails, so those settings cannot be silently ignored. The client never retries a failed TLS connection as plaintext. gRPC establishes connections lazily: local policy and CA material are checked at startup, while remote certificate/hostname/transport errors fail the RPC when it connects.
+
+### Production Transport Models
+
+| Model | Web settings | Core settings |
+| --- | --- | --- |
+| TLS directly to Core | `CORE_GRPC_USE_TLS=true`; trusted CA and matching certificate name | Both gRPC TLS files; no plaintext opt-in needed |
+| TLS-terminating gRPC proxy | Verified TLS to the proxy's gRPC endpoint | `GRPC_ALLOW_INSECURE=true` for the restricted proxy-to-Core backend |
+| Explicit trusted internal plaintext hop | `CORE_GRPC_USE_TLS=false`, `CORE_ALLOW_INSECURE=true` | No TLS files; `GRPC_ALLOW_INSECURE=true` |
+
+For an explicitly allowed plaintext connection, Web logs a `WARN` naming `CORE_ALLOW_INSECURE` and stating that bearer session tokens are unencrypted. Restrict this connection to the trusted network or proxy backend. `WEB_TRUSTED_PROXIES` configures HTTP header trust and does not permit plaintext Core transport. Browser-facing HTTPS also does not encrypt this hop automatically.
+
+Before upgrading production Helm/Compose deployments, ensure their manifests emit these settings for both processes. Existing production plaintext deployments must configure TLS or set the corresponding explicit opt-ins. There is no database migration or automatic fallback.
+
+### Transport Reviewer Checks
+
+No database, external service, or manually generated certificates are required:
+
+```bash
+go test ./internal/config ./internal/core ./cmd/web -run TestTransport -count=1 -v
+```
+
+The tests exercise real startup subprocesses and loopback gRPC servers with generated certificates. They verify startup rejection, invalid TLS settings, warning logs, successful verified TLS, unknown CA and hostname rejection, no downgrade to plaintext, and session metadata reaching handlers only over the selected permitted transport.
+
+Manual checks with a disposable deployment:
+
+1. Start Web with `APP_ENV=production`, `CORE_GRPC_USE_TLS=false`, and `CORE_ALLOW_INSECURE=false`. Expect a nonzero exit with a clear TLS configuration error before HTTP startup.
+2. Enable TLS and configure Core's trusted CA/certificate name. Normal login should work. Using an untrusted CA, wrong certificate name, or plaintext Core endpoint must fail RPCs without sending session metadata to a plaintext handler.
+3. Set `CORE_GRPC_TLS_INSECURE_SKIP_VERIFY=true` in production. Startup must fail, even with `CORE_ALLOW_INSECURE=true`.
+4. Test a deliberately trusted plaintext hop by removing the CA and server-name settings, setting `CORE_GRPC_USE_TLS=false` and `CORE_ALLOW_INSECURE=true`, and separately enabling Core's opt-in. Verify a `WARN` on both applications. Other production requirements, including the persistent CSRF secret, still apply.
+
+---
+
+
+### New Password Whitespace
+
+User creation and both password-change forms prevent whitespace while entering a temporary, new, or confirmation password. Pressing Space or pasting/dropping text containing whitespace leaves the existing field unchanged and displays an inline message. This includes leading/trailing spaces, tabs, line breaks, and Unicode whitespace. Autofill or composition that inserts whitespace marks the field invalid until corrected. The forms also describe the 15-character minimum.
+
+Server validation remains active if JavaScript is unavailable or bypassed. Web shows `new passwords must not contain spaces or other whitespace` before submitting a whitespace-containing credential mutation to Core. Core policy errors for minimum/maximum length, common passwords, and whitespace are displayed as specific validation messages instead of a generic retry error. Unknown validation details are not exposed. Core remains responsible for the full policy; deploy the matching Core password-policy change as well.
+
+Web does not trim password fields. Login and current-password verification preserve existing passwords exactly, including whitespace, so an existing user can upgrade to a compliant password. Confirmation must match the new password exactly. Rejected changes keep the current session and first-login state intact; successful changes retain the existing all-session revocation behavior.
+
+Run the HTTP regression checks without a running Core instance or database:
+
+```bash
+go test ./internal/web -run TestPasswordPolicy -count=1 -v
+```
+
+For manual checks, use disposable accounts in `/admin/users`, the first-login `/change-password` flow, and My Profile's password form:
+
+1. Type `quiet`, then press Space. The field must remain `quiet` and display inline feedback. Check the start, middle, and end of the field, including confirmation fields.
+2. Paste text containing a space or Unicode nonbreaking space. The paste must be blocked with an inline message while preserving the existing text. Tab must still move focus normally.
+3. Enter `quiet-otter-bay` without whitespace. The inline message must clear, and submission should succeed when Core's other checks pass.
+4. With JavaScript disabled or a direct form request, submit whitespace and verify the specific server message. Also try a short or common password: Core's validation reason must appear instead of `unable to change your password; please try again later`.
+5. Confirm rejected changes do not create an account, change credentials, or end the session. Existing whitespace-containing passwords must still reach Core unchanged during login and as the current password when upgrading.
+
+---
+
+## Authentication Protections
+
+### CSRF Protection
+
+All state-changing routes require a valid CSRF token and its signed browser cookie, including login, logout, password changes, account updates, admin actions, families, people, and housing forms. Shared middleware also protects future POST, PUT, PATCH, and DELETE routes before any Core call. Hidden tokens are rendered by the server, so normal form submissions need no JavaScript.
+
+Web validates `Origin` against the request's scheme and host, including the port. Sibling subdomains are rejected. If `Origin` is absent, a supplied `Referer` must match; HTTPS submissions require either `Origin` or `Referer` as well as the token. Local HTTP allows both headers to be absent only with a valid token/cookie pair. Tokens supplied only in the URL query are rejected. Scripted clients can send the form token in `X-CSRF-Token` instead.
+
+Rejected submissions return HTTP 403 with a message to reopen the form. They do not call Core or change the session cookie. Pages with tokens use `Cache-Control: no-store`. Masked tokens vary per page load and remain usable across browser tabs.
+
+Before deploying, generate `CSRF_AUTH_KEY` once with `openssl rand -hex 32`, store it as a deployment secret, and supply the same value to every Web replica. Production startup fails if this setting is missing or malformed. Development can leave it empty to generate a temporary key; reload open forms after restarting Web. Rotating the key invalidates open forms but does not revoke login sessions.
+
+Production CSRF cookies are HTTP-only, Secure, SameSite=Lax, host-only, and use the `__Host-` prefix. This applies even when TLS terminates at ingress. The ingress must preserve the public `Host`; arbitrary forwarded-host/protocol headers are not used for CSRF trust. Local HTTP uses an unprefixed cookie. Keep `SESSION_COOKIE_SECURE=true` in production as well.
+
+For a running local/staging Web instance, reviewers can run this without an account or password:
+
+```bash
+go run ./cmd/csrf-check -url http://localhost:8080
+```
+
+The command prints readable `PASS` results for login/logout, password/account, admin, family, person, and housing POST routes. It checks missing and invalid tokens, missing cookies, tokens from another browser, foreign/sibling/null origins, Referer fallback, noncacheable token pages, and tokens from two tabs. Valid-token controls submit empty login forms and must reach normal validation, so an app that always returns 403 cannot falsely pass.
+
+Probes run signed out and do not supply application form data. Authenticated actions and backend side effects are explicitly reported as `SKIP`; use the regression suite below for those checks. Unexpected session cookies, outages, oversized responses, or HTTP 429 fail the checker. Redirects are not followed. Each run consumes authentication rate-limit slots; allow a fresh rate-limit window before repeating it.
+
+The reviewer command is tested against the actual router over HTTP and HTTPS, with broken endpoints to verify that missing protection and blanket rejection are detected:
+
+```bash
+go test ./cmd/csrf-check
+```
+
+Run the broader automated checks without Core or a database:
+
+```bash
+go test ./internal/web -run TestCSRF -count=1
+```
+
+The checks verify every registered POST route, invalid/missing tokens and cookies, tokens from another browser, foreign and sibling origins, Referer fallback, form fields including retry pages, and cookies shared between replicas. For a manual review:
+
+| Check | Expected result |
+| --- | --- |
+| Open a form and submit it normally | The usual action or validation message |
+| Remove its hidden `csrf_token` field and submit | 403; the change is not made |
+| Replace the token with a value from another browser | 403; the change is not made |
+| POST with a foreign or sibling `Origin`, even with a valid token | 403; the change is not made |
+| Use forms in two browser tabs | Both remain usable |
+
+The existing reviewer commands load the login form and retain its CSRF cookie before running their probes. The login enumeration comparison ignores only the randomized hidden token; all other response content must match.
+
+### Login Response Protection
+
+Failed logins display only `Invalid email or password.` Web uses the same redirect and rendered message for unknown emails, wrong passwords, disabled accounts, lookup failures, and other Core login errors. It never displays raw Core login error messages or sets a session cookie after failure. Missing email or password uses the same message. Authentication throttling still returns HTTP 429 with retry information.
+
+Deploy the matching Core fix for [core #54](https://github.com/OurNeZt/OurNeZt-core/issues/54) to normalize gRPC login responses and perform bounded dummy Argon2id verification for unknown accounts. Web's message protection works independently, but Core is needed to reduce backend timing differences.
+
+Run the login response and traffic limit regression checks without a Core deployment:
+
+```bash
+go test ./internal/web -run 'TestLogin|TestAuthenticationRouteLimits|TestWebAuthenticationConcurrencyCap' -count=1 -v
+```
+
+### Login Enumeration Reviewer Checks
+
+Start Web and Core on a local/staging instance with an existing active test account. Optionally create a second test account through the admin UI and disable it. Supply those fixture emails below; the checker does not create or disable accounts, and never asks for a real password:
+
+```bash
+go run ./cmd/login-enumeration-check -url http://localhost:8080 -email active@example.com -disabled-email disabled@example.com
+```
+
+Replace the example emails with your fixtures. The command generates an unknown email and a random wrong password, then submits two or three failed logins. After acquiring the CSRF cookie, it requires the same HTTP 302 redirect to `Invalid email or password.`, identical response bodies and rendered login pages (apart from masked CSRF tokens), and no additional `Set-Cookie`. It prints `PASS` for each case and exits nonzero on failure. Omitting `-disabled-email` explicitly reports that case as `SKIP`. These requests consume authentication limit slots; a 429 fails the check with a retry instruction.
+
+This checks Web's public responses. A generic Web response alone cannot prove Core connectivity or account fixture state. Confirm Core is running and use the Core regression command in its README to verify matching gRPC responses, successful login, and dummy Argon2 work. Lookup failures are injected by automated tests; they do not require breaking a running database. Timing is verified by checking the password work and configured cost, without a flaky wall-clock threshold.
+
+The reviewer checker itself is tested against the application router, plus simulated endpoints that leak messages, set cookies, return different bodies, succeed unexpectedly, throttle, redirect elsewhere, or return an HTTP outage:
+
+```bash
+go test ./cmd/login-enumeration-check ./internal/web -run 'TestReviewerCheck|TestLogin' -count=1 -v
+```
+
+Authentication submissions are limited before expensive Core calls. Web applies these defaults per running instance:
+
+| Environment variable | Default | Purpose |
+| --- | --- | --- |
+| `AUTH_IP_LIMIT` | `30` | Authentication submissions per client IP within the window. |
+| `AUTH_ACCOUNT_LIMIT` | `5` | Submissions per normalized account identity within the window. |
+| `AUTH_RATE_WINDOW` | `1m` | Rate limit window. |
+| `AUTH_MAX_CONCURRENT` | `8` | Concurrent authentication submissions. |
+| `WEB_TRUSTED_PROXIES` | Empty | Comma-separated proxy IPs or CIDRs allowed to supply forwarded client IPs. |
+
+Rejected submissions return **HTTP 429** with `Retry-After` and `Cache-Control: no-store`. Limits cover login, password changes, and admin user creation. Set `WEB_TRUSTED_PROXIES` to the actual ingress proxy source addresses when running behind a reverse proxy; the empty default ignores forwarded headers. Core also enforces its own authentication limits.
+
+---
+
+## HTTP Request Protections
+
+The Web server bounds request bodies and connection I/O with the following defaults:
+
+| Environment variable | Default | Purpose |
+| --- | --- | --- |
+| `WEB_READ_HEADER_TIMEOUT` | `10s` | Maximum time to read request headers. |
+| `WEB_READ_TIMEOUT` | `15s` | Maximum time to read the entire request, including its body. |
+| `WEB_WRITE_TIMEOUT` | `30s` | Deadline for response writes. |
+| `WEB_IDLE_TIMEOUT` | `60s` | Maximum idle time between keep-alive requests. |
+| `WEB_MAX_REQUEST_BODY_BYTES` | `1048576` (1 MiB) | Maximum body size for every request, including multipart requests. |
+
+Timeouts must be positive Go durations, and the body limit must be a positive integer in bytes. Missing, invalid, zero, or negative values retain the protective defaults.
+
+Login, password changes, and admin user creation retain a smaller **16 KiB** body limit, even if the global limit is increased. A smaller global limit also applies to these routes.
+
+Bodies are completely checked within the size cap before session validation or handlers can use form data. This also bounds requests without a Content-Length, including chunked uploads. Oversized bodies return **HTTP 413**, malformed forms return **HTTP 400**, and body read timeouts return **HTTP 408** when a response can still be written. Multipart parsing uses bounded memory and cleans up any temporary form files. Normal housing notes, including 10,000 characters of Unicode text, fit within the default limit.
+
+`WEB_WRITE_TIMEOUT` bounds connection writes; it does not cancel handler work. `REQUEST_TIMEOUT` controls the separate Core RPC budget described below. These limits apply to both plaintext and TLS listeners.
+
+Use the [regression tests](#http-protection-regression-tests) to verify connection timeouts and the [reviewer command](#reviewer-check-against-a-running-web-instance) to check body limits on a running instance.
+
+---
+
+## Core Request Deadlines
+
+`REQUEST_TIMEOUT` defaults to **5 seconds** and bounds every Web-to-Core RPC, including session validation, authentication, dashboard, family, person, housing, income, CPF, admin, and account operations. Missing, invalid, zero, or negative values fall back to the default.
+
+After request body validation, Web creates one deadline shared by session validation and subsequent business RPCs. A page with several sequential calls uses the remaining budget rather than receiving a fresh timeout for each call. Earlier request deadlines and client cancellation are preserved, along with the session metadata sent to Core. The Core client also applies a per-call deadline, protecting calls made outside the HTTP middleware, and cancels its timeout context when each call completes.
+
+Session validation timeouts return an HTML **504 Gateway Timeout** page; unavailable Core responses return **503 Service Unavailable**. These responses include `Cache-Control: no-store` and preserve the session cookie. Business handlers show safe error messages through their existing error redirects; page rendering also detects timeout or unavailable errors from optional RPCs, preventing incomplete backend data from appearing as a successful page. Internal gRPC connection details are not exposed in these messages. Unsaved housing notes, evaluation answers, and checklist criteria remain available to copy or retry after a timeout.
+
+`WEB_WRITE_TIMEOUT` controls response writes separately. Keep it longer than `REQUEST_TIMEOUT` so Web can send an error after a Core deadline expires. See the [gRPC deadline guide](https://grpc.io/docs/guides/deadlines/) for background.
 
 ---
 
@@ -276,6 +516,95 @@ open http://localhost:8080
 
 ---
 
+## Frontend Assets and Content Security Policy
+
+Tailwind CSS and DaisyUI are compiled into `static/vendor/ui.css`. Chart.js is
+served from `static/vendor/chart.umd.js`. All browser assets are self-hosted;
+pages do not fetch executable code or styles from a CDN. The generated files,
+upstream MIT licenses, and SHA-256 checksums are committed, so Go development
+and the existing Docker build do not need Node.js or a CDN at runtime.
+
+After changing templates, JavaScript classes, or frontend dependencies, rebuild
+with Node.js 22 and npm:
+
+```bash
+npm ci --ignore-scripts --no-audit --no-fund
+npm run build:assets
+```
+
+Commit `package.json`, `package-lock.json`, and the updated `static/vendor/`
+files together. Dependency versions are exact and npm verifies downloads against
+the lockfile integrity hashes. Review dependency upgrades and regenerate assets
+with this command; do not edit generated files directly. CI rebuilds from the
+lockfile and rejects stale assets. The build uses the
+[Tailwind CLI](https://tailwindcss.com/docs/installation/tailwind-cli) and
+[DaisyUI plugin](https://daisyui.com/docs/install/cli/).
+
+Every response includes an enforced Content Security Policy. Scripts require a
+fresh cryptographically random nonce, including self-hosted script elements.
+New script tags in Go templates must include `nonce="{{ $.CSPNonce }}"`; pass
+`CSPNonce` through any `dict` used to render a partial containing scripts.
+Inline event handlers, inline style attributes, `eval`, third-party styles,
+frames, and objects are blocked. Styles belong in self-hosted stylesheets;
+event handlers belong in authorized scripts using `addEventListener`.
+Images allow same-origin and `data:` sources for DaisyUI icons. Forms and
+browser connections are limited to the same origin. HTML responses use
+`Cache-Control: no-store` to prevent nonce reuse through response caching.
+These nonce rules follow the [CSP guide](https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CSP).
+
+## Browser Security Header Ownership
+
+Web's middleware sets the following headers before authentication, request body
+limits, and CSRF checks. They apply to pages, static assets, redirects, and
+application-generated errors in local, Docker, and Kubernetes deployments.
+
+| Header | Application policy |
+| --- | --- |
+| `Content-Security-Policy` | Nonce-based scripts, same-origin resource restrictions, and `frame-ancestors 'none'`; see above. |
+| `X-Frame-Options` | `DENY` |
+| `X-Content-Type-Options` | `nosniff` |
+| `Referrer-Policy` | `strict-origin-when-cross-origin` |
+| `Permissions-Policy` | `camera=(), microphone=(), geolocation=(), payment=(), usb=()` |
+| `Strict-Transport-Security` | `max-age=31536000` on requests served directly over TLS. |
+
+The referrer policy omits paths and query strings on cross-origin requests and
+omits the referrer on HTTPS-to-HTTP requests. The permissions policy disables
+device and payment features this application does not use. See the
+[Referrer-Policy reference](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Referrer-Policy)
+and [Permissions Policy guide](https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Permissions_Policy).
+
+| Browser-facing deployment | HSTS and HTTPS redirect owner |
+| --- | --- |
+| Local HTTP development | HSTS is omitted; no HTTPS redirect is required. |
+| Direct Web HTTPS, including Docker | Configure both `WEB_TLS_CERT_FILE` and `WEB_TLS_KEY_FILE`; Web sends HSTS. Any separate public HTTP listener must redirect to HTTPS. |
+| TLS-terminating reverse proxy or Kubernetes ingress | Ingress must redirect public HTTP to HTTPS and set `Strict-Transport-Security: max-age=31536000` on all public HTTPS responses, including errors generated by ingress. Web's backend HTTP responses omit HSTS. |
+
+Web uses the actual TLS connection to decide whether to send HSTS. It does not
+infer TLS from `APP_ENV`, `SESSION_COOKIE_SECURE`, `WEB_TRUSTED_PROXIES`,
+`X-Forwarded-Proto`, or `Forwarded`. These settings and headers cannot cause a
+plaintext request to enable HSTS. The policy intentionally omits
+`includeSubDomains` and `preload`; those require a separate decision by the
+domain owner. See the [HSTS reference](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Strict-Transport-Security).
+
+Reverse proxies must preserve application-owned headers, especially the CSP:
+the nonce in the response header must match the rendered HTML. Avoid adding a
+second CSP or conflicting header values. Configure equivalent baseline headers
+for redirects and errors generated by the proxy itself. HTTPS termination and
+redirects belong to the deployment configuration; this repository does not
+contain the production ingress manifests.
+
+Reviewer checks, without a running Core service or database:
+
+```bash
+go test ./internal/web -run TestSecurityHeaders -count=1 -v
+```
+
+These checks cover all headers across pages, assets, redirects, and errors, plus
+real HTTP/TLS connections and misleading forwarded-protocol headers. With Web
+running, inspect `curl -I http://localhost:8080/login` and the public HTTPS URL.
+For HTTPS behind ingress, test the public URL as well as a direct backend
+port-forward: only the public HTTPS response should include HSTS.
+
 ## Testing
 
 Run all tests:
@@ -296,12 +625,70 @@ Run tests with coverage:
 go test -v -cover ./...
 ```
 
-Generate an HTML coverage report:
+Optional developer code coverage report (shows which source code ran; this is not a feature pass/fail report):
 
 ```bash
 go test -coverprofile=coverage.out ./...
 go tool cover -html=coverage.out
 ```
+
+### HTTP Protection Regression Tests
+
+Run the focused checks without a running Core service or database:
+
+```bash
+go test ./cmd/http-limits-check ./internal/config ./internal/web -run 'TestHTTP|TestRequestBody|TestBoundedMultipart|TestRouterRejects|TestMaximumHousingNotes' -count=1 -v
+```
+
+These tests cover:
+
+- Default, custom, invalid, and nonpositive configuration values.
+- Known-length and chunked bodies, exact size boundaries, and the smaller authentication limit.
+- Malformed forms, bounded multipart parsing, temporary file cleanup, and 10,000-character Unicode housing notes.
+- Rejection before session validation or Core calls.
+- Real socket checks for slow headers, slow bodies, stalled chunked uploads, idle keep-alive connections, and response write deadlines.
+- TLS/HTTP2 oversized body rejection.
+- The reviewer command against the actual application router, an endpoint missing chunked protection, and unfixed or unavailable endpoints.
+
+### Core Deadline Regression Tests
+
+Run the deadline checks without a separate Core deployment or database:
+
+```bash
+go test ./internal/config ./internal/core ./internal/web -run 'TestRPC|TestCore|TestRequestTimeout' -count=1 -v
+```
+
+The tests start a local gRPC server that deliberately stalls. They verify deadlines for every Core service, unavailable connections with wait-for-ready enabled, shared budgets across sequential HTTP calls, earlier caller deadlines, cancellation, session metadata, safe error messages, session cookie preservation, and unsaved housing draft recovery. They also check that an unavailable backend cannot render an empty family list as a successful page.
+
+### Session Revocation Regression Tests
+
+Run the logout and password-change checks without a separate Core deployment:
+
+```bash
+go test ./internal/web -run TestSession -count=1 -v
+```
+
+These verify revocation before cookie deletion, repeated logout, rejected token reuse, timeout and unavailable Core responses, retry behavior, first-login and normal password changes, and preservation of cookies after failures. Run the matching Core lifecycle and PostgreSQL tests to verify backend invalidation and transaction behavior.
+
+### Reviewer Check Against A Running Web Instance
+
+Start Web as described above, then run this command in another terminal:
+
+```bash
+go run ./cmd/http-limits-check -url http://localhost:8080
+```
+
+The command prints a `PASS` line for each check and exits with a nonzero status on failure. It verifies that a body exactly at the global cap is accepted, oversized known-length/chunked/multipart bodies return **413**, malformed forms return **400**, and the smaller login body cap still applies. Rejections must also include `Cache-Control: no-store`.
+
+Most probes POST to an intentionally unregistered path, so **404** is the expected result for accepted bodies. One oversized probe targets `/login`; it is rejected before login processing and consumes one authentication IP-limit slot. The command sends no credentials or session cookies and changes no application records.
+
+If the instance uses a custom global body limit, supply the same byte count:
+
+```bash
+go run ./cmd/http-limits-check -url http://localhost:8080 -max-body-bytes 2097152 -timeout 15s
+```
+
+The checker supports body limits from 64 bytes to 64 MiB. Use a direct local or staging Web listener, or a Kubernetes port-forward to Web, to verify the application limits. An ingress proxy may reject requests first and apply different limits. This command checks body handling; the automated socket tests above verify connection timeouts.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -315,7 +702,7 @@ Build the image locally:
 docker build -t ournezt-web:local .
 ```
 
-Run the container:
+Run the container with the persistent CSRF secret configured (see [CSRF Protection](#csrf-protection)) and a trusted Core CA at `./tls/core-ca.crt`. This example expects the Core certificate to contain `core.internal`:
 
 ```bash
 docker run --rm \
@@ -323,12 +710,22 @@ docker run --rm \
   -e APP_ENV="production" \
   -e WEB_ADDR=":8080" \
   -e CORE_GRPC_ADDR="host.docker.internal:50051" \
+  --mount type=bind,source="$(pwd)/tls/core-ca.crt",target=/etc/ournezt/core-ca.crt,readonly \
+  -e CORE_GRPC_USE_TLS="true" \
+  -e CORE_GRPC_TLS_CA_FILE="/etc/ournezt/core-ca.crt" \
+  -e CORE_GRPC_TLS_SERVER_NAME="core.internal" \
   -e SESSION_COOKIE_NAME="ournezt_session" \
   -e SESSION_COOKIE_MAX_AGE="12h" \
   -e SESSION_COOKIE_SECURE="true" \
+  -e CSRF_AUTH_KEY="${CSRF_AUTH_KEY}" \
   -e REQUEST_TIMEOUT="5s" \
   ournezt-web:local
 ```
+
+This example assumes a TLS-terminating proxy in front of port 8080. Configure
+that proxy's HSTS and HTTPS redirects as described in
+[Browser Security Header Ownership](#browser-security-header-ownership), or
+configure Web's TLS certificate and key for direct HTTPS.
 
 Container startup behavior:
 
@@ -385,16 +782,23 @@ ghcr.io/OurNeZt/ournezt-web:latest
 
 - [x] Web application foundation
 - [x] Gin server setup
-- [x] Tailwind CSS and DaisyUI CDN integration
+- [x] Self-hosted Tailwind CSS, DaisyUI, and Chart.js with an enforced Content Security Policy
 - [x] HTML template structure
 - [x] Static asset handling
 - [x] Authentication pages
 - [x] Session middleware integration
+- [x] Server-side logout and password-change session revocation
 - [x] gRPC client integration with OurNeZt Core
 - [x] Family and household dashboard pages
 - [x] Person profile management pages
 - [x] Finance and CPF dashboard views
 - [x] Housing affordability planning pages
+- [x] Housing groups and dashboard visibility controls
+- [x] Housing checklists, evaluations, and notes
+- [x] Authentication rate limits and trusted proxy configuration
+- [x] Request body limits and HTTP connection timeouts
+- [x] Core RPC deadlines and safe dependency failure responses
+- [x] Reviewer commands for authentication and request body checks
 - [x] Responsive UI polish
 - [x] Docker image build and release workflow
 - [x] Deployment manifests
