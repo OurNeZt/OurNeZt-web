@@ -6,6 +6,46 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ---
 
+## [v2.0.0] - 2026-11-13
+
+### Added
+
+- CSRF protection for state-changing requests, including login, logout, and authenticated forms, with a reload page for rejected submissions.
+- Configurable HTTP connection timeouts and a global request body limit, including bounded multipart parsing.
+- A shared Core RPC deadline budget and safe timeout/service-unavailable pages that preserve unsaved housing notes, checklist criteria, and evaluation answers.
+- Inline whitespace feedback and clear Core password-policy messages for user creation and password changes.
+- Self-hosted, pinned Tailwind CSS, DaisyUI, and Chart.js assets with committed licenses, checksums, and CI verification of generated files.
+- Browser security headers covering pages, assets, redirects, and application errors, including nonce-based Content Security Policy, frame protection, MIME sniffing protection, referrer and permissions policies, and HSTS for direct HTTPS.
+- Reviewer commands and regression coverage for request limits, RPC deadlines, session revocation, login responses, CSRF, password validation, transport security, and browser headers.
+
+### Changed
+
+- Production startup now requires a persistent `CSRF_AUTH_KEY` containing 32 random bytes encoded as 64 hexadecimal characters. Share the same secret across Web replicas.
+- Production Core connections now require verified TLS unless `CORE_ALLOW_INSECURE=true` explicitly permits a trusted plaintext hop. Invalid TLS settings fail startup, certificate-verification bypass is forbidden in production, and failed TLS connections never downgrade to plaintext.
+- Logout now revokes the session in Core before clearing the browser cookie. When revocation cannot be confirmed, the cookie is retained and the user can retry.
+- Successful password changes clear the browser session and require a fresh login after Core revokes all sessions for the account.
+- Every Core RPC uses `REQUEST_TIMEOUT`, defaulting to five seconds, with one budget shared by session validation and subsequent calls in each HTTP request.
+- HTTP defaults now bound headers to 10 seconds, complete reads to 15 seconds, writes to 30 seconds, idle connections to 60 seconds, and request bodies to 1 MiB. Authentication forms retain the smaller 16 KiB limit.
+- Scripts now require per-response CSP nonces; inline event handlers, inline style attributes, external scripts/styles, frames, and objects are blocked. HTML responses use `Cache-Control: no-store`.
+
+### Fixed
+
+- Prevented login responses from revealing whether an account exists, is disabled, or has an incorrect password.
+- Preserved exact login and current-password values instead of silently trimming credentials; new passwords containing whitespace are rejected before submission to Core.
+- Preserved session cookies and editable drafts during Core timeouts or outages, and prevented optional RPC failures from rendering incomplete data as a successful page.
+- Made GitHub Actions cache export best-effort so cache reservation failures do not fail a release after its image is built and pushed. Build and image push failures still fail the workflow.
+
+### Removed
+
+- Runtime CDN dependencies for frontend scripts and styles.
+
+### Upgrade Notes
+
+- Deploy the matching Core 2.0 release before Web so server-side logout revocation and password-policy handling are available.
+- Before upgrading production, supply `CSRF_AUTH_KEY`, retain HTTPS and secure cookies, and configure verified Web-to-Core TLS or the explicit trusted plaintext opt-ins on both services. Existing production configuration may otherwise fail startup.
+- When TLS terminates at ingress, configure HSTS and HTTP-to-HTTPS redirects there. Preserve the application's CSP header so its nonce matches the rendered page.
+- Core 2.0 list APIs return 50 records by default. This Web release does not follow `next_page_token`; affected lists, including housing comparisons, omit later pages. Update the client before deploying where collections can exceed 50 records.
+
 ## [v1.4.0] - 2026-10-09
 
 ### Added
