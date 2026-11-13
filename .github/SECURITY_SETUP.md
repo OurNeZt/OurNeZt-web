@@ -55,14 +55,15 @@ npm run build:assets
 ## Local checks and coverage
 
 ```sh
-go install golang.org/x/vuln/cmd/govulncheck@v1.9.0
+GOTOOLCHAIN=auto go install golang.org/x/vuln/cmd/govulncheck@v1.9.0
 CGO_ENABLED=0 govulncheck ./...
 npm audit --package-lock-only --include=dev --audit-level=low
 ```
 
 CI scans on Linux with the latest Go 1.25 patch, matching the Docker build's minor
-version. Installing the scanner may download a newer toolchain for the scanner
-itself. Update CI and Docker together when upgrading the application toolchain;
+version. Only scanner installation enables `GOTOOLCHAIN=auto`, allowing Go to
+download a newer toolchain for the scanner itself. The scan still uses the
+application's Go 1.25 toolchain. Update CI and Docker together when upgrading it;
 Dependabot cannot fix standard library vulnerabilities by updating Go modules.
 
 These checks do not scan Alpine packages in the container image. Container image
