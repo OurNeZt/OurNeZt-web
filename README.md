@@ -812,6 +812,9 @@ See the [open issues](https://github.com/OurNeZt/OurNeZt-web/issues) for planned
 
 ## Contributing
 
+Security checks and GitHub alert activation are documented in
+[Security setup](.github/SECURITY_SETUP.md).
+
 Contributions are welcome.
 
 For normal development:
