@@ -1,0 +1,12 @@
+{{ define "partials/finance_icon" }}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+  {{ if eq . "income" }}<path d="M12 3v11m-4-4 4 4 4-4M4 15v5h16v-5"/>
+  {{ else if eq . "expenses" }}<path d="M12 15V4m-4 4 4-4 4 4M4 15v5h16v-5"/>
+  {{ else if eq . "surplus" }}<path d="M4 7h16v13H4zM3 4h18v3H3zM9 12h6"/>
+  {{ else if eq . "gross" }}<path d="M4 20h16M6 16v-4m6 4V8m6 8V4"/>
+  {{ else if eq . "trend" }}<path d="M3 19h18M4 14l5-5 4 3 7-8m-5 0h5v5"/>
+  {{ else if eq . "housing" }}<path d="m3 10 9-7 9 7M5 9v11h14V9M9 20v-7h6v7"/>
+  {{ else if eq . "payments" }}<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 11h18M8 16h2m4 0h2"/>
+  {{ end }}
+</svg>
+{{ end }}

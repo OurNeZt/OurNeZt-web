@@ -1,39 +1,38 @@
 {{ define "dashboard" }}
 {{ template "partials/header" . }}
-<section class="card bg-base-100 shadow">
-  <div class="card-body">
-    <h1 class="card-title">Household Dashboard</h1>
+<section class="oz-page-heading" aria-labelledby="dashboard-title">
+  <div class="oz-page-title-group">
+    <span class="oz-page-icon">{{ template "partials/nav_icon" "overview" }}</span>
+    <h1 id="dashboard-title">Overview</h1>
+  </div>
     {{ if .Data.Families }}
-    <form method="get" action="/dashboard" class="flex gap-2">
-      <select class="select select-bordered" name="family_id">
+    <form method="get" action="/dashboard" class="oz-household-switch">
+      <label for="dashboard-household">Planning for</label>
+      <select id="dashboard-household" class="select select-bordered" name="family_id">
         {{ range .Data.Families }}<option value="{{ .Id }}" {{ if eq $.Data.FamilyID .Id }}selected{{ end }}>{{ .Name }}</option>{{ end }}
       </select>
-      <button class="btn" type="submit">Switch</button>
+      <button class="btn btn-sm" type="submit">View</button>
     </form>
-    {{ else }}
-    <p>No family yet. <a class="link" href="/families">Create or join one</a>.</p>
     {{ end }}
-  </div>
 </section>
 {{ if .Data.Dashboard }}
-<div class="grid md:grid-cols-4 gap-4 mt-6">
-  <div class="stat bg-base-100 rounded-box shadow"><div class="stat-title">Gross Income</div><div class="stat-value text-lg">{{ cents .Data.Income.CurrentGrossIncomeCents }}</div></div>
-  <div class="stat bg-base-100 rounded-box shadow"><div class="stat-title">Take Home</div><div class="stat-value text-lg">{{ cents .Data.Income.TakeHomeIncomeCents }}</div></div>
-  <div class="stat bg-base-100 rounded-box shadow"><div class="stat-title">Monthly Expenses</div><div class="stat-value text-lg">{{ cents .Data.Income.MonthlyExpensesCents }}</div></div>
-  <div class="stat bg-base-100 rounded-box shadow"><div class="stat-title">Monthly Surplus</div><div class="stat-value text-lg">{{ cents .Data.Income.MonthlySurplusCents }}</div></div>
+<div class="oz-section-intro"><h2>Monthly snapshot</h2><p>SGD / month</p></div>
+<div class="oz-metrics">
+  <div class="oz-metric oz-metric-income"><div class="oz-metric-header"><p class="oz-metric-label">Take-home income</p><span class="oz-metric-icon">{{ template "partials/finance_icon" "income" }}</span></div><p class="oz-metric-value">{{ cents .Data.Income.TakeHomeIncomeCents }}</p><p class="oz-metric-note">After deductions</p></div>
+  <div class="oz-metric oz-metric-expenses"><div class="oz-metric-header"><p class="oz-metric-label">Living expenses</p><span class="oz-metric-icon">{{ template "partials/finance_icon" "expenses" }}</span></div><p class="oz-metric-value">{{ cents .Data.Income.MonthlyExpensesCents }}</p><p class="oz-metric-note">Your listed expenses</p></div>
+  <div class="oz-metric oz-metric-featured {{ if lt .Data.Income.MonthlySurplusCents 0 }}oz-metric-negative{{ end }}"><div class="oz-metric-header"><p class="oz-metric-label">{{ if lt .Data.Income.MonthlySurplusCents 0 }}Monthly shortfall{{ else }}Money left{{ end }}</p><span class="oz-metric-icon">{{ template "partials/finance_icon" "surplus" }}</span></div><p class="oz-metric-value">{{ cents .Data.Income.MonthlySurplusCents }}</p><p class="oz-metric-note">After listed expenses</p></div>
+  <div class="oz-metric oz-metric-gross"><div class="oz-metric-header"><p class="oz-metric-label">Gross income</p><span class="oz-metric-icon">{{ template "partials/finance_icon" "gross" }}</span></div><p class="oz-metric-value">{{ cents .Data.Income.CurrentGrossIncomeCents }}</p><p class="oz-metric-note">Before deductions</p></div>
 </div>
-<div class="grid gap-4 mt-6 md:grid-cols-2">
+<div class="grid gap-4 md:grid-cols-2 oz-dashboard-grid">
   <section class="card bg-base-100 shadow">
     <div class="card-body">
-      <h2 class="card-title text-base">Income Overview</h2>
-      <p class="text-xs opacity-70">Monthly time series of gross income with DIA projected gross shown as a future point.</p>
+      <div class="oz-chart-heading"><span class="oz-chart-icon oz-chart-icon-income">{{ template "partials/finance_icon" "trend" }}</span><div><h2 class="card-title text-base">Income over time</h2><p class="oz-chart-caption">Gross income &middot; SGD / month</p></div></div>
       <div class="oz-chart-box"><canvas id="incomeChart" aria-label="Income overview chart"></canvas></div>
     </div>
   </section>
   <section class="card bg-base-100 shadow">
     <div class="card-body">
-      <h2 class="card-title text-base">Housing Scenario Impact</h2>
-      <p class="text-xs opacity-70">Monthly housing cost and surplus after housing by visible option.</p>
+      <div class="oz-chart-heading"><span class="oz-chart-icon oz-chart-icon-housing">{{ template "partials/finance_icon" "housing" }}</span><div><h2 class="card-title text-base">Home comparison</h2><p class="oz-chart-caption">Housing cost and money left &middot; SGD / month</p></div></div>
       {{ if gt .Data.HiddenHousingCount 0 }}
       <div class="alert oz-alert-soft text-xs">{{ .Data.HiddenHousingCount }} hidden housing option{{ if ne .Data.HiddenHousingCount 1 }}s are{{ else }} is{{ end }} excluded from dashboard charts and timeline.</div>
       {{ end }}
@@ -49,7 +48,7 @@
   </section>
 </div>
 {{ if .Data.Housing }}
-<section class="card bg-base-100 shadow mt-4"><div class="card-body"><h2 class="card-title text-base">Housing Evaluations</h2>
+<section class="card bg-base-100 shadow mt-4"><div class="card-body"><h2 class="card-title text-base">Your home shortlist</h2>
   <div class="grid gap-3 md:grid-cols-2">{{ range .Data.Housing }}<article class="border border-base-300 rounded-box p-4">
     <h3 class="font-semibold"><a class="link" href="/housing/{{ .Id }}?family_id={{ $.Data.FamilyID }}#evaluation">{{ .Name }}</a></h3>
     {{ template "partials/evaluation_summary" .Evaluation }}
@@ -59,8 +58,7 @@
 {{ end }}
 <section class="card bg-base-100 shadow mt-4">
   <div class="card-body">
-    <h2 class="card-title text-base">Payment vs Income Timeline</h2>
-    <p class="text-xs opacity-70">Follow each visible housing option from today through total initial payment, final downpayment, and the later monthly payment stage.</p>
+    <div class="oz-chart-heading"><span class="oz-chart-icon oz-chart-icon-payments">{{ template "partials/finance_icon" "payments" }}</span><div><h2 class="card-title text-base">Payment timeline</h2><p class="oz-chart-caption">Monthly amounts on the left axis; one-off payments on the right.</p></div></div>
     {{ if .Data.TimelineSeries }}
     <label class="oz-field max-w-sm">
       <span>Housing Option</span>
@@ -73,9 +71,9 @@
     <div class="oz-chart-box oz-chart-box-timeline"><canvas id="timelineChart" aria-label="Payment and income timeline chart"></canvas></div>
     <div class="oz-chart-legend-mobile" aria-hidden="true">
       <span class="oz-chart-legend-item"><span class="oz-chart-legend-swatch oz-chart-legend-swatch-line"></span>Take-Home</span>
-      <span class="oz-chart-legend-item"><span class="oz-chart-legend-swatch oz-chart-legend-swatch-brown"></span>Monthly Need</span>
-      <span class="oz-chart-legend-item"><span class="oz-chart-legend-swatch oz-chart-legend-swatch-blue"></span>Initial Payment</span>
-      <span class="oz-chart-legend-item"><span class="oz-chart-legend-swatch oz-chart-legend-swatch-coral"></span>Final DP</span>
+      <span class="oz-chart-legend-item"><span class="oz-chart-legend-swatch oz-chart-legend-swatch-expenses"></span>Monthly payment</span>
+      <span class="oz-chart-legend-item"><span class="oz-chart-legend-swatch oz-chart-legend-swatch-upfront"></span>Initial payment</span>
+      <span class="oz-chart-legend-item"><span class="oz-chart-legend-swatch oz-chart-legend-swatch-future"></span>Final downpayment</span>
     </div>
     {{ else }}
     <div class="alert oz-alert-soft text-sm">Add at least one housing option to show payment timeline.</div>
@@ -91,6 +89,21 @@
 <script nonce="{{ $.CSPNonce }}">
   (() => {
     if (!window.Chart) return;
+    Chart.defaults.color = "#646f59";
+    Chart.defaults.borderColor = "#e1e3d5";
+    Chart.defaults.font.family = '"Segoe UI", system-ui, sans-serif';
+    Chart.defaults.font.size = 13;
+    const theme = getComputedStyle(document.documentElement);
+    const chartColors = {
+      income: theme.getPropertyValue("--oz-chart-income").trim() || "#4677ac",
+      expenses: theme.getPropertyValue("--oz-chart-expenses").trim() || "#c16b50",
+      surplus: theme.getPropertyValue("--oz-chart-surplus").trim() || "#34866f",
+      upfront: theme.getPropertyValue("--oz-chart-upfront").trim() || "#b7862d",
+      future: theme.getPropertyValue("--oz-chart-future").trim() || "#8967ad"
+    };
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      Chart.defaults.animation = false;
+    }
 
     const incomeCtx = document.getElementById("incomeChart");
     if (incomeCtx) {
@@ -111,13 +124,13 @@
                 {{ $gross }} / 100
               {{- end -}}
             ],
-            borderColor: "#ef7f7a",
-            backgroundColor: "rgba(239,127,122,0.18)",
+            borderColor: chartColors.income,
+            backgroundColor: "rgba(70,119,172,0.13)",
             tension: 0.28,
             fill: true,
             pointRadius: 3,
             pointHoverRadius: 5,
-            borderWidth: 2
+            borderWidth: 3
           },
           {
             label: "Projected Gross (DIA)",
@@ -127,8 +140,8 @@
                 {{ if lt $gross 0 }}null{{ else }}{{ $gross }} / 100{{ end }}
               {{- end -}}
             ],
-            borderColor: "#385a82",
-            backgroundColor: "rgba(56,90,130,0.12)",
+            borderColor: chartColors.future,
+            backgroundColor: "rgba(137,103,173,0.12)",
             borderDash: [6, 4],
             showLine: true,
             spanGaps: true,
@@ -171,42 +184,52 @@
           ],
           datasets: [
             {
-              label: "Monthly Housing Cost",
+              label: "Housing cost",
               data: [
                 {{- range $i, $r := .Data.HousingCharts -}}
                   {{- if $i }},{{ end -}}
                   {{ $r.MonthlyHousingCostCents }} / 100
                 {{- end -}}
               ],
-              backgroundColor: "rgba(56,90,130,0.72)",
-              borderColor: "#385a82",
-              borderWidth: 1
+              backgroundColor: chartColors.expenses,
+              borderColor: chartColors.expenses,
+              borderWidth: 0,
+              borderRadius: 5,
+              maxBarThickness: 18
             },
             {
-              label: "Surplus After Housing",
+              label: "Money left after housing",
               data: [
                 {{- range $i, $r := .Data.HousingCharts -}}
                   {{- if $i }},{{ end -}}
                   {{ $r.MonthlySurplusAfterCents }} / 100
                 {{- end -}}
               ],
-              backgroundColor: "rgba(126,161,61,0.72)",
-              borderColor: "#7ea13d",
-              borderWidth: 1
+              backgroundColor: (context) => context.raw < 0 ? chartColors.expenses : chartColors.surplus,
+              borderColor: chartColors.surplus,
+              borderWidth: 0,
+              borderRadius: 5,
+              maxBarThickness: 18
             }
           ]
         },
         options: {
+          indexAxis: "y",
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
             legend: { position: "bottom" }
           },
           scales: {
-            y: {
+            x: {
+              beginAtZero: true,
               ticks: {
                 callback: (v) => "$" + Number(v).toLocaleString()
               }
+            },
+            y: {
+              grid: { display: false },
+              ticks: { autoSkip: false }
             }
           }
         }
@@ -285,24 +308,24 @@
             {
               label: "Take-Home",
               data: initialSeries.estimatedTakeHome,
-              borderColor: "#7ea13d",
-              backgroundColor: "rgba(126,161,61,0.12)",
+              borderColor: chartColors.income,
+              backgroundColor: chartColors.income,
               yAxisID: "monthlyAxis",
               type: "line",
               tension: 0.22,
               spanGaps: true,
               pointRadius: 3,
               pointHoverRadius: 4,
-              pointBackgroundColor: "#dcecb2",
-              pointBorderColor: "#6c9429",
+              pointBackgroundColor: "#fffdf8",
+              pointBorderColor: chartColors.income,
               pointBorderWidth: 2,
               borderWidth: 2
             },
             {
-              label: "Monthly Need",
+              label: "Monthly payment",
               data: initialSeries.monthlyPaymentNeed,
-              backgroundColor: "rgba(138,101,69,0.72)",
-              borderColor: "#8a6545",
+              backgroundColor: chartColors.expenses,
+              borderColor: chartColors.expenses,
               yAxisID: "monthlyAxis",
               type: "bar",
               borderWidth: 1,
@@ -314,8 +337,8 @@
             {
               label: "Initial Payment",
               data: initialSeries.initialDownpayment,
-              backgroundColor: "rgba(56,90,130,0.72)",
-              borderColor: "#385a82",
+              backgroundColor: chartColors.upfront,
+              borderColor: chartColors.upfront,
               borderWidth: 1,
               yAxisID: "upfrontAxis",
               stack: "downpayment",
@@ -325,10 +348,10 @@
               borderRadius: 0
             },
             {
-              label: "Final DP",
+              label: "Final downpayment",
               data: initialSeries.finalDownpayment,
-              backgroundColor: "rgba(239,127,122,0.72)",
-              borderColor: "#ef7f7a",
+              backgroundColor: chartColors.future,
+              borderColor: chartColors.future,
               borderWidth: 1,
               yAxisID: "upfrontAxis",
               stack: "downpayment",
@@ -355,7 +378,7 @@
                 boxWidth: initialCompactTimeline ? 18 : 42,
                 padding: initialCompactTimeline ? 12 : 16,
                 font: {
-                  size: initialCompactTimeline ? 11 : 12
+                  size: initialCompactTimeline ? 12 : 13
                 }
               }
             }
@@ -368,7 +391,7 @@
                 maxRotation: initialCompactTimeline ? 20 : 0,
                 minRotation: initialCompactTimeline ? 20 : 0,
                 font: {
-                  size: initialCompactTimeline ? 10 : 12
+                  size: initialCompactTimeline ? 12 : 13
                 }
               },
               title: {
@@ -382,7 +405,7 @@
               ticks: {
                 callback: toMoneyTick,
                 font: {
-                  size: initialCompactTimeline ? 10 : 12
+                  size: initialCompactTimeline ? 12 : 13
                 }
               },
               title: {
@@ -399,7 +422,7 @@
               ticks: {
                 callback: toMoneyTick,
                 font: {
-                  size: initialCompactTimeline ? 10 : 12
+                  size: initialCompactTimeline ? 12 : 13
                 }
               },
               title: {
@@ -419,15 +442,15 @@
         timelineChart.options.plugins.legend.display = !compact;
         timelineChart.options.plugins.legend.labels.boxWidth = compact ? 18 : 42;
         timelineChart.options.plugins.legend.labels.padding = compact ? 12 : 16;
-        timelineChart.options.plugins.legend.labels.font.size = compact ? 11 : 12;
+        timelineChart.options.plugins.legend.labels.font.size = compact ? 12 : 13;
         timelineChart.options.scales.x.ticks.maxRotation = compact ? 20 : 0;
         timelineChart.options.scales.x.ticks.minRotation = compact ? 20 : 0;
-        timelineChart.options.scales.x.ticks.font.size = compact ? 10 : 12;
+        timelineChart.options.scales.x.ticks.font.size = compact ? 12 : 13;
         timelineChart.options.scales.x.title.display = !compact;
-        timelineChart.options.scales.monthlyAxis.ticks.font.size = compact ? 10 : 12;
+        timelineChart.options.scales.monthlyAxis.ticks.font.size = compact ? 12 : 13;
         timelineChart.options.scales.monthlyAxis.title.display = !compact;
         timelineChart.options.scales.monthlyAxis.title.text = "Monthly income and payment";
-        timelineChart.options.scales.upfrontAxis.ticks.font.size = compact ? 10 : 12;
+        timelineChart.options.scales.upfrontAxis.ticks.font.size = compact ? 12 : 13;
         timelineChart.options.scales.upfrontAxis.title.display = !compact;
         timelineChart.options.scales.upfrontAxis.title.text = "One-time payments";
         timelineChart.update();
@@ -453,6 +476,13 @@
     }
   })();
 </script>
+{{ else }}
+<section class="card oz-empty-state">
+  <div class="oz-empty-symbol" aria-hidden="true">&#8962;</div>
+  <h2>Your next chapter starts here.</h2>
+  <p>Create a household for yourself or the people you plan with. Then add your financial profiles and the homes you're considering.</p>
+  <a class="btn btn-primary" href="/families">Set up your household <span aria-hidden="true">&rarr;</span></a>
+</section>
 {{ end }}
 {{ template "partials/footer" . }}
 {{ end }}

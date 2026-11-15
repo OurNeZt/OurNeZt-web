@@ -304,7 +304,7 @@ func TestCoreUnavailableCannotRenderEmptyFamilyData(t *testing.T) {
 	req.AddCookie(&http.Cookie{Name: "session", Value: "token"})
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
-	if w.Code != http.StatusServiceUnavailable || !strings.Contains(w.Body.String(), coreUnavailableMessage) || strings.Contains(w.Body.String(), "private Core") || strings.Contains(w.Body.String(), "No families") {
+	if w.Code != http.StatusServiceUnavailable || !strings.Contains(w.Body.String(), coreUnavailableMessage) || strings.Contains(w.Body.String(), "private Core") || strings.Contains(w.Body.String(), "Your households will appear here") {
 		t.Fatalf("Core failure rendered as empty data: %d %s", w.Code, w.Body.String())
 	}
 	outage.Store(false)
@@ -312,7 +312,7 @@ func TestCoreUnavailableCannotRenderEmptyFamilyData(t *testing.T) {
 	req.AddCookie(&http.Cookie{Name: "session", Value: "token"})
 	w = httptest.NewRecorder()
 	router.ServeHTTP(w, req)
-	if w.Code != http.StatusOK || !strings.Contains(w.Body.String(), "No families") {
+	if w.Code != http.StatusOK || !strings.Contains(w.Body.String(), "Your households will appear here") {
 		t.Fatalf("dependency failure leaked into the next request: %d", w.Code)
 	}
 }

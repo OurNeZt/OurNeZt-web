@@ -1,35 +1,37 @@
 {{ define "families" }}
 {{ $csrf := .CSRFField }}
 {{ template "partials/header" . }}
+<header class="oz-page-heading"><div class="oz-page-title-group"><span class="oz-page-icon oz-page-icon-household">{{ template "partials/nav_icon" "households" }}</span><h1>Households</h1></div></header>
 <div class="grid gap-6 md:grid-cols-2">
   <section class="card bg-base-100 shadow">
     <div class="card-body">
-      <h2 class="card-title">Create Family</h2>
+      <h2 class="card-title">Start a household</h2>
       <form method="post" action="/families" class="space-y-2">{{ $csrf }}
-        <input class="input input-bordered w-full" name="name" placeholder="Family name" required>
-        <select class="select select-bordered w-full" name="family_type" required>
-          <option value="">Select family type</option>
+        <label class="oz-field"><span>Household name</span><input class="input input-bordered w-full" name="name" placeholder="e.g. Our first home" required></label>
+        <label class="oz-field"><span>Planning together as</span><select class="select select-bordered w-full" name="family_type" required>
+          <option value="">Select household type</option>
           <option value="single">Single</option>
           <option value="couple">Couple</option>
           <option value="family">Family</option>
-        </select>
-        <button class="btn btn-primary" type="submit">Create</button>
+        </select></label>
+        <button class="btn btn-primary" type="submit">Create household</button>
       </form>
     </div>
   </section>
   <section class="card bg-base-100 shadow">
     <div class="card-body">
-      <h2 class="card-title">Join Family</h2>
+      <h2 class="card-title">Join your people</h2>
+      <p class="text-sm opacity-75">Already have an invitation? Enter the household's invite code.</p>
       <form method="post" action="/families/join" class="space-y-2">{{ $csrf }}
-        <input class="input input-bordered w-full" name="code" placeholder="Invite code" required>
-        <button class="btn btn-secondary" type="submit">Join</button>
+        <label class="oz-field"><span>Invite code</span><input class="input input-bordered w-full" name="code" placeholder="Enter your invite code" required></label>
+        <button class="btn btn-secondary" type="submit">Join household</button>
       </form>
     </div>
   </section>
 </div>
 <section class="card bg-base-100 shadow mt-6">
   <div class="card-body">
-    <h2 class="card-title">Your Families</h2>
+    <h2 class="card-title">Your households</h2>
     <div class="overflow-x-auto">
       <table class="table">
         <thead><tr><th>Name</th><th>Type</th><th></th></tr></thead>
@@ -41,7 +43,7 @@
             <td><a class="btn btn-sm" href="/families/{{ .Id }}">Open</a></td>
           </tr>
           {{ else }}
-          <tr><td colspan="3" class="opacity-70">No families yet</td></tr>
+          <tr><td colspan="3" class="opacity-70">Your households will appear here. Create one above to begin.</td></tr>
           {{ end }}
         </tbody>
       </table>
