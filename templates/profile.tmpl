@@ -1,12 +1,7 @@
 {{ define "profile" }}
 {{ $csrf := .CSRFField }}
 {{ template "partials/header" . }}
-<section class="card bg-base-100 shadow">
-  <div class="card-body">
-    <h1 class="card-title text-3xl">My Profile</h1>
-    <p class="opacity-80">View your account details, manage your password, and jump to your personal financial profile.</p>
-  </div>
-</section>
+<header class="oz-page-heading"><div class="oz-page-title-group"><span class="oz-page-icon">{{ template "partials/nav_icon" "people" }}</span><h1>Your account</h1></div></header>
 
 <div class="grid gap-6 md:grid-cols-2 mt-6">
   <section class="card bg-base-100 shadow">

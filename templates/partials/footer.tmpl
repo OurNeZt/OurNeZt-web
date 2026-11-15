@@ -2,10 +2,15 @@
   </main>
   <footer class="oz-footer">
     <div class="max-w-6xl mx-auto px-6 py-4 oz-footer-inner">
-      <p class="text-xs">
-        <span id="ozFooterYear"></span> OurNeZt. Plan home, family, and finances with confidence.
-      </p>
-      <p class="text-xs opacity-70">Built for practical first-home planning.</p>
+      <p class="text-xs"><span class="oz-footer-brand">OurNeZt</span><span id="ozFooterYear"></span></p>
+      <p class="oz-footer-note">Made with care, for the life you're building.</p>
+      {{ if .User }}
+      <nav class="oz-footer-links" aria-label="Help and account links">
+        <a href="/faq">Help &amp; guidance</a>
+        <button type="button" id="ozStartTour">Quick tour</button>
+        {{ if and (ne .User.Role "admin") (not .User.MustChangePassword) }}<a href="/profile">My account</a>{{ end }}
+      </nav>
+      {{ end }}
     </div>
   </footer>
 
@@ -47,6 +52,14 @@
 
   <script nonce="{{ $.CSPNonce }}">
     (() => {
+      const startTour = document.getElementById("ozStartTour");
+      if (startTour) {
+        startTour.addEventListener("click", () => {
+          const destination = new URL(window.location.href);
+          destination.searchParams.set("tour", "1");
+          window.location.assign(destination.toString());
+        });
+      }
       const mobileMenu = document.querySelector(".oz-mobile-menu");
       let mobileMenuForcedOpenByTour = false;
       const setMobileMenuForcedOpen = (open) => {
@@ -777,15 +790,14 @@
         renderStep(currentIndex, false);
       };
 
+      const url = new URL(window.location.href);
+      const tourRequested = url.searchParams.get("tour") === "1";
       const hiddenByPreference = safeGet(hideAllKey) === "1";
-      if (hiddenByPreference && !forcePasswordChange) return;
+      if (hiddenByPreference && !forcePasswordChange && !tourRequested) return;
 
-      const promptSeen = safeGet(promptSeenKey) === "1";
       const tourEnabled = safeGet(tourEnabledKey) === "1";
       const seenThisPage = safeGet(seenPageKey) === "1";
 
-      const url = new URL(window.location.href);
-      const tourRequested = url.searchParams.get("tour") === "1";
       if (tourRequested) {
         safeSet(promptSeenKey, "1");
         safeSet(tourEnabledKey, "1");
@@ -805,8 +817,6 @@
         startCoach(currentIndex);
       } else if (tourRequested || (tourEnabled && !seenThisPage)) {
         startCoach(currentIndex);
-      } else if (!promptSeen && promptBackdrop) {
-        openPrompt();
       }
 
       if (promptStartBtn) {

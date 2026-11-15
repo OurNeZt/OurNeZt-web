@@ -1,8 +1,9 @@
 {{ define "housing_compare" }}
 {{ template "partials/header" . }}
+<header class="oz-page-heading"><div class="oz-page-title-group"><span class="oz-page-icon oz-page-icon-compare">{{ template "partials/finance_icon" "gross" }}</span><h1>Compare homes</h1></div></header>
 <section class="card bg-base-100 shadow">
   <div class="card-body">
-    <h1 class="card-title">Housing Comparison</h1>
+    <h2 class="card-title">Housing comparison</h2>
     {{ if .Data.Families }}
     <form method="get" action="/housing/compare" class="flex gap-2 flex-wrap">
       <select class="select select-bordered" name="family_id">

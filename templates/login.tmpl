@@ -3,26 +3,40 @@
 {{ template "partials/header" . }}
 <section class="oz-login-shell">
   <div class="oz-login-visual">
-    <img src="/static/img/ournezt-logo.png" alt="OurNeZt logo">
-    <h1>Welcome Back</h1>
-    <p>Plan your home, money, and family goals together.</p>
+    <h1>Plan your<br><em>next home.</em></h1>
+    <p>Finances, homes, and household plans in one place.</p>
+    <svg class="oz-still-life" viewBox="0 0 440 260" fill="none" aria-hidden="true">
+      <path d="M91 226V116a103 103 0 0 1 206 0v110" fill="#e6e5d5"/>
+      <circle cx="270" cy="77" r="29" fill="#d7bc98"/>
+      <path d="M73 226c37-44 87-57 129-42s71 3 106-30l26 72" fill="#b9c1a4"/>
+      <path d="M92 227c71-24 143-31 211-16l26 16" fill="#87977a"/>
+      <path d="M141 151l56-44 59 44v75H141z" fill="#fcf9ef"/>
+      <path d="M127 153l70-55 73 55" stroke="#80684e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M184 227v-47a14 14 0 0 1 28 0v47" fill="#b89274"/>
+      <path d="M156 161h15v19h-15zM226 161h15v19h-15z" fill="#d1d7bf"/>
+      <path d="M54 228h320" stroke="#a0a58c" stroke-width="1.5" stroke-linecap="round"/>
+      <path d="M329 227l-6-47h40l-7 47" fill="#b67f61"/>
+      <path d="M343 182v-63m0 38c-22 0-28-13-23-24 16 0 23 11 23 24zm0-17c21 0 29-15 23-25-14 1-23 11-23 25z" stroke="#5d7051" stroke-width="2" stroke-linejoin="round"/>
+      <path d="M52 240c29-2 47 3 65 0m204 0c17 2 31-1 43 0" stroke="#c5c4af" stroke-linecap="round"/>
+    </svg>
   </div>
   <div class="card oz-panel oz-login-card">
     <div class="card-body">
-      <h2 class="card-title text-2xl">Login</h2>
+      <div><h2 class="card-title text-2xl">Welcome back.</h2>
+      <p class="oz-login-subtitle">Pick up where you left off.</p></div>
       <form method="post" action="/login" class="space-y-4">{{ $csrf }}
         <label class="oz-field">
           <span>Email</span>
-          <input class="input input-bordered w-full" name="email" type="email" autocomplete="username" required>
+          <input class="input input-bordered w-full" name="email" type="email" autocomplete="username" placeholder="you@example.com" required>
         </label>
         <label class="oz-field">
           <span>Password</span>
           <input class="input input-bordered w-full" name="password" type="password" autocomplete="current-password" required>
         </label>
-        <button class="btn btn-primary w-full" type="submit">Sign in</button>
+        <button class="btn btn-primary w-full" type="submit">Sign in <span aria-hidden="true">&rarr;</span></button>
       </form>
-      <p class="text-xs opacity-70 mt-3 text-center">
-        First-time setup?
+      <p class="oz-login-help">
+        Setting up your own instance?
         <a class="link link-primary" href="/bootstrap-admin-help">Bootstrap admin guide</a>
       </p>
     </div>

@@ -34,12 +34,17 @@ func (a *App) render(c *gin.Context, templateName, title string, payload any) {
 		CSPNonce:          c.GetString(cspNonceKey),
 		CSRFField:         csrf.TemplateField(c.Request),
 		Title:             title,
+		CurrentPath:       c.Request.URL.Path,
 		User:              user,
 		Error:             strings.TrimSpace(c.Query("error")),
 		Flash:             strings.TrimSpace(c.Query("flash")),
 		MaintenanceNotice: a.maintenanceNotice(),
 		Data:              payload,
 	})
+}
+
+func navActive(currentPath, section string) bool {
+	return currentPath == section || strings.HasPrefix(currentPath, section+"/")
 }
 
 func (a *App) grpcContext(c *gin.Context) context.Context {

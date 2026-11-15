@@ -1,13 +1,14 @@
 {{ define "housing" }}
 {{ $csrf := .CSRFField }}
 {{ template "partials/header" . }}
+<header class="oz-page-heading"><div class="oz-page-title-group"><span class="oz-page-icon oz-page-icon-housing">{{ template "partials/finance_icon" "housing" }}</span><h1>Homes</h1></div></header>
 <section class="card bg-base-100 shadow">
   <div class="card-body gap-5">
     <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
       <div class="space-y-2">
-        <h1 class="card-title">Housing Options</h1>
+        <h2 class="card-title">Your shortlist</h2>
         {{ if .Data.FamilyID }}
-        <p class="text-sm opacity-75">Organise housing options into groups and choose what stays visible on the dashboard, charts, and comparison views.</p>
+        <p class="text-sm opacity-75">Group homes and control dashboard visibility.</p>
         <div class="flex flex-wrap gap-2 text-xs">
           <span class="badge badge-outline">{{ .Data.VisibleHousingCount }} visible on dashboard</span>
           {{ if gt .Data.HiddenHousingCount 0 }}

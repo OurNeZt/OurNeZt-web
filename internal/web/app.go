@@ -31,6 +31,7 @@ type ViewData struct {
 	CSPNonce          string
 	CSRFField         template.HTML
 	Title             string
+	CurrentPath       string
 	User              *CurrentUser
 	Error             string
 	Flash             string
@@ -160,6 +161,7 @@ func parseTemplates(root string) (*template.Template, error) {
 	sort.Strings(paths)
 	tpl := template.New("ournezt-web").Funcs(template.FuncMap{
 		"cents":                       centsString,
+		"navActive":                   navActive,
 		"evaluationScore":             evaluationScore,
 		"evaluationColor":             evaluationColor,
 		"criterionWeight":             criterionWeight,

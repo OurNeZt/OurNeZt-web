@@ -1,9 +1,10 @@
 {{ define "people" }}
 {{ $csrf := .CSRFField }}
 {{ template "partials/header" . }}
+<header class="oz-page-heading"><div class="oz-page-title-group"><span class="oz-page-icon">{{ template "partials/nav_icon" "people" }}</span><h1>People</h1></div></header>
 <section class="card bg-base-100 shadow">
   <div class="card-body">
-    <h1 class="card-title">Household Profiles</h1>
+    <h2 class="card-title">Household profiles</h2>
     <p class="text-sm opacity-75">Account holders should edit their own financial profile from My Profile. Add/edit occupants here for household planning.</p>
     {{ if .Data.Families }}
     <form method="get" action="/people" class="flex gap-2 flex-wrap">
