@@ -29,3 +29,7 @@ The theme includes a skip link, active-page attributes, visible keyboard focus, 
 Visual QA uses the actual templates and fictional sample data without a production database. Desktop (1440 px), tablet (820 px), phone (390 px) and small-phone (320 px) review covers sign-in, populated/empty overview, housing list/comparison/forms, people/forms, households, account and FAQ. Keep generated screenshots and fixture servers out of the shipped application.
 
 Before completing all of #94, review this direction with users and apply the agreed guest/onboarding contracts when those APIs exist. Dashboard comprehension testing and the three chart replacements belong to their linked issues.
+
+## Release tracking
+
+This visual refresh belongs to Web issue #94. Its closing reference is recorded in the commit history so the issue stays open through the `dev` merge and closes when the referenced commit reaches the default `stable` branch. If release changes are squashed, retain `Closes #94` in the resulting commit message or the pull request into `stable`.
